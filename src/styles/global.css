@@ -1,0 +1,134 @@
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background: var(--background-color, #f4f6fa);
+}
+
+.app-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-layout {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 64px);
+}
+
+.left-panel {
+  width: 340px;
+  min-width: 260px;
+  background: var(--left-panel-bg, #f9fafb);
+  border-right: 1px solid var(--border-color, #e0e0e0);
+  display: flex;
+  flex-direction: column;
+}
+
+.middle-panel {
+  flex: 1;
+  background: var(--middle-panel-bg, #fff);
+  border-right: 1px solid var(--border-color, #e0e0e0);
+  display: flex;
+  flex-direction: column;
+}
+
+.right-panel {
+  width: 360px;
+  min-width: 260px;
+  background: var(--right-panel-bg, #f9fafb);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Resizable Panels Styles */
+.panel-content {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.resize-handle {
+  width: 8px;
+  background-color: var(--handle-bg, #f0f0f0);
+  border-left: 1px solid var(--border-color, #e0e0e0);
+  border-right: 1px solid var(--border-color, #e0e0e0);
+  cursor: col-resize;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resize-handle:hover, .resize-handle[data-resize-handle-active] {
+  background-color: var(--handle-active-bg, #d0d0d0);
+}
+
+.resize-handle::after {
+  content: "";
+  height: 24px;
+  width: 2px;
+  background-color: var(--handle-indicator, #bdbdbd);
+  border-radius: 1px;
+}
+
+/* Theme variables */
+:root {
+  --background-color: #f4f6fa;
+  --left-panel-bg: #f9fafb;
+  --middle-panel-bg: #fff;
+  --right-panel-bg: #f9fafb;
+  --border-color: #e0e0e0;
+  --handle-bg: #f0f0f0;
+  --handle-active-bg: #d0d0d0;
+  --handle-indicator: #bdbdbd;
+}
+
+[data-theme="dark"] {
+  --background-color: #333333;
+  --left-panel-bg: #2a2a2a;
+  --middle-panel-bg: #1a1a1a;
+  --right-panel-bg: #2a2a2a;
+  --border-color: #333333;
+  --handle-bg: #2a2a2a;
+  --handle-active-bg: #3a3a3a;
+  --handle-indicator: #666666;
+}
+
+/* ReactFlow Dark Mode Styles */
+.react-flow-dark-mode {
+  background-color: #1a1a1a;
+}
+
+.react-flow-dark-mode .react-flow__node {
+  color: #e2e8f0;
+}
+
+.react-flow-dark-mode .react-flow__handle {
+  background-color: #4a5568;
+  border-color: #2d3748;
+}
+
+.react-flow-dark-mode .react-flow__handle:hover {
+  background-color: #718096;
+}
+
+.react-flow-dark-mode .react-flow__attribution {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: #a0aec0;
+}
+
+.react-flow-dark-mode .react-flow__edge-path {
+  stroke: #718096;
+}
+
+.react-flow-dark-mode .react-flow__edge-text {
+  fill: #e2e8f0;
+}
+
+.react-flow-dark-mode .react-flow__edge-textbg {
+  fill: #1a1a1a;
+}
