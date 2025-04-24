@@ -9,6 +9,7 @@ export interface WorkflowNode {
   content: string;
   position: { x: number; y: number };
   llmModel?: string; // Only for agents and models
+  memoryType?: string; // Only for memory nodes
   parentId?: string; // Reference to the parent node (if created from a diamond connector)
   sourceHandle?: string; // The handle ID from which this node was created
 }
@@ -79,13 +80,33 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
       : state.selectedNode,
   })),
   
-  removeNode: (id) => set((state) => ({
-    nodes: state.nodes.filter((node) => node.id !== id),
-    edges: state.edges.filter(
-      (edge) => edge.source !== id && edge.target !== id
-    ),
-    selectedNode: state.selectedNode?.id === id ? null : state.selectedNode,
-  })),
+  removeNode: (id) => set((state) => {
+    // Get the node to be deleted
+    const nodeToDelete = state.nodes.find(node => node.id === id);
+    
+    // If the node is an agent, find all associated nodes (nodes with parentId equal to this agent's id)
+    let nodesToDelete = [id];
+    if (nodeToDelete && nodeToDelete.type === 'agent') {
+      // Find all child nodes of this agent
+      const childNodeIds = state.nodes
+        .filter(node => node.parentId === id)
+        .map(node => node.id);
+      
+      // Add child node IDs to the list of nodes to delete
+      nodesToDelete = [...nodesToDelete, ...childNodeIds];
+    }
+    
+    return {
+      // Filter out all nodes that should be deleted
+      nodes: state.nodes.filter(node => !nodesToDelete.includes(node.id)),
+      // Filter out all edges connected to deleted nodes
+      edges: state.edges.filter(
+        edge => !nodesToDelete.includes(edge.source) && !nodesToDelete.includes(edge.target)
+      ),
+      // Update selected node if it was deleted
+      selectedNode: state.selectedNode && nodesToDelete.includes(state.selectedNode.id) ? null : state.selectedNode,
+    };
+  }),
   
   addEdge: (edge) => set((state) => ({
     edges: [...state.edges, edge],

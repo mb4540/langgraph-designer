@@ -61,6 +61,22 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
     'ernie-4': 'Baidu ERNIE 4.0',
   };
 
+  // Map of memory types to display names
+  const memoryDisplayNames: Record<string, string> = {
+    'conversation-buffer': 'Conversation Buffer',
+    'sliding-window': 'Sliding-Window',
+    'summary': 'Summary',
+    'summary-buffer-hybrid': 'Summary-Buffer Hybrid',
+    'entity-knowledge-graph': 'Entity/Knowledge-Graph',
+    'vector-store': 'Vector-Store',
+    'episodic': 'Episodic',
+    'long-term-profile': 'Long-Term Profile',
+    'scratch-pad': 'Scratch-pad',
+    'tool-result-cache': 'Tool-Result Cache',
+    'read-only-shared': 'Read-Only Shared Knowledge',
+    'combined-layered': 'Combined/Layered',
+  };
+
   return nodes.map(node => {
     // Create label based on node type
     let label = '';
@@ -68,6 +84,10 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
       // For model nodes, show the model name
       const modelName = modelDisplayNames[node.llmModel] || node.llmModel;
       label = `Model: ${modelName}`;
+    } else if (node.type === 'memory' && node.memoryType) {
+      // For memory nodes, show the memory type
+      const memoryName = memoryDisplayNames[node.memoryType] || node.memoryType;
+      label = `Memory: ${memoryName}`;
     } else {
       // For other nodes, use the default format
       label = `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.name}`;
@@ -79,6 +99,7 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
       data: { 
         label: label,
         llmModel: node.llmModel, // Pass the model to the node component
+        memoryType: node.memoryType, // Pass the memory type to the node component
         onDelete: onDeleteFn
       },
       position: node.position,
@@ -121,18 +142,29 @@ const WorkflowGraph: React.FC = () => {
   const { mode } = useThemeContext();
   const isDarkMode = mode === 'dark';
   
-  // State for delete confirmation dialog
+  // State for deletion confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
-  
-  // Reference to the ReactFlow instance
-  const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
+  const [deleteDialogMessage, setDeleteDialogMessage] = useState('');
 
   // Handle node deletion
   const handleDeleteNode = useCallback((id: string) => {
+    // Find the node to be deleted
+    const node = storeNodes.find(node => node.id === id);
+    
+    // Set different message based on node type
+    if (node && node.type === 'agent') {
+      setDeleteDialogMessage('Are you sure you want to delete this agent? This will also delete all connected model, memory, tool, and output parser nodes associated with this agent.');
+    } else {
+      setDeleteDialogMessage('Are you sure you want to delete this node? This action cannot be undone.');
+    }
+    
     setNodeToDelete(id);
     setDeleteDialogOpen(true);
-  }, []);
+  }, [storeNodes]);
+
+  // Reference to the ReactFlow instance
+  const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
 
   const confirmDelete = useCallback(() => {
     if (nodeToDelete) {
@@ -251,7 +283,7 @@ const WorkflowGraph: React.FC = () => {
       <ConfirmationDialog
         open={deleteDialogOpen}
         title="Delete Node"
-        message="Are you sure you want to delete this node? This action cannot be undone."
+        message={deleteDialogMessage}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
