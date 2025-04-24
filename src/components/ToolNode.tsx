@@ -16,19 +16,26 @@ const ToolNode: React.FC<NodeProps> = ({ id, data }) => {
     }
   };
 
+  // Colors that match the tool diamond
+  const color = isDarkMode ? '#805ad5' : '#9ae6b4';
+  const darkColor = isDarkMode ? '#6b46c1' : '#68d391'; // Darker shade for outline
+  const lightColor = isDarkMode ? 'rgba(128, 90, 213, 0.2)' : 'rgba(154, 230, 180, 0.2)'; // Lighter shade for fill
+
   return (
     <div
       style={{
-        background: isDarkMode ? '#3c366b' : '#f0fff4',
+        background: lightColor,
         color: isDarkMode ? '#e2e8f0' : '#1a202c',
-        border: isDarkMode ? '1px solid #805ad5' : '1px solid #9ae6b4',
-        transform: 'rotate(45deg)', // Diamond shape
+        border: `2px solid ${darkColor}`,
+        borderRadius: '50%', // Circle shape
         padding: '10px',
-        width: '140px',
-        height: '140px',
+        width: '150px',
+        height: '150px',
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
+        textAlign: 'center',
         position: 'relative',
         boxShadow: isDarkMode ? '0 4px 6px rgba(0, 0, 0, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
       }}
@@ -38,25 +45,15 @@ const ToolNode: React.FC<NodeProps> = ({ id, data }) => {
         id="target-handle"
         type="target" 
         position={Position.Top} 
-        style={{ 
-          background: isDarkMode ? '#805ad5' : '#9ae6b4',
-          transform: 'rotate(-45deg)', // Counter-rotate the handle
-        }} 
+        style={{ background: darkColor }} 
       />
-      <div style={{ 
-        fontWeight: 'bold', 
-        transform: 'rotate(-45deg)', // Counter-rotate the text
-        textAlign: 'center',
-      }}>
-        {data.label}
-      </div>
+      <div style={{ fontWeight: 'bold', color: darkColor }}>{data.label}</div>
       
       {/* Delete icon */}
       <div 
         style={{
           position: 'absolute',
-          bottom: '20px',
-          transform: 'rotate(-45deg)', // Counter-rotate the icon
+          bottom: '30px',
           cursor: 'pointer',
           color: isDarkMode ? '#e53e3e' : '#f56565',
         }}
@@ -70,10 +67,7 @@ const ToolNode: React.FC<NodeProps> = ({ id, data }) => {
         id="source-handle"
         type="source" 
         position={Position.Bottom} 
-        style={{ 
-          background: isDarkMode ? '#805ad5' : '#9ae6b4',
-          transform: 'rotate(-45deg)', // Counter-rotate the handle
-        }} 
+        style={{ background: darkColor }} 
       />
     </div>
   );

@@ -16,16 +16,21 @@ const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
     }
   };
 
+  // Colors that match the memory diamond
+  const color = isDarkMode ? '#f39c12' : '#f6ad55';
+  const darkColor = isDarkMode ? '#d68910' : '#dd6b20'; // Darker shade for outline
+  const lightColor = isDarkMode ? 'rgba(243, 156, 18, 0.2)' : 'rgba(246, 173, 85, 0.2)'; // Lighter shade for fill
+
   return (
     <div
       style={{
-        background: isDarkMode ? '#2c3e50' : '#fffaf0',
+        background: lightColor,
         color: isDarkMode ? '#e2e8f0' : '#1a202c',
-        border: isDarkMode ? '1px solid #f39c12' : '1px solid #f6ad55',
-        clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)', // Hexagon shape
+        border: `2px solid ${darkColor}`,
+        borderRadius: '50%', // Circle shape
         padding: '10px',
-        width: '160px',
-        height: '140px',
+        width: '150px',
+        height: '150px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -40,9 +45,9 @@ const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
         id="target-handle"
         type="target" 
         position={Position.Top} 
-        style={{ background: isDarkMode ? '#f39c12' : '#f6ad55' }} 
+        style={{ background: darkColor }} 
       />
-      <div style={{ fontWeight: 'bold' }}>{data.label}</div>
+      <div style={{ fontWeight: 'bold', color: darkColor }}>{data.label}</div>
       
       {/* Delete icon */}
       <div 
@@ -62,7 +67,7 @@ const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
         id="source-handle"
         type="source" 
         position={Position.Bottom} 
-        style={{ background: isDarkMode ? '#f39c12' : '#f6ad55' }} 
+        style={{ background: darkColor }} 
       />
     </div>
   );

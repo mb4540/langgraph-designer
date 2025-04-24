@@ -3,6 +3,16 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { useThemeContext } from '../context/ThemeContext';
 import { useWorkflowStore, NodeType } from '../store/workflowStore';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+
+// Define fixed positions for each node type relative to the parent agent
+const NODE_POSITIONS = {
+  model: { x: -150, y: 200 },
+  memory: { x: -50, y: 200 },
+  tool: { x: 50, y: 200 },
+  outputParser: { x: 150, y: 200 },
+  agent: { x: 300, y: 0 } // For connected agents
+};
 
 interface DiamondProps {
   label: string;
@@ -12,9 +22,10 @@ interface DiamondProps {
   color: string;
   lightColor: string;
   handleId: string;
+  nodeType: NodeType;
 }
 
-const Diamond: React.FC<DiamondProps> = ({ label, position, onClick, isDarkMode, color, lightColor, handleId }) => {
+const Diamond: React.FC<DiamondProps> = ({ label, position, onClick, isDarkMode, color, lightColor, handleId, nodeType }) => {
   return (
     <div
       onClick={onClick}
@@ -46,15 +57,19 @@ const Diamond: React.FC<DiamondProps> = ({ label, position, onClick, isDarkMode,
         {label.charAt(0)}
       </div>
       
-      {/* Custom handle for this diamond */}
+      {/* Custom handle for this diamond - positioned at the bottom point of the diamond */}
       <Handle
         id={handleId}
         type="source"
         position={Position.Bottom}
         style={{
           background: isDarkMode ? color : lightColor,
-          transform: 'translateY(12px)', // Position at the bottom of the diamond
-          visibility: 'hidden', // Hide the handle visually but keep it functional
+          transform: 'translateY(12px) rotate(-45deg)', // Position at the bottom point of the diamond
+          bottom: '0',
+          left: '50%',
+          width: '8px',
+          height: '8px',
+          zIndex: 20,
         }}
       />
     </div>
@@ -74,10 +89,10 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
     const agentNode = useWorkflowStore.getState().nodes.find(node => node.id === id);
     if (!agentNode) return;
     
-    // Position the new node below the agent with some randomness
+    // Use fixed position offsets based on node type
     const newNodePosition = {
-      x: agentNode.position.x + (Math.random() * 200 - 100),
-      y: agentNode.position.y + 200 + (Math.random() * 50)
+      x: agentNode.position.x + NODE_POSITIONS[type].x,
+      y: agentNode.position.y + NODE_POSITIONS[type].y
     };
 
     // Create the new node based on type
@@ -111,6 +126,49 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
     selectNode(newId);
   };
 
+  const handleAddAgent = () => {
+    // Generate a unique ID
+    const newId = `agent-${Date.now()}`;
+    
+    // Get the position of the current agent node
+    const agentNode = useWorkflowStore.getState().nodes.find(node => node.id === id);
+    if (!agentNode) return;
+    
+    // Use fixed position offset for agent nodes
+    const newNodePosition = {
+      x: agentNode.position.x + NODE_POSITIONS.agent.x,
+      y: agentNode.position.y + NODE_POSITIONS.agent.y
+    };
+
+    // Create the new agent node
+    const newNode = {
+      id: newId,
+      type: 'agent' as NodeType, 
+      name: 'New Agent',
+      content: 'This is a new agent.',
+      position: newNodePosition,
+    };
+
+    // Add the new agent node
+    addNode(newNode);
+    
+    // Create an edge from the current agent to the new agent
+    const newEdge = {
+      id: `e${id}-${newId}`,
+      source: id,
+      target: newId,
+      animated: true, // Add animation to show data flow
+      sourceHandle: 'agent-handle', // Connect from the agent handle
+      targetHandle: 'target-handle', // Connect to the default target handle
+    };
+    
+    // Add the edge
+    addEdge(newEdge);
+    
+    // Select the new agent to open it in the details panel
+    selectNode(newId);
+  };
+
   const handleDelete = (event: React.MouseEvent) => {
     event.stopPropagation();
     if (data.onDelete) {
@@ -137,6 +195,88 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       <Handle type="target" position={Position.Top} style={{ background: isDarkMode ? '#4299e1' : '#63b3ed' }} />
       <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{data.label}</div>
       
+      {/* Small circle on the right side with connecting line and plus square */}
+      <div style={{ position: 'relative' }}>
+        <div
+          style={{
+            position: 'absolute',
+            right: '-12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '24px',
+            height: '24px',
+            background: isDarkMode ? '#4299e1' : '#63b3ed',
+            borderRadius: '50%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 10,
+            boxShadow: isDarkMode ? '0 2px 4px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          <div style={{
+            fontSize: '10px',
+            fontWeight: 'bold',
+            color: isDarkMode ? '#fff' : '#2a4365',
+            userSelect: 'none',
+          }}>
+            A
+          </div>
+          
+          {/* Handle for the circle */}
+          <Handle
+            id="agent-handle"
+            type="source"
+            position={Position.Right}
+            style={{
+              background: isDarkMode ? '#4299e1' : '#63b3ed',
+              right: '-4px',
+              width: '8px',
+              height: '8px',
+              zIndex: 20,
+            }}
+          />
+        </div>
+        
+        {/* Connecting line */}
+        <div
+          style={{
+            position: 'absolute',
+            right: '-60px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '40px',
+            height: '2px',
+            background: isDarkMode ? '#4299e1' : '#63b3ed',
+            zIndex: 9,
+          }}
+        />
+        
+        {/* Square with plus sign */}
+        <div
+          onClick={handleAddAgent}
+          style={{
+            position: 'absolute',
+            right: '-80px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '20px',
+            height: '20px',
+            background: isDarkMode ? '#2a4365' : '#ebf8ff',
+            border: isDarkMode ? '1px solid #4299e1' : '1px solid #63b3ed',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 10,
+            boxShadow: isDarkMode ? '0 2px 4px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
+            cursor: 'pointer',
+          }}
+          title="Add connected agent"
+        >
+          <AddIcon style={{ fontSize: '14px', color: isDarkMode ? '#4299e1' : '#63b3ed' }} />
+        </div>
+      </div>
+      
       {/* Delete icon */}
       <div 
         style={{
@@ -161,6 +301,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         color="#38b2ac"
         lightColor="#4fd1c5"
         handleId="model-handle"
+        nodeType="model"
       />
       <Diamond
         label="Memory"
@@ -170,6 +311,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         color="#f39c12"
         lightColor="#f6ad55"
         handleId="memory-handle"
+        nodeType="memory"
       />
       <Diamond
         label="Tools"
@@ -179,6 +321,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         color="#805ad5"
         lightColor="#9ae6b4"
         handleId="tool-handle"
+        nodeType="tool"
       />
       <Diamond
         label="Output Parser"
@@ -188,10 +331,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         color="#3182ce"
         lightColor="#4299e1"
         handleId="parser-handle"
+        nodeType="outputParser"
       />
-      
-      {/* We keep the default source handle for backward compatibility */}
-      <Handle type="source" position={Position.Bottom} style={{ background: isDarkMode ? '#4299e1' : '#63b3ed', visibility: 'hidden' }} />
     </div>
   );
 };

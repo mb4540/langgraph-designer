@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -11,7 +11,8 @@ import ReactFlow, {
   Connection,
   NodeTypes,
   NodeMouseHandler,
-  MarkerType
+  MarkerType,
+  ReactFlowInstance
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Paper from '@mui/material/Paper';
@@ -34,35 +35,55 @@ const nodeTypes: NodeTypes = {
   outputParser: OutputParserNode,
 };
 
+// Maps node types to their respective handle IDs
+const nodeTypeToHandleMap = {
+  model: 'model-handle',
+  memory: 'memory-handle',
+  tool: 'tool-handle',
+  outputParser: 'parser-handle',
+};
+
 // Convert store nodes to ReactFlow nodes
-const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean): Node[] => {
+const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDeleteFn: (id: string) => void): Node[] => {
   return nodes.map(node => ({
     id: node.id,
     type: node.type,
     data: { 
       label: `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.name}`,
-      onDelete: (id: string) => {}
+      onDelete: onDeleteFn
     },
     position: node.position,
   }));
 };
 
 // Convert store edges to ReactFlow edges, preserving handle information
-const storeEdgesToFlowEdges = (edges: StoreEdge[], isDarkMode: boolean): Edge[] => {
-  return edges.map(edge => ({
-    ...edge,
-    // Preserve source and target handles if they exist
-    sourceHandle: edge.sourceHandle || null,
-    targetHandle: edge.targetHandle || 'target-handle', // Default to the main target handle
-    style: {
-      stroke: isDarkMode ? '#718096' : '#4a5568',
-      strokeWidth: 2,
-    },
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      color: isDarkMode ? '#718096' : '#4a5568',
-    },
-  }));
+const storeEdgesToFlowEdges = (edges: StoreEdge[], nodes: StoreNode[], isDarkMode: boolean): Edge[] => {
+  return edges.map(edge => {
+    // Find the target node to determine its type
+    const targetNode = nodes.find(node => node.id === edge.target);
+    
+    // If we have a target node and it's not an agent, use the appropriate handle based on its type
+    let sourceHandle = edge.sourceHandle;
+    if (targetNode && targetNode.type !== 'agent' && !sourceHandle) {
+      // Use the handle that corresponds to the target node's type
+      sourceHandle = nodeTypeToHandleMap[targetNode.type as keyof typeof nodeTypeToHandleMap] || undefined;
+    }
+    
+    return {
+      ...edge,
+      // Use the determined source handle or the existing one
+      sourceHandle: sourceHandle,
+      targetHandle: edge.targetHandle || 'target-handle', // Default to the main target handle
+      style: {
+        stroke: isDarkMode ? '#718096' : '#4a5568',
+        strokeWidth: 2,
+      },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: isDarkMode ? '#718096' : '#4a5568',
+      },
+    };
+  });
 };
 
 const WorkflowGraph: React.FC = () => {
@@ -73,71 +94,78 @@ const WorkflowGraph: React.FC = () => {
   // State for delete confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
+  
+  // Reference to the ReactFlow instance
+  const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
 
   // Handle node deletion
-  const handleDeleteNode = (id: string) => {
+  const handleDeleteNode = useCallback((id: string) => {
     setNodeToDelete(id);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     if (nodeToDelete) {
       removeNode(nodeToDelete);
       setNodeToDelete(null);
     }
     setDeleteDialogOpen(false);
-  };
+  }, [nodeToDelete, removeNode]);
 
-  const cancelDelete = () => {
+  const cancelDelete = useCallback(() => {
     setNodeToDelete(null);
     setDeleteDialogOpen(false);
-  };
+  }, []);
   
   // Convert store data to ReactFlow format
-  const initialNodes = storeNodesToFlowNodes(storeNodes, isDarkMode).map(node => ({
-    ...node,
-    data: {
-      ...node.data,
-      onDelete: handleDeleteNode
-    }
-  }));
+  const initialNodes = storeNodesToFlowNodes(storeNodes, isDarkMode, handleDeleteNode);
   
   // Apply dark mode styling to edges and preserve handle information
-  const initialEdges = storeEdgesToFlowEdges(storeEdges, isDarkMode);
+  const initialEdges = storeEdgesToFlowEdges(storeEdges, storeNodes, isDarkMode);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   // Update nodes and edges when store data changes
   useEffect(() => {
-    const updatedNodes = storeNodesToFlowNodes(storeNodes, isDarkMode).map(node => ({
-      ...node,
-      data: {
-        ...node.data,
-        onDelete: handleDeleteNode
-      }
-    }));
+    const updatedNodes = storeNodesToFlowNodes(storeNodes, isDarkMode, handleDeleteNode);
     setNodes(updatedNodes);
 
-    const updatedEdges = storeEdgesToFlowEdges(storeEdges, isDarkMode);
+    const updatedEdges = storeEdgesToFlowEdges(storeEdges, storeNodes, isDarkMode);
     setEdges(updatedEdges);
-  }, [storeNodes, storeEdges, isDarkMode, setNodes, setEdges]);
+  }, [storeNodes, storeEdges, isDarkMode, setNodes, setEdges, handleDeleteNode]);
 
   const onConnect = useCallback(
-    (params: Edge | Connection) => setEdges((eds) => addEdge({
-      ...params,
-      // Ensure new connections use the target-handle by default
-      targetHandle: params.targetHandle || 'target-handle',
-      style: {
-        stroke: isDarkMode ? '#718096' : '#4a5568',
-        strokeWidth: 2,
-      },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: isDarkMode ? '#718096' : '#4a5568',
-      },
-    }, eds)),
-    [setEdges, isDarkMode]
+    (params: Edge | Connection) => {
+      // Find the target node to determine its type
+      const targetNode = storeNodes.find(node => node.id === params.target);
+      
+      // If we have a target node and it's not an agent, use the appropriate handle based on its type
+      let sourceHandle = params.sourceHandle;
+      if (targetNode && targetNode.type !== 'agent' && !sourceHandle) {
+        // Use the handle that corresponds to the target node's type
+        sourceHandle = nodeTypeToHandleMap[targetNode.type as keyof typeof nodeTypeToHandleMap] || undefined;
+      }
+      
+      const edge = {
+        ...params,
+        id: `e${params.source}-${params.target}-${Date.now()}`,
+        sourceHandle,
+        // Ensure new connections use the target-handle by default
+        targetHandle: params.targetHandle || 'target-handle',
+        style: {
+          stroke: isDarkMode ? '#718096' : '#4a5568',
+          strokeWidth: 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: isDarkMode ? '#718096' : '#4a5568',
+        },
+      };
+      
+      setEdges((eds) => addEdge(edge as Edge, eds));
+    },
+    [setEdges, isDarkMode, storeNodes]
   );
 
   // Handle node double-click to select it for the details panel
@@ -147,6 +175,11 @@ const WorkflowGraph: React.FC = () => {
     },
     [selectNode]
   );
+  
+  // Store the ReactFlow instance when it's initialized
+  const onInit = useCallback((instance: ReactFlowInstance) => {
+    reactFlowInstanceRef.current = instance;
+  }, []);
 
   return (
     <Paper elevation={3} sx={{ height: '100%', padding: 0, overflow: 'hidden', position: 'relative' }}>
@@ -162,7 +195,9 @@ const WorkflowGraph: React.FC = () => {
           onConnect={onConnect}
           onNodeDoubleClick={onNodeDoubleClick}
           nodeTypes={nodeTypes}
-          fitView
+          onInit={onInit}
+          fitViewOptions={{ duration: 0 }} // Disable animations
+          fitView={false} // Disable automatic fitting to view
           proOptions={{ hideAttribution: true }}
           className={isDarkMode ? 'react-flow-dark-mode' : ''}
         >
@@ -178,11 +213,11 @@ const WorkflowGraph: React.FC = () => {
               color: isDarkMode ? '#fff' : '#333',
             }}
           />
-          <Background variant={'dots' as any} gap={12} size={1} color={isDarkMode ? '#555' : '#ddd'} />
+          <Background color={isDarkMode ? '#555' : '#ddd'} gap={16} />
         </ReactFlow>
       </div>
-
-      {/* Confirmation Dialog */}
+      
+      {/* Confirmation Dialog for Node Deletion */}
       <ConfirmationDialog
         open={deleteDialogOpen}
         title="Delete Node"

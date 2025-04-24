@@ -16,22 +16,26 @@ const OutputParserNode: React.FC<NodeProps> = ({ id, data }) => {
     }
   };
 
+  // Colors that match the output parser diamond
+  const color = isDarkMode ? '#3182ce' : '#4299e1';
+  const darkColor = isDarkMode ? '#2b6cb0' : '#3182ce'; // Darker shade for outline
+  const lightColor = isDarkMode ? 'rgba(49, 130, 206, 0.2)' : 'rgba(66, 153, 225, 0.2)'; // Lighter shade for fill
+
   return (
     <div
       style={{
-        background: isDarkMode ? '#1a365d' : '#ebf8ff',
+        background: lightColor,
         color: isDarkMode ? '#e2e8f0' : '#1a202c',
-        border: isDarkMode ? '1px solid #3182ce' : '1px solid #4299e1',
-        clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)', // Triangle shape
+        border: `2px solid ${darkColor}`,
+        borderRadius: '50%', // Circle shape
         padding: '10px',
-        width: '160px',
-        height: '160px',
+        width: '150px',
+        height: '150px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         textAlign: 'center',
-        paddingTop: '60px', // Push content down to center it in the triangle
         position: 'relative',
         boxShadow: isDarkMode ? '0 4px 6px rgba(0, 0, 0, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
       }}
@@ -41,9 +45,9 @@ const OutputParserNode: React.FC<NodeProps> = ({ id, data }) => {
         id="target-handle"
         type="target" 
         position={Position.Top} 
-        style={{ background: isDarkMode ? '#3182ce' : '#4299e1' }} 
+        style={{ background: darkColor }} 
       />
-      <div style={{ fontWeight: 'bold' }}>{data.label}</div>
+      <div style={{ fontWeight: 'bold', color: darkColor }}>{data.label}</div>
       
       {/* Delete icon */}
       <div 
@@ -63,7 +67,7 @@ const OutputParserNode: React.FC<NodeProps> = ({ id, data }) => {
         id="source-handle"
         type="source" 
         position={Position.Bottom} 
-        style={{ background: isDarkMode ? '#3182ce' : '#4299e1' }} 
+        style={{ background: darkColor }} 
       />
     </div>
   );

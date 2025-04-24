@@ -16,12 +16,17 @@ const ModelNode: React.FC<NodeProps> = ({ id, data }) => {
     }
   };
 
+  // Colors that match the model diamond
+  const color = isDarkMode ? '#38b2ac' : '#4fd1c5';
+  const darkColor = isDarkMode ? '#2c9a9a' : '#38a89d'; // Darker shade for outline
+  const lightColor = isDarkMode ? 'rgba(56, 178, 172, 0.2)' : 'rgba(79, 209, 197, 0.2)'; // Lighter shade for fill
+
   return (
     <div
       style={{
-        background: isDarkMode ? '#2d3748' : '#e6fffa',
+        background: lightColor,
         color: isDarkMode ? '#e2e8f0' : '#1a202c',
-        border: isDarkMode ? '1px solid #38b2ac' : '1px solid #4fd1c5',
+        border: `2px solid ${darkColor}`,
         borderRadius: '50%', // Circle shape
         padding: '10px',
         width: '150px',
@@ -40,9 +45,9 @@ const ModelNode: React.FC<NodeProps> = ({ id, data }) => {
         id="target-handle"
         type="target" 
         position={Position.Top} 
-        style={{ background: isDarkMode ? '#38b2ac' : '#4fd1c5' }} 
+        style={{ background: darkColor }} 
       />
-      <div style={{ fontWeight: 'bold' }}>{data.label}</div>
+      <div style={{ fontWeight: 'bold', color: darkColor }}>{data.label}</div>
       
       {/* Delete icon */}
       <div 
@@ -62,7 +67,7 @@ const ModelNode: React.FC<NodeProps> = ({ id, data }) => {
         id="source-handle"
         type="source" 
         position={Position.Bottom} 
-        style={{ background: isDarkMode ? '#38b2ac' : '#4fd1c5' }} 
+        style={{ background: darkColor }} 
       />
     </div>
   );
