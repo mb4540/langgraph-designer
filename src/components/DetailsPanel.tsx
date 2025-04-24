@@ -13,6 +13,28 @@ import Editor from '@monaco-editor/react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useThemeContext } from '../context/ThemeContext';
 
+// List of available LLM models
+const LLM_MODELS = [
+  { value: 'gpt-4o', label: 'OpenAI GPT-4o' },
+  { value: 'claude-3-7-sonnet', label: 'Anthropic Claude 3.7 Sonnet' },
+  { value: 'gemini-2-5-pro', label: 'Google DeepMind Gemini 2.5 Pro' },
+  { value: 'llama-3-70b', label: 'Meta Llama 3-70B' },
+  { value: 'mistral-large', label: 'Mistral Large' },
+  { value: 'grok-3', label: 'xAI Grok 3' },
+  { value: 'deepseek-coder-v2', label: 'DeepSeek-Coder V2' },
+  { value: 'cohere-command-r', label: 'Cohere Command-R' },
+  { value: 'phi-3', label: 'Microsoft Phi-3' },
+  { value: 'jurassic-2-ultra', label: 'AI21 Labs Jurassic-2 Ultra' },
+  { value: 'pangu-2', label: 'Huawei PanGu 2.0' },
+  { value: 'ernie-4', label: 'Baidu ERNIE 4.0' },
+];
+
+// Simplified list for agent nodes
+const AGENT_MODELS = [
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+  { value: 'gpt-4o', label: 'GPT-4o' },
+];
+
 const DetailsPanel: React.FC = () => {
   const { selectedNode, updateNode } = useWorkflowStore();
   const { mode } = useThemeContext();
@@ -27,16 +49,30 @@ const DetailsPanel: React.FC = () => {
       setContent(selectedNode.content);
       if (selectedNode.type === 'agent' && selectedNode.llmModel) {
         setLlmModel(selectedNode.llmModel);
+      } else if (selectedNode.type === 'model' && selectedNode.llmModel) {
+        setLlmModel(selectedNode.llmModel);
+      } else if (selectedNode.type === 'model' && !selectedNode.llmModel) {
+        // Default model for model nodes
+        setLlmModel('gpt-4o');
       }
     }
   }, [selectedNode]);
 
   const handleSave = () => {
     if (selectedNode) {
-      const updates: any = { name, content };
-      if (selectedNode.type === 'agent') {
+      const updates: any = {};
+      
+      // Only include name and content for non-model nodes
+      if (selectedNode.type !== 'model') {
+        updates.name = name;
+        updates.content = content;
+      }
+      
+      // Include llmModel for both agent and model nodes
+      if (selectedNode.type === 'agent' || selectedNode.type === 'model') {
         updates.llmModel = llmModel;
       }
+      
       updateNode(selectedNode.id, updates);
     }
   };
@@ -56,24 +92,23 @@ const DetailsPanel: React.FC = () => {
     );
   }
 
-  return (
-    <Paper elevation={3} sx={{ height: '100%', padding: 2, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <Typography variant="h6" gutterBottom>
-        {selectedNode.type === 'agent' ? 'Agent Details' : 'Tool Details'}
-      </Typography>
-      
-      <Box sx={{ mb: 2 }}>
-        <TextField
-          fullWidth
-          label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          margin="normal"
-          variant="outlined"
-        />
-      </Box>
-      
-      {selectedNode.type === 'agent' && (
+  // Determine the title based on node type
+  const getNodeTitle = () => {
+    switch (selectedNode.type) {
+      case 'agent': return 'Agent Details';
+      case 'model': return 'Model Details';
+      case 'memory': return 'Memory Details';
+      case 'tool': return 'Tool Details';
+      case 'outputParser': return 'Output Parser Details';
+      default: return 'Node Details';
+    }
+  };
+
+  // Render different content based on node type
+  const renderDetailsContent = () => {
+    if (selectedNode.type === 'model') {
+      // For model nodes, only show the model selection
+      return (
         <Box sx={{ mb: 2 }}>
           <FormControl fullWidth margin="normal">
             <InputLabel>LLM Model</InputLabel>
@@ -82,56 +117,100 @@ const DetailsPanel: React.FC = () => {
               label="LLM Model"
               onChange={(e) => setLlmModel(e.target.value)}
             >
-              <MenuItem value="gpt-4o-mini">GPT-4o Mini</MenuItem>
-              <MenuItem value="gpt-4o">GPT-4o</MenuItem>
+              {LLM_MODELS.map(model => (
+                <MenuItem key={model.value} value={model.value}>{model.label}</MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
-      )}
-      
-      <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
-        {selectedNode.type === 'agent' ? 'Description' : 'Code'}
+      );
+    }
+    
+    // For all other node types
+    return (
+      <>
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            fullWidth
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            margin="normal"
+            variant="outlined"
+          />
+        </Box>
+        
+        {selectedNode.type === 'agent' && (
+          <Box sx={{ mb: 2 }}>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>LLM Model</InputLabel>
+              <Select
+                value={llmModel}
+                label="LLM Model"
+                onChange={(e) => setLlmModel(e.target.value)}
+              >
+                {AGENT_MODELS.map(model => (
+                  <MenuItem key={model.value} value={model.value}>{model.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        )}
+        
+        <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
+          {selectedNode.type === 'agent' ? 'Description' : 'Code'}
+        </Typography>
+        
+        <Box sx={{ flexGrow: 1, mb: 2, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+          {selectedNode.type === 'agent' ? (
+            <TextField
+              multiline
+              fullWidth
+              minRows={10}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              variant="outlined"
+              sx={{ height: '100%' }}
+              inputProps={{ style: { verticalAlign: 'top' } }}
+              InputProps={{
+                sx: {
+                  height: '100%',
+                  '& .MuiInputBase-inputMultiline': {
+                    height: '100%',
+                    alignItems: 'flex-start',
+                    verticalAlign: 'top',
+                    paddingTop: '14px',
+                    textAlign: 'left',
+                  }
+                }
+              }}
+            />
+          ) : (
+            <Editor
+              height="300px"
+              defaultLanguage="javascript"
+              value={content}
+              onChange={(value) => setContent(value || '')}
+              theme={mode === 'dark' ? 'vs-dark' : 'light'}
+              options={{
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                fontSize: 14,
+              }}
+            />
+          )}
+        </Box>
+      </>
+    );
+  };
+
+  return (
+    <Paper elevation={3} sx={{ height: '100%', padding: 2, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <Typography variant="h6" gutterBottom>
+        {getNodeTitle()}
       </Typography>
       
-      <Box sx={{ flexGrow: 1, mb: 2, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-        {selectedNode.type === 'agent' ? (
-          <TextField
-            multiline
-            fullWidth
-            minRows={10}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            variant="outlined"
-            sx={{ height: '100%' }}
-            inputProps={{ style: { verticalAlign: 'top' } }}
-            InputProps={{
-              sx: {
-                height: '100%',
-                '& .MuiInputBase-inputMultiline': {
-                  height: '100%',
-                  alignItems: 'flex-start',
-                  verticalAlign: 'top',
-                  paddingTop: '14px',
-                  textAlign: 'left',
-                }
-              }
-            }}
-          />
-        ) : (
-          <Editor
-            height="300px"
-            defaultLanguage="javascript"
-            value={content}
-            onChange={(value) => setContent(value || '')}
-            theme={mode === 'dark' ? 'vs-dark' : 'light'}
-            options={{
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              fontSize: 14,
-            }}
-          />
-        )}
-      </Box>
+      {renderDetailsContent()}
       
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button variant="contained" color="primary" onClick={handleSave}>

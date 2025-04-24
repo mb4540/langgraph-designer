@@ -45,15 +45,45 @@ const nodeTypeToHandleMap = {
 
 // Convert store nodes to ReactFlow nodes
 const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDeleteFn: (id: string) => void): Node[] => {
-  return nodes.map(node => ({
-    id: node.id,
-    type: node.type,
-    data: { 
-      label: `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.name}`,
-      onDelete: onDeleteFn
-    },
-    position: node.position,
-  }));
+  // Map of model IDs to display names
+  const modelDisplayNames: Record<string, string> = {
+    'gpt-4o': 'OpenAI GPT-4o',
+    'claude-3-7-sonnet': 'Anthropic Claude 3.7 Sonnet',
+    'gemini-2-5-pro': 'Google DeepMind Gemini 2.5 Pro',
+    'llama-3-70b': 'Meta Llama 3-70B',
+    'mistral-large': 'Mistral Large',
+    'grok-3': 'xAI Grok 3',
+    'deepseek-coder-v2': 'DeepSeek-Coder V2',
+    'cohere-command-r': 'Cohere Command-R',
+    'phi-3': 'Microsoft Phi-3',
+    'jurassic-2-ultra': 'AI21 Labs Jurassic-2 Ultra',
+    'pangu-2': 'Huawei PanGu 2.0',
+    'ernie-4': 'Baidu ERNIE 4.0',
+  };
+
+  return nodes.map(node => {
+    // Create label based on node type
+    let label = '';
+    if (node.type === 'model' && node.llmModel) {
+      // For model nodes, show the model name
+      const modelName = modelDisplayNames[node.llmModel] || node.llmModel;
+      label = `Model: ${modelName}`;
+    } else {
+      // For other nodes, use the default format
+      label = `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.name}`;
+    }
+
+    return {
+      id: node.id,
+      type: node.type,
+      data: { 
+        label: label,
+        llmModel: node.llmModel, // Pass the model to the node component
+        onDelete: onDeleteFn
+      },
+      position: node.position,
+    };
+  });
 };
 
 // Convert store edges to ReactFlow edges, preserving handle information

@@ -104,6 +104,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       position: newNodePosition,
       parentId: id, // Reference to the parent agent
       sourceHandle: handleId, // Store which diamond created this node
+      // Add default LLM model for model nodes
+      ...(type === 'model' && { llmModel: 'gpt-4o' })
     };
 
     // Add the new node
