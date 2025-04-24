@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type NodeType = 'agent' | 'tool';
+export type NodeType = 'agent' | 'tool' | 'model' | 'memory' | 'outputParser';
 
 export interface WorkflowNode {
   id: string;
@@ -8,7 +8,9 @@ export interface WorkflowNode {
   name: string;
   content: string;
   position: { x: number; y: number };
-  llmModel?: string; // Only for agents
+  llmModel?: string; // Only for agents and models
+  parentId?: string; // Reference to the parent node (if created from a diamond connector)
+  sourceHandle?: string; // The handle ID from which this node was created
 }
 
 export interface WorkflowEdge {
@@ -16,6 +18,8 @@ export interface WorkflowEdge {
   source: string;
   target: string;
   animated?: boolean;
+  sourceHandle?: string; // Handle ID on the source node
+  targetHandle?: string; // Handle ID on the target node
 }
 
 interface WorkflowState {
