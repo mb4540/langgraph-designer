@@ -77,6 +77,26 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
     'combined-layered': 'Combined/Layered',
   };
 
+  // Map of tool types to display names
+  const toolDisplayNames: Record<string, string> = {
+    'stagehand-browser': 'Stagehand Browser',
+    'vector-store-retriever': 'Vector-Store Retriever',
+    'calculator-math': 'Calculator / Math',
+    'multi-database-sql': 'Multi-Database SQL',
+    'email-imap-smtp': 'Email (IMAP/SMTP)',
+    'azure-functions': 'Azure Functions',
+  };
+
+  // Map of parser types to display names
+  const parserDisplayNames: Record<string, string> = {
+    'json-output-parser': 'JSONOutputParser',
+    'pydantic-output-parser': 'PydanticOutputParser',
+    'comma-separated-list-parser': 'CommaSeparatedListOutputParser',
+    'datetime-output-parser': 'DatetimeOutputParser',
+    'react-output-parser': 'ReActOutputParser',
+    'structured-output-parser': 'StructuredOutputParser',
+  };
+
   return nodes.map(node => {
     // Create label based on node type
     let label = '';
@@ -88,6 +108,14 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
       // For memory nodes, show the memory type
       const memoryName = memoryDisplayNames[node.memoryType] || node.memoryType;
       label = `Memory: ${memoryName}`;
+    } else if (node.type === 'tool' && node.toolType) {
+      // For tool nodes, show the tool type
+      const toolName = toolDisplayNames[node.toolType] || node.toolType;
+      label = `Tool: ${toolName}`;
+    } else if (node.type === 'outputParser' && node.parserType) {
+      // For output parser nodes, show the parser type
+      const parserName = parserDisplayNames[node.parserType] || node.parserType;
+      label = `Parser: ${parserName}`;
     } else {
       // For other nodes, use the default format
       label = `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.name}`;
@@ -100,6 +128,8 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
         label: label,
         llmModel: node.llmModel, // Pass the model to the node component
         memoryType: node.memoryType, // Pass the memory type to the node component
+        toolType: node.toolType, // Pass the tool type to the node component
+        parserType: node.parserType, // Pass the parser type to the node component
         onDelete: onDeleteFn
       },
       position: node.position,

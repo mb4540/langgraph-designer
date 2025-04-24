@@ -107,7 +107,11 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       // Add default LLM model for model nodes
       ...(type === 'model' && { llmModel: 'gpt-4o' }),
       // Add default memory type for memory nodes
-      ...(type === 'memory' && { memoryType: 'conversation-buffer' })
+      ...(type === 'memory' && { memoryType: 'conversation-buffer' }),
+      // Add default tool type for tool nodes
+      ...(type === 'tool' && { toolType: 'stagehand-browser' }),
+      // Add default parser type for outputParser nodes
+      ...(type === 'outputParser' && { parserType: 'json-output-parser' })
     };
 
     // Add the new node

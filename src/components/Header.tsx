@@ -39,7 +39,7 @@ const Header: React.FC = () => {
             textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
           }}
         >
-          LangGraph Agentic Workflow Designer
+          Workflow Designer
         </Typography>
         <IconButton onClick={toggleTheme} color="inherit" aria-label="toggle theme">
           {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
