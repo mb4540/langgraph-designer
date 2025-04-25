@@ -5,6 +5,32 @@ import { useWorkflowStore, NodeType } from '../../store/workflowStore';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 
+// Import all possible agent icons
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import AssistantIcon from '@mui/icons-material/Assistant';
+import BiotechIcon from '@mui/icons-material/Biotech';
+import SchoolIcon from '@mui/icons-material/School';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+
+// Map of icon IDs to their components
+const iconComponents: Record<string, React.ComponentType<any>> = {
+  'smart-toy': SmartToyIcon,
+  'psychology': PsychologyIcon,
+  'support-agent': SupportAgentIcon,
+  'assistant': AssistantIcon,
+  'biotech': BiotechIcon,
+  'school': SchoolIcon,
+  'auto-fix': AutoFixHighIcon,
+  'data-object': DataObjectIcon,
+  'terminal': TerminalIcon,
+  'account-tree': AccountTreeIcon,
+};
+
 // Define fixed positions for each node type relative to the parent agent
 const NODE_POSITIONS = {
   model: { x: -150, y: 200 },
@@ -81,6 +107,10 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
   const isDarkMode = mode === 'dark';
   const { addNode, addEdge, selectNode } = useWorkflowStore();
 
+  // Determine which icon to display
+  const iconId = data.icon || 'smart-toy';
+  const IconComponent = iconComponents[iconId] || SmartToyIcon;
+
   const handleAddComponent = (type: NodeType, handleId: string) => {
     // Generate a unique ID
     const newId = `${type}-${Date.now()}`;
@@ -104,14 +134,10 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       position: newNodePosition,
       parentId: id, // Reference to the parent agent
       sourceHandle: handleId, // Store which diamond created this node
-      // Add default LLM model for model nodes
-      ...(type === 'model' && { llmModel: 'gpt-4o' }),
       // Add default memory type for memory nodes
       ...(type === 'memory' && { memoryType: 'conversation-buffer' }),
       // Add default tool type for tool nodes
       ...(type === 'tool' && { toolType: 'stagehand-browser' }),
-      // Add default parser type for outputParser nodes
-      ...(type === 'outputParser' && { parserType: 'json-output-parser' })
     };
 
     // Add the new node
@@ -197,6 +223,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         paddingBottom: '20px',
         marginBottom: '30px', // Add space for the diamonds
         boxShadow: isDarkMode ? '0 4px 6px rgba(0, 0, 0, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
+        height: '100px', // Make the box twice as high
       }}
       onDoubleClick={() => selectNode(id)}
     >
@@ -216,8 +243,35 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         <DeleteIcon fontSize="small" />
       </div>
       
+      {/* Agent Icon */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        color: isDarkMode ? '#4299e1' : '#3182ce',
+      }}>
+        <IconComponent fontSize="medium" />
+      </div>
+      
       {/* Node content */}
-      <div style={{ marginTop: '5px', fontWeight: 'bold' }}>{data.label}</div>
+      <div style={{ 
+        marginTop: '5px', 
+        marginLeft: '40px', // Add space for the icon
+        fontWeight: 'normal', // Not bold
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '5px'
+      }}>
+        <div>{data.label}</div>
+        {data.llmModel && (
+          <div style={{ 
+            fontSize: '0.8rem', 
+            color: isDarkMode ? '#a0aec0' : '#4a5568'
+          }}>
+            Model: {data.llmModel}
+          </div>
+        )}
+      </div>
       
       {/* Input handle */}
       <Handle
@@ -232,21 +286,10 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         }}
       />
       
-      {/* Diamonds for adding components */}
-      <Diamond
-        label="Model"
-        position={20}
-        onClick={() => handleAddComponent('model', 'model-handle')}
-        isDarkMode={isDarkMode}
-        color="#805ad5"
-        lightColor="#e9d8fd"
-        handleId="model-handle"
-        nodeType="model"
-      />
-      
+      {/* Diamonds for adding components - only Memory and Tool, positioned at 33% and 67% */}
       <Diamond
         label="Memory"
-        position={40}
+        position={33} // Repositioned to be equidistant
         onClick={() => handleAddComponent('memory', 'memory-handle')}
         isDarkMode={isDarkMode}
         color="#38a169"
@@ -257,24 +300,13 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       
       <Diamond
         label="Tool"
-        position={60}
+        position={67} // Repositioned to be equidistant
         onClick={() => handleAddComponent('tool', 'tool-handle')}
         isDarkMode={isDarkMode}
         color="#dd6b20"
         lightColor="#feebc8"
         handleId="tool-handle"
         nodeType="tool"
-      />
-      
-      <Diamond
-        label="Parser"
-        position={80}
-        onClick={() => handleAddComponent('outputParser', 'parser-handle')}
-        isDarkMode={isDarkMode}
-        color="#d53f8c"
-        lightColor="#fed7e2"
-        handleId="parser-handle"
-        nodeType="outputParser"
       />
       
       {/* Agent connection handle and button */}

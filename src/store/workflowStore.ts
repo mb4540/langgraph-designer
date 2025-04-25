@@ -14,6 +14,15 @@ export interface WorkflowNode {
   parserType?: string; // Only for outputParser nodes
   parentId?: string; // Reference to the parent node (if created from a diamond connector)
   sourceHandle?: string; // The handle ID from which this node was created
+  
+  // Additional fields for agent details
+  workgroup?: string; // Work-group the agent belongs to
+  icon?: string; // Icon identifier for the agent
+  agentType?: string; // Type of agent (e.g., 'assistant')
+  description?: string; // Description of the agent
+  enableMarkdown?: boolean; // Whether to enable markdown response format
+  credentialsSource?: string; // Source of LLM credentials
+  maxConsecutiveReplies?: number; // Maximum number of consecutive auto replies
 }
 
 export interface WorkflowEdge {
