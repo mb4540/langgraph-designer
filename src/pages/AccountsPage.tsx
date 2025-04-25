@@ -26,7 +26,11 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Chip
+  Chip,
+  IconButton,
+  Tooltip,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
@@ -35,11 +39,23 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import PublicIcon from '@mui/icons-material/Public';
 import LockIcon from '@mui/icons-material/Lock';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 
+// Interface for work-group type
+interface WorkGroup {
+  id: number;
+  name: string;
+  owner: string;
+  scope: 'Public' | 'Restricted';
+  access: 'Admin' | 'Editor' | 'Viewer';
+  description: string;
+}
+
 // Sample data for work-groups
-const sampleWorkGroups = [
+const sampleWorkGroups: WorkGroup[] = [
   { id: 1, name: 'Marketing Team', owner: 'John Smith', scope: 'Public', access: 'Admin', description: 'Work-group for marketing team workflows and agents' },
   { id: 2, name: 'Sales Automation', owner: 'Sarah Johnson', scope: 'Restricted', access: 'Editor', description: 'Sales process automation workflows' },
   { id: 3, name: 'Customer Support', owner: 'Michael Brown', scope: 'Public', access: 'Viewer', description: 'Customer support automation and agent workflows' },
@@ -50,16 +66,20 @@ const sampleWorkGroups = [
 const AccountsPage: React.FC = () => {
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
-  const [workGroups, setWorkGroups] = useState(sampleWorkGroups);
+  const [workGroups, setWorkGroups] = useState<WorkGroup[]>(sampleWorkGroups);
   const [newWorkGroup, setNewWorkGroup] = useState({
     name: '',
-    scope: 'Restricted',
+    scope: 'Restricted' as 'Public' | 'Restricted',
     description: ''
   });
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [selectedWorkGroup, setSelectedWorkGroup] = useState<WorkGroup | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
 
   // Handle opening and closing the dialog
   const handleOpenDialog = () => setOpenDialog(true);
@@ -68,15 +88,46 @@ const AccountsPage: React.FC = () => {
     setNewWorkGroup({ name: '', scope: 'Restricted', description: '' });
   };
 
+  // Handle opening work-group details dialog
+  const handleOpenDetailsDialog = (workGroup: WorkGroup) => {
+    setSelectedWorkGroup(workGroup);
+    setEditMode(workGroup.access === 'Admin');
+    setDetailsDialogOpen(true);
+  };
+
+  // Handle closing work-group details dialog
+  const handleCloseDetailsDialog = () => {
+    setDetailsDialogOpen(false);
+    setSelectedWorkGroup(null);
+    setEditMode(false);
+  };
+
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewWorkGroup(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle edit form input changes
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedWorkGroup) return;
+    
+    const { name, value } = e.target;
+    setSelectedWorkGroup(prev => prev ? { ...prev, [name]: value } : null);
+  };
+
   // Handle radio button changes
   const handleScopeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewWorkGroup(prev => ({ ...prev, scope: e.target.value }));
+    setNewWorkGroup(prev => ({ ...prev, scope: e.target.value as 'Public' | 'Restricted' }));
+  };
+
+  // Handle edit radio button changes
+  const handleEditScopeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedWorkGroup) return;
+    
+    setSelectedWorkGroup(prev => 
+      prev ? { ...prev, scope: e.target.value as 'Public' | 'Restricted' } : null
+    );
   };
 
   // Handle filter type change
@@ -93,7 +144,7 @@ const AccountsPage: React.FC = () => {
   const handleSaveWorkGroup = () => {
     if (newWorkGroup.name.trim() === '') return;
     
-    const newGroup = {
+    const newGroup: WorkGroup = {
       id: workGroups.length + 1,
       name: newWorkGroup.name,
       owner: 'Current User', // In a real app, this would come from authentication
@@ -104,6 +155,23 @@ const AccountsPage: React.FC = () => {
     
     setWorkGroups([...workGroups, newGroup]);
     handleCloseDialog();
+  };
+
+  // Handle save edited work-group
+  const handleSaveEditedWorkGroup = () => {
+    if (!selectedWorkGroup || selectedWorkGroup.name.trim() === '') return;
+    
+    const updatedWorkGroups = workGroups.map(group => 
+      group.id === selectedWorkGroup.id ? selectedWorkGroup : group
+    );
+    
+    setWorkGroups(updatedWorkGroups);
+    handleCloseDetailsDialog();
+  };
+
+  // Handle tab change
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
   // Filter work-groups based on filter type and search query
@@ -250,7 +318,34 @@ const AccountsPage: React.FC = () => {
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((group) => (
                   <TableRow key={group.id} hover>
-                    <TableCell>{group.name}</TableCell>
+                    <TableCell>
+                      <Link
+                        component="button"
+                        variant="body2"
+                        onClick={() => handleOpenDetailsDialog(group)}
+                        sx={{ 
+                          textAlign: 'left',
+                          fontWeight: 500,
+                          color: '#00388f',
+                          textDecoration: 'none',
+                          '&:hover': { 
+                            textDecoration: 'underline',
+                            color: '#009FDB'
+                          },
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        {group.name}
+                        <Tooltip title={group.access === 'Admin' ? 'Edit work-group' : 'View details'}>
+                          <Box component="span" sx={{ display: 'inline-flex', ml: 1, color: 'text.secondary' }}>
+                            {group.access === 'Admin' ? 
+                              <EditIcon fontSize="small" sx={{ fontSize: 16 }} /> : 
+                              <VisibilityIcon fontSize="small" sx={{ fontSize: 16 }} />}
+                          </Box>
+                        </Tooltip>
+                      </Link>
+                    </TableCell>
                     <TableCell>{group.owner}</TableCell>
                     <TableCell>
                       {group.scope === 'Public' ? (
@@ -369,6 +464,181 @@ const AccountsPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Work-group Details/Edit Dialog */}
+      {selectedWorkGroup && (
+        <Dialog open={detailsDialogOpen} onClose={handleCloseDetailsDialog} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            {editMode ? 'Edit Work-group' : 'Work-group Details'}
+          </DialogTitle>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}
+          >
+            <Tab label="Overview" />
+            <Tab label="Users" />
+          </Tabs>
+          <DialogContent>
+            {/* Overview Tab */}
+            {activeTab === 0 && (
+              <Box sx={{ pt: 1 }}>
+                <TextField
+                  margin="dense"
+                  name="name"
+                  label="Work-group Name"
+                  type="text"
+                  fullWidth
+                  variant="outlined"
+                  value={selectedWorkGroup.name}
+                  onChange={handleEditInputChange}
+                  disabled={!editMode}
+                  sx={{ mb: 3 }}
+                />
+                <FormControl component="fieldset" sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Scope</Typography>
+                  <RadioGroup 
+                    row 
+                    name="scope" 
+                    value={selectedWorkGroup.scope} 
+                    onChange={handleEditScopeChange}
+                  >
+                    <FormControlLabel 
+                      value="Restricted" 
+                      control={<Radio />} 
+                      label="Restricted" 
+                      disabled={!editMode}
+                    />
+                    <FormControlLabel 
+                      value="Public" 
+                      control={<Radio />} 
+                      label="Public" 
+                      disabled={!editMode}
+                    />
+                  </RadioGroup>
+                </FormControl>
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Owner</Typography>
+                  <Typography variant="body1">{selectedWorkGroup.owner}</Typography>
+                </Box>
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>My Access</Typography>
+                  <Chip 
+                    label={selectedWorkGroup.access} 
+                    size="small" 
+                    sx={{ 
+                      backgroundColor: 
+                        selectedWorkGroup.access === 'Admin' ? 'rgba(145, 220, 0, 0.1)' : 
+                        selectedWorkGroup.access === 'Editor' ? 'rgba(0, 159, 219, 0.1)' : 
+                        'rgba(0, 56, 143, 0.1)',
+                      color: 
+                        selectedWorkGroup.access === 'Admin' ? '#91DC00' : 
+                        selectedWorkGroup.access === 'Editor' ? '#009FDB' : 
+                        '#00388f'
+                    }}
+                  />
+                </Box>
+                <TextField
+                  margin="dense"
+                  name="description"
+                  label="Work-group Description"
+                  type="text"
+                  fullWidth
+                  multiline
+                  rows={4}
+                  variant="outlined"
+                  value={selectedWorkGroup.description}
+                  onChange={handleEditInputChange}
+                  disabled={!editMode}
+                />
+              </Box>
+            )}
+            
+            {/* Users Tab */}
+            {activeTab === 1 && (
+              <Box sx={{ pt: 1 }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  mb: 3 
+                }}>
+                  <Typography variant="h6">{selectedWorkGroup.name}</Typography>
+                  <Button 
+                    variant="contained" 
+                    startIcon={<AddIcon />}
+                    sx={{ 
+                      backgroundColor: '#00388f',
+                      '&:hover': { backgroundColor: '#002a6b' },
+                      color: 'white'
+                    }}
+                  >
+                    Add User
+                  </Button>
+                </Box>
+                
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Access</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {/* Sample user data - replace with actual data */}
+                      <TableRow>
+                        <TableCell>user1@example.com</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label="Admin" 
+                            size="small" 
+                            sx={{ 
+                              backgroundColor: 'rgba(145, 220, 0, 0.1)',
+                              color: '#91DC00'
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>user2@example.com</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label="Editor" 
+                            size="small" 
+                            sx={{ 
+                              backgroundColor: 'rgba(0, 159, 219, 0.1)',
+                              color: '#009FDB'
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button onClick={handleCloseDetailsDialog} variant="outlined">
+              {editMode ? 'Cancel' : 'Close'}
+            </Button>
+            {editMode && activeTab === 0 && (
+              <Button 
+                onClick={handleSaveEditedWorkGroup} 
+                variant="contained"
+                disabled={!selectedWorkGroup.name.trim()}
+                sx={{ 
+                  backgroundColor: '#00388f',
+                  '&:hover': { backgroundColor: '#002a6b' }
+                }}
+              >
+                Save Changes
+              </Button>
+            )}
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };
