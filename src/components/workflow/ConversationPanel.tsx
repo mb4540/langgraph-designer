@@ -6,8 +6,9 @@ import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
-import { Message } from '../api/openai';
-import { useWorkflowStore, NodeType } from '../store/workflowStore';
+import { Message } from '../../api/openai';
+import { NodeType } from '../../store/workflowStore';
+import { useWorkflowContext } from '../../context/WorkflowContext';
 
 const initialInterview = [
   'Welcome to Workflow Designer! What workflow are you trying to build?',
@@ -18,7 +19,7 @@ const initialInterview = [
 ];
 
 const ConversationPanel: React.FC = () => {
-  const { addNode, addEdge } = useWorkflowStore();
+  const { addNode, addEdge } = useWorkflowContext();
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: initialInterview[0] }
   ]);
@@ -37,7 +38,7 @@ const ConversationPanel: React.FC = () => {
   useEffect(() => {
     const checkApiKey = async () => {
       try {
-        const { openAIChat } = await import('../api/openai');
+        const { openAIChat } = await import('../../api/openai');
         await openAIChat([{ role: 'user', content: 'Test message' }]);
         setApiKeyValid(true);
       } catch (err) {
@@ -79,7 +80,7 @@ const ConversationPanel: React.FC = () => {
           }
         } else {
           // For all other conversations, use OpenAI
-          const { openAIChat } = await import('../api/openai');
+          const { openAIChat } = await import('../../api/openai');
           reply = await openAIChat(newMessages);
 
           // Check for agent or tool creation commands
@@ -199,13 +200,13 @@ const ConversationPanel: React.FC = () => {
           variant="outlined"
           placeholder="Type your message..."
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           disabled={loading}
         />
         <Button 
           variant="contained" 
-          onClick={handleSend} 
+          onClick={handleSend}
           disabled={loading || !input.trim()}
         >
           Send
