@@ -10,7 +10,6 @@ const NODE_POSITIONS = {
   model: { x: -150, y: 200 },
   memory: { x: -50, y: 200 },
   tool: { x: 50, y: 200 },
-  outputParser: { x: 150, y: 200 },
   agent: { x: 300, y: 0 } // For connected agents
 };
 
@@ -109,9 +108,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       // Add default memory type for memory nodes
       ...(type === 'memory' && { memoryType: 'conversation-buffer' }),
       // Add default tool type for tool nodes
-      ...(type === 'tool' && { toolType: 'stagehand-browser' }),
-      // Add default parser type for outputParser nodes
-      ...(type === 'outputParser' && { parserType: 'json-output-parser' })
+      ...(type === 'tool' && { toolType: 'stagehand-browser' })
     };
 
     // Add the new node
@@ -330,16 +327,6 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         lightColor="#9ae6b4"
         handleId="tool-handle"
         nodeType="tool"
-      />
-      <Diamond
-        label="Output Parser"
-        position={87.5}
-        onClick={() => handleAddComponent('outputParser', 'parser-handle')}
-        isDarkMode={isDarkMode}
-        color="#3182ce"
-        lightColor="#4299e1"
-        handleId="parser-handle"
-        nodeType="outputParser"
       />
     </div>
   );

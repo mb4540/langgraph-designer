@@ -120,46 +120,6 @@ const MEMORY_TYPES = [
   },
 ];
 
-// Output parser types
-const OUTPUT_PARSER_TYPES = [
-  {
-    value: 'json-output-parser',
-    label: 'JSONOutputParser',
-    description: 'Converts raw model text into a validated Python dict that must be well-formed JSON, raising an error if the structure is malformed.',
-    source: 'LangChain'
-  },
-  {
-    value: 'pydantic-output-parser',
-    label: 'PydanticOutputParser',
-    description: 'Forces the LLM\'s response to match a Pydantic model, guaranteeing each key and data type before downstream use.',
-    source: 'LangChain'
-  },
-  {
-    value: 'comma-separated-list-parser',
-    label: 'CommaSeparatedListOutputParser',
-    description: 'Takes a comma-separated string (e.g., "alpha, beta, gamma") and returns it as a clean Python list.',
-    source: 'LangChain'
-  },
-  {
-    value: 'datetime-output-parser',
-    label: 'DatetimeOutputParser',
-    description: 'Reads date/time strings from the LLM and returns native datetime objects in the desired format.',
-    source: 'LangChain'
-  },
-  {
-    value: 'react-output-parser',
-    label: 'ReActOutputParser',
-    description: 'Designed for ReAct-style agents; splits output into an AgentAction (tool call) or an AgentFinish (final answer).',
-    source: 'LangChain'
-  },
-  {
-    value: 'structured-output-parser',
-    label: 'StructuredOutputParser',
-    description: 'Maps text into a dictionary that follows a custom response schema—useful when you need multiple named fields or arrays.',
-    source: 'LangChain'
-  },
-];
-
 // Tool types with MCP code templates
 const TOOL_TYPES = [
   {
@@ -456,7 +416,6 @@ const DetailsPanel: React.FC = () => {
   const [toolType, setToolType] = useState('');
   const [isEditingTool, setIsEditingTool] = useState(false);
   const [toolCode, setToolCode] = useState('');
-  const [parserType, setParserType] = useState('');
 
   useEffect(() => {
     if (selectedNode) {
@@ -495,14 +454,6 @@ const DetailsPanel: React.FC = () => {
         setToolType('');
         setToolCode('');
       }
-      
-      // Set parser type for outputParser nodes
-      if (selectedNode.type === 'outputParser' && selectedNode.parserType) {
-        setParserType(selectedNode.parserType);
-      } else if (selectedNode.type === 'outputParser') {
-        // Default to json output parser if no parser type is set
-        setParserType('json-output-parser');
-      }
     }
   }, [selectedNode]);
 
@@ -511,7 +462,7 @@ const DetailsPanel: React.FC = () => {
       const updates: any = {};
       
       // Only include name and content for non-model, non-memory, and non-outputParser nodes
-      if (selectedNode.type !== 'model' && selectedNode.type !== 'memory' && selectedNode.type !== 'outputParser') {
+      if (selectedNode.type !== 'model' && selectedNode.type !== 'memory') {
         updates.name = name;
         // For tools in edit mode, save the tool code as content
         if (selectedNode.type === 'tool' && isEditingTool) {
@@ -534,11 +485,6 @@ const DetailsPanel: React.FC = () => {
       // Include toolType for tool nodes
       if (selectedNode.type === 'tool') {
         updates.toolType = toolType;
-      }
-      
-      // Include parserType for outputParser nodes
-      if (selectedNode.type === 'outputParser') {
-        updates.parserType = parserType;
       }
       
       updateNode(selectedNode.id, updates);
@@ -572,7 +518,6 @@ const DetailsPanel: React.FC = () => {
       case 'model': return 'Model Details';
       case 'memory': return 'Memory Details';
       case 'tool': return 'Tool Details';
-      case 'outputParser': return 'Output Parser Details';
       default: return 'Node Details';
     }
   };
@@ -756,39 +701,6 @@ const DetailsPanel: React.FC = () => {
           </Box>
         );
       }
-    } else if (selectedNode.type === 'outputParser') {
-      // For output parser nodes, show the parser type selection
-      return (
-        <Box sx={{ mb: 2, mt: 2 }}>
-          <FormControl component="fieldset">
-            <FormLabel component="legend">Output Parser Type</FormLabel>
-            <RadioGroup
-              value={parserType}
-              onChange={(e) => setParserType(e.target.value)}
-            >
-              {OUTPUT_PARSER_TYPES.map(parser => (
-                <Box key={parser.value} sx={{ mb: 2, border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
-                  <FormControlLabel 
-                    value={parser.value} 
-                    control={<Radio />} 
-                    label={
-                      <Box>
-                        <Typography variant="subtitle1">{parser.label}</Typography>
-                        <Typography variant="body2" color="text.secondary">{parser.description}</Typography>
-                        {parser.source && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                            Source: {parser.source}
-                          </Typography>
-                        )}
-                      </Box>
-                    } 
-                  />
-                </Box>
-              ))}
-            </RadioGroup>
-          </FormControl>
-        </Box>
-      );
     }
     
     // For all other node types

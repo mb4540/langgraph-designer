@@ -8,7 +8,6 @@ import AgentDetailsForm from './details/AgentDetailsForm';
 import ModelDetailsForm from './details/ModelDetailsForm';
 import MemoryDetailsForm from './details/MemoryDetailsForm';
 import ToolDetailsForm from './details/ToolDetailsForm';
-import OutputParserDetailsForm from './details/OutputParserDetailsForm';
 
 const DetailsPanel: React.FC = () => {
   const { selectedNode } = useWorkflowContext();
@@ -23,7 +22,6 @@ const DetailsPanel: React.FC = () => {
       case 'model': return 'Model Details';
       case 'memory': return 'Memory Details';
       case 'tool': return 'Tool Details';
-      case 'outputParser': return 'Output Parser Details';
       default: return 'Node Details';
     }
   };
@@ -41,8 +39,6 @@ const DetailsPanel: React.FC = () => {
         return <MemoryDetailsForm node={selectedNode} />;
       case 'tool':
         return <ToolDetailsForm node={selectedNode} />;
-      case 'outputParser':
-        return <OutputParserDetailsForm node={selectedNode} />;
       default:
         return null;
     }

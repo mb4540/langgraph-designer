@@ -24,7 +24,6 @@ import AgentNode from '../nodes/AgentNode';
 import ModelNode from '../nodes/ModelNode';
 import MemoryNode from '../nodes/MemoryNode';
 import ToolNode from '../nodes/ToolNode';
-import OutputParserNode from '../nodes/OutputParserNode';
 import ConfirmationDialog from '../ConfirmationDialog';
 
 // Define custom node types
@@ -33,7 +32,6 @@ const nodeTypes: NodeTypes = {
   model: ModelNode,
   memory: MemoryNode,
   tool: ToolNode,
-  outputParser: OutputParserNode,
 };
 
 // Maps node types to their respective handle IDs
@@ -41,7 +39,6 @@ const nodeTypeToHandleMap = {
   model: 'model-handle',
   memory: 'memory-handle',
   tool: 'tool-handle',
-  outputParser: 'parser-handle',
 };
 
 // Map of model IDs to display names
@@ -86,16 +83,6 @@ const toolDisplayNames: Record<string, string> = {
   'azure-functions': 'Azure Functions',
 };
 
-// Map of parser types to display names
-const parserDisplayNames: Record<string, string> = {
-  'json-output-parser': 'JSONOutputParser',
-  'pydantic-output-parser': 'PydanticOutputParser',
-  'comma-separated-list-parser': 'CommaSeparatedListOutputParser',
-  'datetime-output-parser': 'DatetimeOutputParser',
-  'react-output-parser': 'ReActOutputParser',
-  'structured-output-parser': 'StructuredOutputParser',
-};
-
 // Convert store nodes to ReactFlow nodes
 const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDeleteFn: (id: string) => void): Node[] => {
   return nodes.map(node => {
@@ -113,10 +100,6 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
       // For tool nodes, show the tool type
       const toolName = toolDisplayNames[node.toolType] || node.toolType;
       label = `Tool: ${toolName}`;
-    } else if (node.type === 'outputParser' && node.parserType) {
-      // For output parser nodes, show the parser type
-      const parserName = parserDisplayNames[node.parserType] || node.parserType;
-      label = `Parser: ${parserName}`;
     } else {
       // For other nodes, use the default format
       label = `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.name}`;
@@ -130,7 +113,6 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
         llmModel: node.llmModel, // Pass the model to the node component
         memoryType: node.memoryType, // Pass the memory type to the node component
         toolType: node.toolType, // Pass the tool type to the node component
-        parserType: node.parserType, // Pass the parser type to the node component
         onDelete: onDeleteFn
       },
       position: node.position,
@@ -282,7 +264,6 @@ const WorkflowGraph: React.FC = () => {
               case 'model': return '#805ad5';
               case 'memory': return '#38a169';
               case 'tool': return '#dd6b20';
-              case 'outputParser': return '#d53f8c';
               default: return '#718096';
             }
           }}

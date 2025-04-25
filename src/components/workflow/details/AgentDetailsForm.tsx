@@ -28,6 +28,8 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import DescriptionIcon from '@mui/icons-material/Description';
+import SecurityIcon from '@mui/icons-material/Security';
 
 import { WorkflowNode } from '../../../store/workflowStore';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
@@ -66,6 +68,8 @@ const agentIcons = [
   { id: 'data-object', name: 'Data Agent', icon: DataObjectIcon },
   { id: 'terminal', name: 'Code Agent', icon: TerminalIcon },
   { id: 'account-tree', name: 'Workflow Agent', icon: AccountTreeIcon },
+  { id: 'description', name: 'RAG Agent', icon: DescriptionIcon },
+  { id: 'security', name: 'Security/Governance Agent', icon: SecurityIcon },
 ];
 
 const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {

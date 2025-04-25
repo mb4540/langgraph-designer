@@ -16,6 +16,8 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import DescriptionIcon from '@mui/icons-material/Description';
+import SecurityIcon from '@mui/icons-material/Security';
 
 // Map of icon IDs to their components
 const iconComponents: Record<string, React.ComponentType<any>> = {
@@ -29,6 +31,8 @@ const iconComponents: Record<string, React.ComponentType<any>> = {
   'data-object': DataObjectIcon,
   'terminal': TerminalIcon,
   'account-tree': AccountTreeIcon,
+  'description': DescriptionIcon,
+  'security': SecurityIcon,
 };
 
 // Define fixed positions for each node type relative to the parent agent
@@ -36,7 +40,6 @@ const NODE_POSITIONS = {
   model: { x: -150, y: 200 },
   memory: { x: -50, y: 200 },
   tool: { x: 50, y: 200 },
-  outputParser: { x: 150, y: 200 },
   agent: { x: 300, y: 0 } // For connected agents
 };
 
@@ -119,10 +122,13 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
     const agentNode = useWorkflowStore.getState().nodes.find(node => node.id === id);
     if (!agentNode) return;
     
+    // Check if the node type has a defined position, if not use a default position
+    const nodePosition = NODE_POSITIONS[type] || { x: 0, y: 200 };
+    
     // Use fixed position offsets based on node type
     const newNodePosition = {
-      x: agentNode.position.x + NODE_POSITIONS[type].x,
-      y: agentNode.position.y + NODE_POSITIONS[type].y
+      x: agentNode.position.x + nodePosition.x,
+      y: agentNode.position.y + nodePosition.y
     };
 
     // Create the new node based on type

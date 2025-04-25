@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type NodeType = 'agent' | 'tool' | 'model' | 'memory' | 'outputParser';
+export type NodeType = 'agent' | 'tool' | 'model' | 'memory';
 
 export interface WorkflowNode {
   id: string;
@@ -11,7 +11,6 @@ export interface WorkflowNode {
   llmModel?: string; // Only for agents and models
   memoryType?: string; // Only for memory nodes
   toolType?: string; // Only for tool nodes
-  parserType?: string; // Only for outputParser nodes
   parentId?: string; // Reference to the parent node (if created from a diamond connector)
   sourceHandle?: string; // The handle ID from which this node was created
   

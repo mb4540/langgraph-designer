@@ -23,7 +23,6 @@ import AgentNode from './AgentNode';
 import ModelNode from './ModelNode';
 import MemoryNode from './MemoryNode';
 import ToolNode from './ToolNode';
-import OutputParserNode from './OutputParserNode';
 import ConfirmationDialog from './ConfirmationDialog';
 
 // Define custom node types
@@ -32,7 +31,6 @@ const nodeTypes: NodeTypes = {
   model: ModelNode,
   memory: MemoryNode,
   tool: ToolNode,
-  outputParser: OutputParserNode,
 };
 
 // Maps node types to their respective handle IDs
@@ -40,7 +38,6 @@ const nodeTypeToHandleMap = {
   model: 'model-handle',
   memory: 'memory-handle',
   tool: 'tool-handle',
-  outputParser: 'parser-handle',
 };
 
 // Convert store nodes to ReactFlow nodes
@@ -87,16 +84,6 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
     'azure-functions': 'Azure Functions',
   };
 
-  // Map of parser types to display names
-  const parserDisplayNames: Record<string, string> = {
-    'json-output-parser': 'JSONOutputParser',
-    'pydantic-output-parser': 'PydanticOutputParser',
-    'comma-separated-list-parser': 'CommaSeparatedListOutputParser',
-    'datetime-output-parser': 'DatetimeOutputParser',
-    'react-output-parser': 'ReActOutputParser',
-    'structured-output-parser': 'StructuredOutputParser',
-  };
-
   return nodes.map(node => {
     // Create label based on node type
     let label = '';
@@ -112,10 +99,6 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
       // For tool nodes, show the tool type
       const toolName = toolDisplayNames[node.toolType] || node.toolType;
       label = `Tool: ${toolName}`;
-    } else if (node.type === 'outputParser' && node.parserType) {
-      // For output parser nodes, show the parser type
-      const parserName = parserDisplayNames[node.parserType] || node.parserType;
-      label = `Parser: ${parserName}`;
     } else {
       // For other nodes, use the default format
       label = `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.name}`;
@@ -129,7 +112,6 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
         llmModel: node.llmModel, // Pass the model to the node component
         memoryType: node.memoryType, // Pass the memory type to the node component
         toolType: node.toolType, // Pass the tool type to the node component
-        parserType: node.parserType, // Pass the parser type to the node component
         onDelete: onDeleteFn
       },
       position: node.position,
@@ -184,7 +166,7 @@ const WorkflowGraph: React.FC = () => {
     
     // Set different message based on node type
     if (node && node.type === 'agent') {
-      setDeleteDialogMessage('Are you sure you want to delete this agent? This will also delete all connected model, memory, tool, and output parser nodes associated with this agent.');
+      setDeleteDialogMessage('Are you sure you want to delete this agent? This will also delete all connected model, memory, and tool nodes associated with this agent.');
     } else {
       setDeleteDialogMessage('Are you sure you want to delete this node? This action cannot be undone.');
     }
