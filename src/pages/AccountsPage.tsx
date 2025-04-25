@@ -3,65 +3,19 @@ import {
   Box, 
   Container, 
   Typography, 
-  Paper, 
-  Grid, 
-  Divider, 
-  Breadcrumbs, 
-  Link,
   Button,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  FormControlLabel,
-  RadioGroup,
-  Radio,
-  InputAdornment,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Chip,
-  IconButton,
-  Tooltip,
-  Tabs,
-  Tab
+  Paper
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
-import HomeIcon from '@mui/icons-material/Home';
+import { useNavigate } from 'react-router-dom';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import PublicIcon from '@mui/icons-material/Public';
-import LockIcon from '@mui/icons-material/Lock';
-import EditIcon from '@mui/icons-material/Edit';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import { useNavigate } from 'react-router-dom';
+
 import Header from '../components/Header';
-
-// Interface for work-group type
-interface WorkGroup {
-  id: number;
-  name: string;
-  owner: string;
-  scope: 'Public' | 'Restricted';
-  access: 'Admin' | 'Editor' | 'Viewer';
-  description: string;
-}
-
-// Sample data for work-groups
-const sampleWorkGroups: WorkGroup[] = [
-  { id: 1, name: 'Marketing Team', owner: 'John Smith', scope: 'Public', access: 'Admin', description: 'Work-group for marketing team workflows and agents' },
-  { id: 2, name: 'Sales Automation', owner: 'Sarah Johnson', scope: 'Restricted', access: 'Editor', description: 'Sales process automation workflows' },
-  { id: 3, name: 'Customer Support', owner: 'Michael Brown', scope: 'Public', access: 'Viewer', description: 'Customer support automation and agent workflows' },
-  { id: 4, name: 'Research Team', owner: 'Emily Davis', scope: 'Restricted', access: 'Admin', description: 'Research and development workflow group' },
-  { id: 5, name: 'Executive Dashboard', owner: 'Robert Wilson', scope: 'Restricted', access: 'Viewer', description: 'Executive reporting and analytics workflows' },
-];
+import BreadcrumbNavigation from '../components/BreadcrumbNavigation';
+import WorkGroupTable from '../components/WorkGroupTable';
+import CreateWorkGroupDialog from '../components/CreateWorkGroupDialog';
+import WorkGroupDetailsDialog from '../components/WorkGroupDetailsDialog';
+import { WorkGroup, sampleWorkGroups } from '../types/workGroup';
 
 const AccountsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -100,6 +54,7 @@ const AccountsPage: React.FC = () => {
     setDetailsDialogOpen(false);
     setSelectedWorkGroup(null);
     setEditMode(false);
+    setActiveTab(0); // Reset to first tab when closing
   };
 
   // Handle form input changes
@@ -207,438 +162,75 @@ const AccountsPage: React.FC = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Header />
-      <Paper 
-        elevation={0}
-        sx={{ 
-          py: 1, 
-          px: 3, 
-          borderRadius: 0, 
-          borderBottom: '1px solid', 
-          borderColor: 'divider',
-          backgroundColor: 'background.paper'
-        }}
-      >
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link 
-            component={RouterLink} 
-            to="/" 
-            color="inherit" 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              '&:hover': { color: '#009FDB' }
-            }}
-          >
-            <HomeIcon sx={{ mr: 0.5, fontSize: 18 }} />
-            Home
-          </Link>
-          <Typography 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              color: '#009FDB',
-              fontWeight: 500
-            }}
-          >
-            <AccountBalanceIcon sx={{ mr: 0.5, fontSize: 18 }} />
-            Manage Workflow Accounts
-          </Typography>
-        </Breadcrumbs>
-      </Paper>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-            Work-groups
-          </Typography>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />} 
-            onClick={handleOpenDialog}
-            sx={{ 
-              backgroundColor: '#00388f',
-              '&:hover': { backgroundColor: '#002a6b' }
-            }}
-          >
-            Create New
-          </Button>
-        </Box>
-
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 3, 
-            borderRadius: 2, 
-            border: '1px solid', 
-            borderColor: 'divider',
-            mb: 4
-          }}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <FormControl component="fieldset">
-              <RadioGroup 
-                row 
-                name="filterType" 
-                value={filterType} 
-                onChange={handleFilterTypeChange}
-              >
-                <FormControlLabel value="all" control={<Radio />} label="All Work-groups" />
-                <FormControlLabel value="my" control={<Radio />} label="My Work-groups" />
-              </RadioGroup>
-            </FormControl>
-            <TextField
-              placeholder="Filter work-groups..."
-              variant="outlined"
-              size="small"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
+      <Container maxWidth="lg" sx={{ flexGrow: 1, py: 4 }}>
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation 
+          currentPage="Manage Workflow Accounts" 
+          icon={<AccountBalanceIcon sx={{ mr: 0.5 }} fontSize="inherit" />} 
+        />
+        
+        {/* Page Header */}
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
+              Work-groups
+            </Typography>
+            <Button 
+              variant="contained" 
+              startIcon={<AddIcon />} 
+              onClick={handleOpenDialog}
+              sx={{ 
+                backgroundColor: '#00388f',
+                '&:hover': { backgroundColor: '#002a6b' }
               }}
-              sx={{ width: 300 }}
-            />
-          </Box>
-
-          <TableContainer>
-            <Table sx={{ minWidth: 650 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Owner</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Scope</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>My Access</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredWorkGroups
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((group) => (
-                  <TableRow key={group.id} hover>
-                    <TableCell>
-                      <Link
-                        component="button"
-                        variant="body2"
-                        onClick={() => handleOpenDetailsDialog(group)}
-                        sx={{ 
-                          textAlign: 'left',
-                          fontWeight: 500,
-                          color: '#00388f',
-                          textDecoration: 'none',
-                          '&:hover': { 
-                            textDecoration: 'underline',
-                            color: '#009FDB'
-                          },
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}
-                      >
-                        {group.name}
-                        <Tooltip title={group.access === 'Admin' ? 'Edit work-group' : 'View details'}>
-                          <Box component="span" sx={{ display: 'inline-flex', ml: 1, color: 'text.secondary' }}>
-                            {group.access === 'Admin' ? 
-                              <EditIcon fontSize="small" sx={{ fontSize: 16 }} /> : 
-                              <VisibilityIcon fontSize="small" sx={{ fontSize: 16 }} />}
-                          </Box>
-                        </Tooltip>
-                      </Link>
-                    </TableCell>
-                    <TableCell>{group.owner}</TableCell>
-                    <TableCell>
-                      {group.scope === 'Public' ? (
-                        <Chip 
-                          icon={<PublicIcon />} 
-                          label="Public" 
-                          size="small" 
-                          sx={{ backgroundColor: 'rgba(0, 159, 219, 0.1)', color: '#009FDB' }}
-                        />
-                      ) : (
-                        <Chip 
-                          icon={<LockIcon />} 
-                          label="Restricted" 
-                          size="small" 
-                          sx={{ backgroundColor: 'rgba(0, 56, 143, 0.1)', color: '#00388f' }}
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={group.access} 
-                        size="small" 
-                        sx={{ 
-                          backgroundColor: 
-                            group.access === 'Admin' ? 'rgba(145, 220, 0, 0.1)' : 
-                            group.access === 'Editor' ? 'rgba(0, 159, 219, 0.1)' : 
-                            'rgba(0, 56, 143, 0.1)',
-                          color: 
-                            group.access === 'Admin' ? '#91DC00' : 
-                            group.access === 'Editor' ? '#009FDB' : 
-                            '#00388f'
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>{group.description}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={filteredWorkGroups.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-        </Paper>
-      </Container>
-
-      {/* Create New Work-group Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Work-group</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <TextField
-              autoFocus
-              margin="dense"
-              name="name"
-              label="Work-group Name"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={newWorkGroup.name}
-              onChange={handleInputChange}
-              sx={{ mb: 3 }}
-            />
-            <FormControl component="fieldset" sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>Scope</Typography>
-              <RadioGroup 
-                row 
-                name="scope" 
-                value={newWorkGroup.scope} 
-                onChange={handleScopeChange}
-              >
-                <FormControlLabel 
-                  value="Restricted" 
-                  control={<Radio />} 
-                  label="Restricted" 
-                />
-                <FormControlLabel 
-                  value="Public" 
-                  control={<Radio />} 
-                  label="Public" 
-                />
-              </RadioGroup>
-            </FormControl>
-            <TextField
-              margin="dense"
-              name="description"
-              label="Work-group Description"
-              type="text"
-              fullWidth
-              multiline
-              rows={4}
-              variant="outlined"
-              value={newWorkGroup.description}
-              onChange={handleInputChange}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={handleCloseDialog} variant="outlined">Cancel</Button>
-          <Button 
-            onClick={handleSaveWorkGroup} 
-            variant="contained"
-            disabled={!newWorkGroup.name.trim()}
-            sx={{ 
-              backgroundColor: '#00388f',
-              '&:hover': { backgroundColor: '#002a6b' }
-            }}
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Work-group Details/Edit Dialog */}
-      {selectedWorkGroup && (
-        <Dialog open={detailsDialogOpen} onClose={handleCloseDetailsDialog} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            {editMode ? 'Edit Work-group' : 'Work-group Details'}
-          </DialogTitle>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}
-          >
-            <Tab label="Overview" />
-            <Tab label="Users" />
-          </Tabs>
-          <DialogContent>
-            {/* Overview Tab */}
-            {activeTab === 0 && (
-              <Box sx={{ pt: 1 }}>
-                <TextField
-                  margin="dense"
-                  name="name"
-                  label="Work-group Name"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={selectedWorkGroup.name}
-                  onChange={handleEditInputChange}
-                  disabled={!editMode}
-                  sx={{ mb: 3 }}
-                />
-                <FormControl component="fieldset" sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Scope</Typography>
-                  <RadioGroup 
-                    row 
-                    name="scope" 
-                    value={selectedWorkGroup.scope} 
-                    onChange={handleEditScopeChange}
-                  >
-                    <FormControlLabel 
-                      value="Restricted" 
-                      control={<Radio />} 
-                      label="Restricted" 
-                      disabled={!editMode}
-                    />
-                    <FormControlLabel 
-                      value="Public" 
-                      control={<Radio />} 
-                      label="Public" 
-                      disabled={!editMode}
-                    />
-                  </RadioGroup>
-                </FormControl>
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Owner</Typography>
-                  <Typography variant="body1">{selectedWorkGroup.owner}</Typography>
-                </Box>
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>My Access</Typography>
-                  <Chip 
-                    label={selectedWorkGroup.access} 
-                    size="small" 
-                    sx={{ 
-                      backgroundColor: 
-                        selectedWorkGroup.access === 'Admin' ? 'rgba(145, 220, 0, 0.1)' : 
-                        selectedWorkGroup.access === 'Editor' ? 'rgba(0, 159, 219, 0.1)' : 
-                        'rgba(0, 56, 143, 0.1)',
-                      color: 
-                        selectedWorkGroup.access === 'Admin' ? '#91DC00' : 
-                        selectedWorkGroup.access === 'Editor' ? '#009FDB' : 
-                        '#00388f'
-                    }}
-                  />
-                </Box>
-                <TextField
-                  margin="dense"
-                  name="description"
-                  label="Work-group Description"
-                  type="text"
-                  fullWidth
-                  multiline
-                  rows={4}
-                  variant="outlined"
-                  value={selectedWorkGroup.description}
-                  onChange={handleEditInputChange}
-                  disabled={!editMode}
-                />
-              </Box>
-            )}
-            
-            {/* Users Tab */}
-            {activeTab === 1 && (
-              <Box sx={{ pt: 1 }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  mb: 3 
-                }}>
-                  <Typography variant="h6">{selectedWorkGroup.name}</Typography>
-                  <Button 
-                    variant="contained" 
-                    startIcon={<AddIcon />}
-                    sx={{ 
-                      backgroundColor: '#00388f',
-                      '&:hover': { backgroundColor: '#002a6b' },
-                      color: 'white'
-                    }}
-                  >
-                    Add User
-                  </Button>
-                </Box>
-                
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Access</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {/* Sample user data - replace with actual data */}
-                      <TableRow>
-                        <TableCell>user1@example.com</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label="Admin" 
-                            size="small" 
-                            sx={{ 
-                              backgroundColor: 'rgba(145, 220, 0, 0.1)',
-                              color: '#91DC00'
-                            }}
-                          />
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>user2@example.com</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label="Editor" 
-                            size="small" 
-                            sx={{ 
-                              backgroundColor: 'rgba(0, 159, 219, 0.1)',
-                              color: '#009FDB'
-                            }}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button onClick={handleCloseDetailsDialog} variant="outlined">
-              {editMode ? 'Cancel' : 'Close'}
+            >
+              Create New
             </Button>
-            {editMode && activeTab === 0 && (
-              <Button 
-                onClick={handleSaveEditedWorkGroup} 
-                variant="contained"
-                disabled={!selectedWorkGroup.name.trim()}
-                sx={{ 
-                  backgroundColor: '#00388f',
-                  '&:hover': { backgroundColor: '#002a6b' }
-                }}
-              >
-                Save Changes
-              </Button>
-            )}
-          </DialogActions>
-        </Dialog>
-      )}
+          </Box>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+            Manage your workflow work-groups and their access settings
+          </Typography>
+        </Paper>
+        
+        {/* Work-group Table */}
+        <WorkGroupTable 
+          workGroups={filteredWorkGroups}
+          filterType={filterType}
+          searchQuery={searchQuery}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onFilterTypeChange={handleFilterTypeChange}
+          onSearchChange={handleSearchChange}
+          onChangePage={handleChangePage}
+          onChangeRowsPerPage={handleChangeRowsPerPage}
+          onOpenDetails={handleOpenDetailsDialog}
+        />
+        
+        {/* Create Work-group Dialog */}
+        <CreateWorkGroupDialog 
+          open={openDialog}
+          newWorkGroup={newWorkGroup}
+          onClose={handleCloseDialog}
+          onInputChange={handleInputChange}
+          onScopeChange={handleScopeChange}
+          onSave={handleSaveWorkGroup}
+        />
+        
+        {/* Work-group Details/Edit Dialog */}
+        {selectedWorkGroup && (
+          <WorkGroupDetailsDialog 
+            open={detailsDialogOpen}
+            workGroup={selectedWorkGroup}
+            editMode={editMode}
+            activeTab={activeTab}
+            onClose={handleCloseDetailsDialog}
+            onSave={handleSaveEditedWorkGroup}
+            onTabChange={handleTabChange}
+            onInputChange={handleEditInputChange}
+            onScopeChange={handleEditScopeChange}
+          />
+        )}
+      </Container>
     </Box>
   );
 };

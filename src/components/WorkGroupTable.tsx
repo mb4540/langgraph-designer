@@ -1,0 +1,116 @@
+import React from 'react';
+import { 
+  Paper, 
+  Box, 
+  FormControl, 
+  RadioGroup, 
+  FormControlLabel, 
+  Radio, 
+  TextField, 
+  InputAdornment,
+  TableContainer, 
+  Table, 
+  TableHead, 
+  TableRow, 
+  TableCell, 
+  TableBody, 
+  TablePagination 
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import WorkGroupTableRow from './WorkGroupTableRow';
+import { WorkGroup } from '../types/workGroup';
+
+interface WorkGroupTableProps {
+  workGroups: WorkGroup[];
+  filterType: string;
+  searchQuery: string;
+  page: number;
+  rowsPerPage: number;
+  onFilterTypeChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChangePage: (event: unknown, newPage: number) => void;
+  onChangeRowsPerPage: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onOpenDetails: (group: WorkGroup) => void;
+}
+
+const WorkGroupTable: React.FC<WorkGroupTableProps> = ({
+  workGroups,
+  filterType,
+  searchQuery,
+  page,
+  rowsPerPage,
+  onFilterTypeChange,
+  onSearchChange,
+  onChangePage,
+  onChangeRowsPerPage,
+  onOpenDetails
+}) => {
+  return (
+    <Paper sx={{ p: 3, mt: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <FormControl component="fieldset">
+          <RadioGroup 
+            row 
+            name="filterType" 
+            value={filterType} 
+            onChange={onFilterTypeChange}
+          >
+            <FormControlLabel value="all" control={<Radio />} label="All Work-groups" />
+            <FormControlLabel value="my" control={<Radio />} label="My Work-groups" />
+          </RadioGroup>
+        </FormControl>
+        <TextField
+          placeholder="Search work-groups..."
+          variant="outlined"
+          size="small"
+          value={searchQuery}
+          onChange={onSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+      
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Owner</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Scope</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>My Access</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {workGroups
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((group) => (
+                <WorkGroupTableRow 
+                  key={group.id} 
+                  group={group} 
+                  onOpenDetails={onOpenDetails} 
+                />
+              ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={workGroups.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={onChangePage}
+        onRowsPerPageChange={onChangeRowsPerPage}
+      />
+    </Paper>
+  );
+};
+
+export default WorkGroupTable;
