@@ -360,7 +360,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         style={{
           position: 'absolute',
           bottom: '5px',
-          left: '5px',
+          right: '5px',
           cursor: 'pointer',
           color: isDarkMode ? '#e53e3e' : '#f56565',
         }}

@@ -16,10 +16,10 @@ const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
     }
   };
 
-  // Colors that match the memory diamond
-  const color = isDarkMode ? '#f39c12' : '#f6ad55';
-  const darkColor = isDarkMode ? '#d68910' : '#dd6b20'; // Darker shade for outline
-  const lightColor = isDarkMode ? 'rgba(243, 156, 18, 0.2)' : 'rgba(246, 173, 85, 0.2)'; // Lighter shade for fill
+  // Colors that match the memory diamond in AgentNode.tsx
+  const color = isDarkMode ? '#f39c12' : '#f39c12';
+  const darkColor = isDarkMode ? '#d68910' : '#d68910'; // Darker shade for outline
+  const lightColor = isDarkMode ? 'rgba(243, 156, 18, 0.2)' : 'rgba(243, 156, 18, 0.2)'; // Lighter shade for fill
 
   return (
     <div
@@ -27,10 +27,10 @@ const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
         background: lightColor,
         color: isDarkMode ? '#e2e8f0' : '#1a202c',
         border: `2px solid ${darkColor}`,
-        borderRadius: '50%', // Circle shape
+        borderRadius: '8px', // Rectangle with rounded corners
         padding: '10px',
-        width: '150px',
-        height: '150px',
+        width: '180px',
+        minHeight: '100px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -53,7 +53,8 @@ const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
       <div 
         style={{
           position: 'absolute',
-          bottom: '30px',
+          bottom: '5px',
+          right: '5px',
           cursor: 'pointer',
           color: isDarkMode ? '#e53e3e' : '#f56565',
         }}
