@@ -307,56 +307,44 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       />
       
       {/* Agent connection handle and button */}
-      <div
-        style={{
-          position: 'absolute',
-          right: '-50px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        {/* Line extending from the node */}
-        <div
-          style={{
-            width: '30px',
-            height: '2px',
-            background: isDarkMode ? '#4299e1' : '#63b3ed',
-          }}
-        />
-        
-        {/* Handle for the agent connection */}
-        <Handle
-          id="agent-handle"
-          type="source"
-          position={Position.Right}
-          style={{
-            background: isDarkMode ? '#4299e1' : '#63b3ed',
-            right: '-15px',
-            width: '8px',
-            height: '8px',
-          }}
-        />
-        
+      <div style={{ position: 'relative' }}>
         {/* Add agent button */}
         <div
           onClick={handleAddAgent}
           style={{
+            position: 'absolute',
+            right: '-20px',
+            top: '50%',
+            transform: 'translateY(-50%)',
             width: '20px',
             height: '20px',
             borderRadius: '4px',
-            background: isDarkMode ? '#4299e1' : '#63b3ed',
+            background: isDarkMode ? '#2a4365' : '#ebf8ff',
+            border: isDarkMode ? '1px solid #4299e1' : '1px solid #63b3ed',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             cursor: 'pointer',
-            marginLeft: '5px',
+            zIndex: 10,
             boxShadow: isDarkMode ? '0 2px 4px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
           }}
-          title="Add Connected Agent"
+          title="Add connected agent"
         >
-          <AddIcon style={{ fontSize: '16px', color: isDarkMode ? '#fff' : '#2a4365' }} />
+          <AddIcon style={{ fontSize: '14px', color: isDarkMode ? '#4299e1' : '#63b3ed' }} />
+          
+          {/* Handle for the agent connection - moved to the right side of the plus button */}
+          <Handle
+            id="agent-handle"
+            type="source"
+            position={Position.Right}
+            style={{
+              background: isDarkMode ? '#4299e1' : '#63b3ed',
+              right: '-4px',
+              width: '8px',
+              height: '8px',
+              zIndex: 20,
+            }}
+          />
         </div>
       </div>
     </div>

@@ -19,6 +19,8 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SecurityIcon from '@mui/icons-material/Security';
 
+// Constants
+
 // Map of icon IDs to their components
 const iconComponents: Record<string, React.ComponentType<any>> = {
   'smart-toy': SmartToyIcon,
@@ -51,14 +53,32 @@ const modelDisplayNames: Record<string, string> = {
   'ernie-4': 'Baidu ERNIE 4.0',
 };
 
-// Define fixed positions for each node type relative to the parent agent
+// Node position constants
 const NODE_POSITIONS = {
-  model: { x: -150, y: 200 },
   memory: { x: -50, y: 200 },
   tool: { x: 50, y: 200 },
   agent: { x: 300, y: 0 } // For connected agents
 };
 
+// Color constants
+const COLORS = {
+  memory: {
+    main: '#f39c12',
+    light: '#f6ad55',
+  },
+  tool: {
+    main: '#805ad5',
+    light: '#9ae6b4',
+  },
+  agent: {
+    main: '#4299e1',
+    light: '#63b3ed',
+    dark: '#2a4365',
+    background: '#ebf8ff',
+  }
+};
+
+// Component interfaces
 interface DiamondProps {
   label: string;
   position: number;
@@ -70,7 +90,17 @@ interface DiamondProps {
   nodeType: NodeType;
 }
 
-const Diamond: React.FC<DiamondProps> = ({ label, position, onClick, isDarkMode, color, lightColor, handleId, nodeType }) => {
+// Diamond component for adding child nodes
+const Diamond: React.FC<DiamondProps> = ({ 
+  label, 
+  position, 
+  onClick, 
+  isDarkMode, 
+  color, 
+  lightColor, 
+  handleId, 
+  nodeType 
+}) => {
   return (
     <div
       onClick={onClick}
@@ -121,6 +151,7 @@ const Diamond: React.FC<DiamondProps> = ({ label, position, onClick, isDarkMode,
   );
 };
 
+// Main AgentNode component
 const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
   const { mode } = useThemeContext();
   const isDarkMode = mode === 'dark';
@@ -130,6 +161,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
   const iconId = data.icon || 'smart-toy';
   const IconComponent = iconComponents[iconId] || SmartToyIcon;
 
+  // Event handlers
   const handleAddComponent = (type: NodeType, handleId: string) => {
     // Generate a unique ID
     const newId = `${type}-${Date.now()}`;
@@ -229,119 +261,85 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
     }
   };
 
+  // Styles
+  const nodeStyles = {
+    background: isDarkMode ? COLORS.agent.dark : COLORS.agent.background,
+    color: isDarkMode ? '#e2e8f0' : '#1a202c',
+    border: isDarkMode ? `1px solid ${COLORS.agent.main}` : `1px solid ${COLORS.agent.light}`,
+    borderRadius: '8px',
+    padding: '10px',
+    minWidth: '180px',
+    position: 'relative' as const,
+    paddingBottom: '20px',
+    marginBottom: '30px', // Add space for the diamonds
+    boxShadow: isDarkMode ? '0 4px 6px rgba(0, 0, 0, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
+  };
+
+  const handleStyles = {
+    background: isDarkMode ? COLORS.agent.main : COLORS.agent.light,
+  };
+
+  const iconStyles = {
+    position: 'absolute' as const,
+    top: '10px',
+    left: '10px',
+    color: isDarkMode ? COLORS.agent.main : COLORS.agent.main,
+  };
+
+  const contentStyles = { 
+    marginTop: '5px', 
+    marginLeft: '40px', // Add space for the icon
+    fontWeight: 'normal' as const, 
+    display: 'flex' as const,
+    flexDirection: 'column' as const,
+    gap: '5px'
+  };
+
+  const modelInfoStyles = { 
+    fontSize: '0.8rem', 
+    color: isDarkMode ? '#a0aec0' : '#4a5568',
+    marginBottom: '8px'
+  };
+
+  // Render
   return (
     <div
-      style={{
-        background: isDarkMode ? '#2a4365' : '#ebf8ff',
-        color: isDarkMode ? '#e2e8f0' : '#1a202c',
-        border: isDarkMode ? '1px solid #4299e1' : '1px solid #63b3ed',
-        borderRadius: '8px',
-        padding: '10px',
-        minWidth: '180px',
-        position: 'relative',
-        paddingBottom: '20px',
-        marginBottom: '30px', // Add space for the diamonds
-        boxShadow: isDarkMode ? '0 4px 6px rgba(0, 0, 0, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
-      }}
+      style={nodeStyles}
       onDoubleClick={() => selectNode(id)}
     >
-      <Handle type="target" position={Position.Top} style={{ background: isDarkMode ? '#4299e1' : '#63b3ed' }} />
+      <Handle type="target" position={Position.Top} style={handleStyles} />
       
       {/* Agent Icon */}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        left: '10px',
-        color: isDarkMode ? '#4299e1' : '#3182ce',
-      }}>
+      <div style={iconStyles}>
         <IconComponent fontSize="medium" />
       </div>
       
       {/* Node content */}
-      <div style={{ 
-        marginTop: '5px', 
-        marginLeft: '40px', // Add space for the icon
-        fontWeight: 'normal', // Not bold
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '5px'
-      }}>
+      <div style={contentStyles}>
         <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{data.label}</div>
       
         {/* Display LLM model if available */}
         {data.llmModel && (
-          <div style={{ 
-            fontSize: '0.8rem', 
-            color: isDarkMode ? '#a0aec0' : '#4a5568',
-            marginBottom: '8px'
-          }}>
+          <div style={modelInfoStyles}>
             Model: {modelDisplayNames[data.llmModel] || data.llmModel}
           </div>
         )}
       </div>
       
-      {/* Small circle on the right side with connecting line and plus square */}
+      {/* Small square on the right side with plus sign */}
       <div style={{ position: 'relative' }}>
-        <div
-          style={{
-            position: 'absolute',
-            right: '-12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: '24px',
-            height: '24px',
-            background: isDarkMode ? '#4299e1' : '#63b3ed',
-            borderRadius: '50%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 10,
-            boxShadow: isDarkMode ? '0 2px 4px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <IconComponent style={{ fontSize: '14px', color: isDarkMode ? '#fff' : '#2a4365' }} />
-          
-          {/* Handle for the circle */}
-          <Handle
-            id="agent-handle"
-            type="source"
-            position={Position.Right}
-            style={{
-              background: isDarkMode ? '#4299e1' : '#63b3ed',
-              right: '-4px',
-              width: '8px',
-              height: '8px',
-              zIndex: 20,
-            }}
-          />
-        </div>
-        
-        {/* Connecting line */}
-        <div
-          style={{
-            position: 'absolute',
-            right: '-60px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: '40px',
-            height: '2px',
-            background: isDarkMode ? '#4299e1' : '#63b3ed',
-            zIndex: 9,
-          }}
-        />
-        
         {/* Square with plus sign */}
         <div
           onClick={handleAddAgent}
           style={{
             position: 'absolute',
-            right: '-80px',
+            right: '-20px',
             top: '50%',
             transform: 'translateY(-50%)',
             width: '20px',
             height: '20px',
-            background: isDarkMode ? '#2a4365' : '#ebf8ff',
-            border: isDarkMode ? '1px solid #4299e1' : '1px solid #63b3ed',
+            background: isDarkMode ? COLORS.agent.dark : COLORS.agent.background,
+            border: isDarkMode ? `1px solid ${COLORS.agent.main}` : `1px solid ${COLORS.agent.light}`,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -351,7 +349,21 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
           }}
           title="Add connected agent"
         >
-          <AddIcon style={{ fontSize: '14px', color: isDarkMode ? '#4299e1' : '#63b3ed' }} />
+          <AddIcon style={{ fontSize: '14px', color: isDarkMode ? COLORS.agent.main : COLORS.agent.light }} />
+          
+          {/* Agent handle - moved to be on the right side of the plus button */}
+          <Handle
+            id="agent-handle"
+            type="source"
+            position={Position.Right}
+            style={{
+              background: isDarkMode ? COLORS.agent.main : COLORS.agent.light,
+              right: '-4px',
+              width: '8px',
+              height: '8px',
+              zIndex: 20,
+            }}
+          />
         </div>
       </div>
       
@@ -376,8 +388,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         position={25}
         onClick={() => handleAddComponent('memory', 'memory-handle')}
         isDarkMode={isDarkMode}
-        color="#f39c12"
-        lightColor="#f6ad55"
+        color={COLORS.memory.main}
+        lightColor={COLORS.memory.light}
         handleId="memory-handle"
         nodeType="memory"
       />
@@ -386,8 +398,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         position={75}
         onClick={() => handleAddComponent('tool', 'tool-handle')}
         isDarkMode={isDarkMode}
-        color="#805ad5"
-        lightColor="#9ae6b4"
+        color={COLORS.tool.main}
+        lightColor={COLORS.tool.light}
         handleId="tool-handle"
         nodeType="tool"
       />
