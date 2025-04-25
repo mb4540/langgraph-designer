@@ -1,9 +1,16 @@
 /**
- * @deprecated This file is being replaced by the modular store approach.
- * Please import from 'src/store' instead.
+ * Store index file that re-exports all store hooks
  */
 
-import { useNodeStore, useEdgeStore, useSelectionStore } from './index';
+// Re-export all stores for easier imports
+export { useNodeStore } from './nodeStore';
+export { useEdgeStore } from './edgeStore';
+export { useSelectionStore } from './selectionStore';
+
+// For backward compatibility, we'll also provide a combined workflow store
+import { useNodeStore } from './nodeStore';
+import { useEdgeStore } from './edgeStore';
+import { useSelectionStore } from './selectionStore';
 import { WorkflowNode, WorkflowEdge } from '../types/nodeTypes';
 
 /**
@@ -79,6 +86,3 @@ export const useWorkflowStore = {
     selectedNode: useSelectionStore.getState().selectedNode,
   }),
 };
-
-// Re-export NodeType for backward compatibility
-export type { NodeType } from '../types/nodeTypes';

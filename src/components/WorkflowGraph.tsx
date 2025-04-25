@@ -18,7 +18,8 @@ import 'reactflow/dist/style.css';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import { useThemeContext } from '../context/ThemeContext';
-import { useWorkflowStore, WorkflowNode as StoreNode, WorkflowEdge as StoreEdge } from '../store/workflowStore';
+import { useNodeStore, useEdgeStore, useSelectionStore } from '../store';
+import { WorkflowNode as StoreNode, WorkflowEdge as StoreEdge } from '../types/nodeTypes';
 import MainAgentNode from './MainAgentNode';
 import MemoryNode from './nodes/MemoryNode';
 import ToolNode from './nodes/ToolNode';
@@ -131,7 +132,9 @@ const storeEdgesToFlowEdges = (edges: StoreEdge[], nodes: StoreNode[], isDarkMod
 };
 
 const WorkflowGraph: React.FC = () => {
-  const { nodes: storeNodes, edges: storeEdges, selectNode, removeNode } = useWorkflowStore();
+  const { nodes: storeNodes, removeNode } = useNodeStore();
+  const { edges: storeEdges } = useEdgeStore();
+  const { selectNode } = useSelectionStore();
   const { mode } = useThemeContext();
   const isDarkMode = mode === 'dark';
   

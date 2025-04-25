@@ -18,7 +18,7 @@ import 'reactflow/dist/style.css';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import { useThemeContext } from '../../context/ThemeContext';
-import { WorkflowNode as StoreNode, WorkflowEdge as StoreEdge } from '../../store/workflowStore';
+import { WorkflowNode as StoreNode, WorkflowEdge as StoreEdge } from '../../types/nodeTypes';
 import { useWorkflowContext } from '../../context/WorkflowContext';
 import AgentNode from '../nodes/AgentNode';
 import MemoryNode from '../nodes/MemoryNode';

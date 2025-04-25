@@ -10,7 +10,7 @@ import CardActionArea from '@mui/material/CardActionArea';
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import Editor from '@monaco-editor/react';
-import { WorkflowNode } from '../../../store/workflowStore';
+import { WorkflowNode } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useThemeContext } from '../../../context/ThemeContext';
 

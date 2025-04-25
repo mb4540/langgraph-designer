@@ -31,7 +31,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SecurityIcon from '@mui/icons-material/Security';
 
-import { WorkflowNode } from '../../../store/workflowStore';
+import { WorkflowNode } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 
 interface AgentDetailsFormProps {

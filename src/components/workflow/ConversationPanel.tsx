@@ -7,7 +7,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import { Message } from '../../api/openai';
-import { NodeType } from '../../store/workflowStore';
+import { NodeType } from '../../types/nodeTypes';
 import { useWorkflowContext } from '../../context/WorkflowContext';
 
 const initialInterview = [

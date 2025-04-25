@@ -1,7 +1,8 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { useThemeContext } from '../../context/ThemeContext';
-import { useWorkflowStore, NodeType } from '../../store/workflowStore';
+import { useNodeStore, useEdgeStore, useSelectionStore } from '../../store';
+import { NodeType } from '../../types/nodeTypes';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 
@@ -107,7 +108,9 @@ const Diamond: React.FC<DiamondProps> = ({ label, position, onClick, isDarkMode,
 const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
   const { mode } = useThemeContext();
   const isDarkMode = mode === 'dark';
-  const { addNode, addEdge, selectNode } = useWorkflowStore();
+  const { addNode } = useNodeStore();
+  const { addEdge } = useEdgeStore();
+  const { selectNode } = useSelectionStore();
 
   // Determine which icon to display
   const iconId = data.icon || 'smart-toy';
@@ -118,7 +121,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
     const newId = `${type}-${Date.now()}`;
     
     // Get the position of the agent node to position the new component relative to it
-    const agentNode = useWorkflowStore.getState().nodes.find(node => node.id === id);
+    const agentNode = useNodeStore.getState().nodes.find(node => node.id === id);
     if (!agentNode) return;
     
     // Check if the node type has a defined position, if not use a default position
@@ -170,7 +173,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
     const newId = `agent-${Date.now()}`;
     
     // Get the position of the current agent node
-    const agentNode = useWorkflowStore.getState().nodes.find(node => node.id === id);
+    const agentNode = useNodeStore.getState().nodes.find(node => node.id === id);
     if (!agentNode) return;
     
     // Use fixed position offset for agent nodes

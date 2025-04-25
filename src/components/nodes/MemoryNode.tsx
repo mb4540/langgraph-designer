@@ -1,13 +1,13 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { useThemeContext } from '../../context/ThemeContext';
-import { useWorkflowStore } from '../../store/workflowStore';
+import { useSelectionStore } from '../../store';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
   const { mode } = useThemeContext();
   const isDarkMode = mode === 'dark';
-  const { selectNode } = useWorkflowStore();
+  const { selectNode } = useSelectionStore();
 
   const handleDelete = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -75,4 +75,4 @@ const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
 };
 
 // Use React.memo to prevent unnecessary re-renders
-export default memo(MemoryNode);
+export default React.memo(MemoryNode);

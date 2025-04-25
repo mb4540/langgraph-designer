@@ -1,13 +1,13 @@
 import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { useThemeContext } from '../context/ThemeContext';
-import { useWorkflowStore } from '../store/workflowStore';
+import { useSelectionStore } from '../store';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const ModelNode: React.FC<NodeProps> = ({ id, data }) => {
   const { mode } = useThemeContext();
   const isDarkMode = mode === 'dark';
-  const { selectNode } = useWorkflowStore();
+  const { selectNode } = useSelectionStore();
 
   const handleDelete = (event: React.MouseEvent) => {
     event.stopPropagation();

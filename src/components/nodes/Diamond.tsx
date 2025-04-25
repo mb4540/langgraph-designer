@@ -1,6 +1,6 @@
 import React from 'react';
 import { Handle, Position } from 'reactflow';
-import { NodeType } from '../../store/workflowStore';
+import { NodeType } from '../../types/nodeTypes';
 
 // Component interfaces
 export interface DiamondProps {

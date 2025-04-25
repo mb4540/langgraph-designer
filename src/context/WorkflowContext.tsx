@@ -1,5 +1,6 @@
 import React, { createContext, useContext, ReactNode, useCallback, useMemo } from 'react';
-import { useWorkflowStore, WorkflowNode, WorkflowEdge } from '../store/workflowStore';
+import { useNodeStore, useEdgeStore, useSelectionStore } from '../store';
+import { WorkflowNode, WorkflowEdge } from '../types/nodeTypes';
 
 interface WorkflowContextType {
   selectedNode: WorkflowNode | null;
@@ -28,18 +29,10 @@ interface WorkflowProviderProps {
 }
 
 export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) => {
-  // Use the Zustand store for state management
-  const {
-    nodes,
-    edges,
-    selectedNode,
-    selectNode: storeSelectNode,
-    addNode: storeAddNode,
-    updateNode: storeUpdateNode,
-    removeNode: storeRemoveNode,
-    addEdge: storeAddEdge,
-    removeEdge: storeRemoveEdge,
-  } = useWorkflowStore();
+  // Use the modular stores for state management
+  const { nodes, addNode: storeAddNode, updateNode: storeUpdateNode, removeNode: storeRemoveNode } = useNodeStore();
+  const { edges, addEdge: storeAddEdge, removeEdge: storeRemoveEdge } = useEdgeStore();
+  const { selectedNode, selectNode: storeSelectNode } = useSelectionStore();
 
   // Wrap the store functions with useCallback to prevent unnecessary re-renders
   const selectNodeCallback = useCallback((id: string | null) => {
@@ -55,8 +48,33 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
   }, [storeUpdateNode]);
 
   const removeNodeCallback = useCallback((id: string) => {
-    storeRemoveNode(id);
-  }, [storeRemoveNode]);
+    // Get the node to be deleted
+    const nodeToDelete = nodes.find(node => node.id === id);
+    
+    // If the node is an agent, find all associated nodes
+    let nodesToDelete = [id];
+    if (nodeToDelete && nodeToDelete.type === 'agent') {
+      // Find all child nodes of this agent
+      const childNodeIds = nodes
+        .filter(node => node.parentId === id)
+        .map(node => node.id);
+      
+      // Add child node IDs to the list of nodes to delete
+      nodesToDelete = [...nodesToDelete, ...childNodeIds];
+    }
+    
+    // Remove all edges connected to these nodes
+    nodesToDelete.forEach(nodeId => {
+      edges
+        .filter(edge => edge.source === nodeId || edge.target === nodeId)
+        .forEach(edge => storeRemoveEdge(edge.id));
+    });
+    
+    // Remove all nodes
+    nodesToDelete.forEach(nodeId => {
+      storeRemoveNode(nodeId);
+    });
+  }, [nodes, edges, storeRemoveNode, storeRemoveEdge]);
 
   const addEdgeCallback = useCallback((edge: WorkflowEdge) => {
     storeAddEdge(edge);
@@ -66,7 +84,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
     storeRemoveEdge(id);
   }, [storeRemoveEdge]);
 
-  // Create a memoized context value to prevent unnecessary re-renders
+  // Create the context value with memoization to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     selectedNode,
     selectNode: selectNodeCallback,

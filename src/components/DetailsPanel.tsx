@@ -2,7 +2,7 @@ import React from 'react';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import { useWorkflowStore } from '../store/workflowStore';
+import { useSelectionStore, useNodeStore } from '../store';
 
 // Import the new component files
 import AgentDetailsPanel from './details/AgentDetailsPanel';
@@ -10,7 +10,8 @@ import MemoryDetailsPanel from './details/MemoryDetailsPanel';
 import ToolDetailsPanel from './details/ToolDetailsPanel';
 
 const DetailsPanel: React.FC = () => {
-  const { selectedNode, updateNode } = useWorkflowStore();
+  const { selectedNode } = useSelectionStore();
+  const { updateNode } = useNodeStore();
 
   if (!selectedNode) {
     return (

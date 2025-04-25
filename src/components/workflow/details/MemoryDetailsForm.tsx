@@ -7,7 +7,7 @@ import Radio from '@mui/material/Radio';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { WorkflowNode } from '../../../store/workflowStore';
+import { WorkflowNode } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 
 // Memory types
