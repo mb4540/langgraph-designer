@@ -1,0 +1,22 @@
+<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="300" height="200" fill="#f8f9fa" rx="10" ry="10"/>
+  
+  <!-- Designer Illustration -->
+  <g id="designer">
+    <!-- Workflow canvas -->
+    <rect x="40" y="40" width="220" height="120" rx="5" ry="5" fill="#ffffff" stroke="#009FDB" stroke-width="2"/>
+    
+    <!-- Agent node -->
+    <circle cx="100" cy="80" r="20" fill="#ffffff" stroke="#009FDB" stroke-width="2"/>
+    <text x="100" y="85" font-family="Arial" font-size="10" text-anchor="middle" fill="#333333">Agent</text>
+    
+    <!-- Model node -->
+    <rect x="170" y="60" width="40" height="40" rx="5" ry="5" fill="#ffffff" stroke="#00c2ff" stroke-width="2"/>
+    <text x="190" y="85" font-family="Arial" font-size="10" text-anchor="middle" fill="#333333">Model</text>
+    
+    <!-- Connection -->
+    <line x1="120" y1="80" x2="170" y2="80" stroke="#009FDB" stroke-width="2"/>
+    <polygon points="165,75 170,80 165,85" fill="#009FDB"/>
+  </g>
+</svg>

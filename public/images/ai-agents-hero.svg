@@ -1,0 +1,47 @@
+<svg width="900" height="500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="900" height="500" fill="#f8f9fa" rx="10" ry="10"/>
+  
+  <!-- Network nodes and connections -->
+  <g id="network">
+    <!-- Connections -->
+    <line x1="200" y1="150" x2="350" y2="250" stroke="#009FDB" stroke-width="2" opacity="0.6"/>
+    <line x1="350" y1="250" x2="500" y2="150" stroke="#009FDB" stroke-width="2" opacity="0.6"/>
+    <line x1="500" y1="150" x2="650" y2="250" stroke="#009FDB" stroke-width="2" opacity="0.6"/>
+    <line x1="350" y1="250" x2="350" y2="350" stroke="#009FDB" stroke-width="2" opacity="0.6"/>
+    <line x1="350" y1="350" x2="500" y2="350" stroke="#009FDB" stroke-width="2" opacity="0.6"/>
+    <line x1="500" y1="350" x2="650" y2="250" stroke="#009FDB" stroke-width="2" opacity="0.6"/>
+    <line x1="200" y1="150" x2="200" y2="350" stroke="#009FDB" stroke-width="2" opacity="0.6"/>
+    <line x1="200" y1="350" x2="350" y2="350" stroke="#009FDB" stroke-width="2" opacity="0.6"/>
+    
+    <!-- Agent Nodes -->
+    <circle cx="200" cy="150" r="40" fill="#ffffff" stroke="#009FDB" stroke-width="3"/>
+    <text x="200" y="155" font-family="Arial" font-size="12" text-anchor="middle" fill="#333333">Agent 1</text>
+    
+    <circle cx="350" cy="250" r="40" fill="#ffffff" stroke="#009FDB" stroke-width="3"/>
+    <text x="350" y="255" font-family="Arial" font-size="12" text-anchor="middle" fill="#333333">Agent 2</text>
+    
+    <circle cx="500" cy="150" r="40" fill="#ffffff" stroke="#009FDB" stroke-width="3"/>
+    <text x="500" y="155" font-family="Arial" font-size="12" text-anchor="middle" fill="#333333">Agent 3</text>
+    
+    <circle cx="650" cy="250" r="40" fill="#ffffff" stroke="#009FDB" stroke-width="3"/>
+    <text x="650" y="255" font-family="Arial" font-size="12" text-anchor="middle" fill="#333333">Agent 4</text>
+    
+    <!-- Tool Nodes -->
+    <rect x="175" y="325" width="50" height="50" rx="5" ry="5" fill="#ffffff" stroke="#00c2ff" stroke-width="2"/>
+    <text x="200" y="355" font-family="Arial" font-size="10" text-anchor="middle" fill="#333333">Tool</text>
+    
+    <rect x="325" y="325" width="50" height="50" rx="5" ry="5" fill="#ffffff" stroke="#00c2ff" stroke-width="2"/>
+    <text x="350" y="355" font-family="Arial" font-size="10" text-anchor="middle" fill="#333333">Memory</text>
+    
+    <rect x="475" y="325" width="50" height="50" rx="5" ry="5" fill="#ffffff" stroke="#00c2ff" stroke-width="2"/>
+    <text x="500" y="355" font-family="Arial" font-size="10" text-anchor="middle" fill="#333333">Model</text>
+  </g>
+  
+  <!-- Decorative elements -->
+  <circle cx="100" cy="100" r="80" fill="#009FDB" opacity="0.1"/>
+  <circle cx="800" cy="400" r="80" fill="#009FDB" opacity="0.1"/>
+  
+  <!-- Title -->
+  <text x="450" y="50" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#333333">LangGraph Workflow</text>
+</svg>

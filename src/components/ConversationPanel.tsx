@@ -10,7 +10,7 @@ import { Message } from '../api/openai';
 import { useWorkflowStore, NodeType } from '../store/workflowStore';
 
 const initialInterview = [
-  'Welcome to LangGraph Designer! What workflow are you trying to build?',
+  'Welcome to Workflow Designer! What workflow are you trying to build?',
   'What agents do you envision in this workflow? (e.g., Data Collector, Summarizer, Notifier)',
   'What tools or actions should each agent have?',
   'How do you want the agents to interact or pass information?',

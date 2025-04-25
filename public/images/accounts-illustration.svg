@@ -1,0 +1,30 @@
+<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="300" height="200" fill="#f8f9fa" rx="10" ry="10"/>
+  
+  <!-- Account Management Illustration -->
+  <g id="accounts">
+    <!-- User profiles -->
+    <circle cx="80" cy="70" r="25" fill="#ffffff" stroke="#009FDB" stroke-width="2"/>
+    <circle cx="150" cy="70" r="25" fill="#ffffff" stroke="#009FDB" stroke-width="2"/>
+    <circle cx="220" cy="70" r="25" fill="#ffffff" stroke="#009FDB" stroke-width="2"/>
+    
+    <!-- User icons -->
+    <path d="M80,65 C85,65 85,60 80,60 C75,60 75,65 80,65" fill="#009FDB"/>
+    <circle cx="80" cy="55" r="8" fill="#009FDB"/>
+    
+    <path d="M150,65 C155,65 155,60 150,60 C145,60 145,65 150,65" fill="#009FDB"/>
+    <circle cx="150" cy="55" r="8" fill="#009FDB"/>
+    
+    <path d="M220,65 C225,65 225,60 220,60 C215,60 215,65 220,65" fill="#009FDB"/>
+    <circle cx="220" cy="55" r="8" fill="#009FDB"/>
+    
+    <!-- Connection lines -->
+    <line x1="105" y1="70" x2="125" y2="70" stroke="#009FDB" stroke-width="2" stroke-dasharray="5,3"/>
+    <line x1="175" y1="70" x2="195" y2="70" stroke="#009FDB" stroke-width="2" stroke-dasharray="5,3"/>
+    
+    <!-- Account settings -->
+    <rect x="60" y="120" width="180" height="40" rx="5" ry="5" fill="#ffffff" stroke="#009FDB" stroke-width="2"/>
+    <text x="150" y="145" font-family="Arial" font-size="14" text-anchor="middle" fill="#333333">Account Settings</text>
+  </g>
+</svg>

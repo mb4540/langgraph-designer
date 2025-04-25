@@ -20,7 +20,7 @@ const Header: React.FC = () => {
       position="static" 
       sx={{ 
         zIndex: 1300,
-        background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+        background: '#009FDB',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
       }}
     >
