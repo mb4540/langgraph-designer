@@ -423,14 +423,6 @@ const DetailsPanel: React.FC = () => {
       setContent(selectedNode.content);
       setIsEditingTool(false); // Reset editing mode when node changes
       
-      // Set LLM model for model nodes only (not for agent nodes anymore)
-      if (selectedNode.type === 'model' && selectedNode.llmModel) {
-        setLlmModel(selectedNode.llmModel);
-      } else if (selectedNode.type === 'model') {
-        // Default to GPT-4o if no model is set
-        setLlmModel('gpt-4o');
-      }
-      
       // Set memory type for memory nodes
       if (selectedNode.type === 'memory' && selectedNode.memoryType) {
         setMemoryType(selectedNode.memoryType);
@@ -461,8 +453,8 @@ const DetailsPanel: React.FC = () => {
     if (selectedNode) {
       const updates: any = {};
       
-      // Only include name and content for non-model, non-memory, and non-outputParser nodes
-      if (selectedNode.type !== 'model' && selectedNode.type !== 'memory') {
+      // Only include name and content for non-memory nodes
+      if (selectedNode.type !== 'memory') {
         updates.name = name;
         // For tools in edit mode, save the tool code as content
         if (selectedNode.type === 'tool' && isEditingTool) {
@@ -470,11 +462,6 @@ const DetailsPanel: React.FC = () => {
         } else {
           updates.content = content;
         }
-      }
-      
-      // Include llmModel for both agent and model nodes
-      if (selectedNode.type === 'model') {
-        updates.llmModel = llmModel;
       }
       
       // Include memoryType for memory nodes
@@ -515,7 +502,6 @@ const DetailsPanel: React.FC = () => {
   const getNodeTitle = () => {
     switch (selectedNode.type) {
       case 'agent': return 'Agent Details';
-      case 'model': return 'Model Details';
       case 'memory': return 'Memory Details';
       case 'tool': return 'Tool Details';
       default: return 'Node Details';
@@ -524,25 +510,7 @@ const DetailsPanel: React.FC = () => {
 
   // Render different content based on node type
   const renderDetailsContent = () => {
-    if (selectedNode.type === 'model') {
-      // For model nodes, only show the model selection
-      return (
-        <Box sx={{ mb: 2 }}>
-          <FormControl fullWidth margin="normal">
-            <InputLabel>LLM Model</InputLabel>
-            <Select
-              value={llmModel}
-              label="LLM Model"
-              onChange={(e) => setLlmModel(e.target.value)}
-            >
-              {LLM_MODELS.map(model => (
-                <MenuItem key={model.value} value={model.value}>{model.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      );
-    } else if (selectedNode.type === 'memory') {
+    if (selectedNode.type === 'memory') {
       // For memory nodes, show the memory type selection
       return (
         <Box sx={{ mb: 2, mt: 2 }}>

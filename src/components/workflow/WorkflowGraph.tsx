@@ -21,7 +21,6 @@ import { useThemeContext } from '../../context/ThemeContext';
 import { WorkflowNode as StoreNode, WorkflowEdge as StoreEdge } from '../../store/workflowStore';
 import { useWorkflowContext } from '../../context/WorkflowContext';
 import AgentNode from '../nodes/AgentNode';
-import ModelNode from '../nodes/ModelNode';
 import MemoryNode from '../nodes/MemoryNode';
 import ToolNode from '../nodes/ToolNode';
 import ConfirmationDialog from '../ConfirmationDialog';
@@ -29,32 +28,14 @@ import ConfirmationDialog from '../ConfirmationDialog';
 // Define custom node types
 const nodeTypes: NodeTypes = {
   agent: AgentNode,
-  model: ModelNode,
   memory: MemoryNode,
   tool: ToolNode,
 };
 
 // Maps node types to their respective handle IDs
 const nodeTypeToHandleMap = {
-  model: 'model-handle',
   memory: 'memory-handle',
   tool: 'tool-handle',
-};
-
-// Map of model IDs to display names
-const modelDisplayNames: Record<string, string> = {
-  'gpt-4o': 'OpenAI GPT-4o',
-  'claude-3-7-sonnet': 'Anthropic Claude 3.7 Sonnet',
-  'gemini-2-5-pro': 'Google DeepMind Gemini 2.5 Pro',
-  'llama-3-70b': 'Meta Llama 3-70B',
-  'mistral-large': 'Mistral Large',
-  'grok-3': 'xAI Grok 3',
-  'deepseek-coder-v2': 'DeepSeek-Coder V2',
-  'cohere-command-r': 'Cohere Command-R',
-  'phi-3': 'Microsoft Phi-3',
-  'jurassic-2-ultra': 'AI21 Labs Jurassic-2 Ultra',
-  'pangu-2': 'Huawei PanGu 2.0',
-  'ernie-4': 'Baidu ERNIE 4.0',
 };
 
 // Map of memory types to display names
@@ -88,11 +69,7 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
   return nodes.map(node => {
     // Create label based on node type
     let label = '';
-    if (node.type === 'model' && node.llmModel) {
-      // For model nodes, show the model name
-      const modelName = modelDisplayNames[node.llmModel] || node.llmModel;
-      label = `Model: ${modelName}`;
-    } else if (node.type === 'memory' && node.memoryType) {
+    if (node.type === 'memory' && node.memoryType) {
       // For memory nodes, show the memory type
       const memoryName = memoryDisplayNames[node.memoryType] || node.memoryType;
       label = `Memory: ${memoryName}`;
@@ -110,9 +87,10 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
       type: node.type,
       data: { 
         label: label,
-        llmModel: node.llmModel, // Pass the model to the node component
+        llmModel: node.llmModel, // Pass the LLM model to the node component
         memoryType: node.memoryType, // Pass the memory type to the node component
         toolType: node.toolType, // Pass the tool type to the node component
+        icon: node.icon, // Pass the icon to the node component
         onDelete: onDeleteFn
       },
       position: node.position,
@@ -261,7 +239,6 @@ const WorkflowGraph: React.FC = () => {
           nodeColor={(node) => {
             switch (node.type) {
               case 'agent': return '#3182ce';
-              case 'model': return '#805ad5';
               case 'memory': return '#38a169';
               case 'tool': return '#dd6b20';
               default: return '#718096';

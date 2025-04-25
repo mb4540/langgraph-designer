@@ -5,6 +5,52 @@ import { useWorkflowStore, NodeType } from '../store/workflowStore';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 
+// Import all possible agent icons
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import AssistantIcon from '@mui/icons-material/Assistant';
+import BiotechIcon from '@mui/icons-material/Biotech';
+import SchoolIcon from '@mui/icons-material/School';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import DescriptionIcon from '@mui/icons-material/Description';
+import SecurityIcon from '@mui/icons-material/Security';
+
+// Map of icon IDs to their components
+const iconComponents: Record<string, React.ComponentType<any>> = {
+  'smart-toy': SmartToyIcon,
+  'psychology': PsychologyIcon,
+  'support-agent': SupportAgentIcon,
+  'assistant': AssistantIcon,
+  'biotech': BiotechIcon,
+  'school': SchoolIcon,
+  'auto-fix': AutoFixHighIcon,
+  'data-object': DataObjectIcon,
+  'terminal': TerminalIcon,
+  'account-tree': AccountTreeIcon,
+  'description': DescriptionIcon,
+  'security': SecurityIcon,
+};
+
+// Map of model IDs to display names
+const modelDisplayNames: Record<string, string> = {
+  'gpt-4o': 'OpenAI GPT-4o',
+  'claude-3-7-sonnet': 'Anthropic Claude 3.7 Sonnet',
+  'gemini-2-5-pro': 'Google DeepMind Gemini 2.5 Pro',
+  'llama-3-70b': 'Meta Llama 3-70B',
+  'mistral-large': 'Mistral Large',
+  'grok-3': 'xAI Grok 3',
+  'deepseek-coder-v2': 'DeepSeek-Coder V2',
+  'cohere-command-r': 'Cohere Command-R',
+  'phi-3': 'Microsoft Phi-3',
+  'jurassic-2-ultra': 'AI21 Labs Jurassic-2 Ultra',
+  'pangu-2': 'Huawei PanGu 2.0',
+  'ernie-4': 'Baidu ERNIE 4.0',
+};
+
 // Define fixed positions for each node type relative to the parent agent
 const NODE_POSITIONS = {
   model: { x: -150, y: 200 },
@@ -80,6 +126,10 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
   const isDarkMode = mode === 'dark';
   const { addNode, addEdge, selectNode } = useWorkflowStore();
 
+  // Determine which icon to display
+  const iconId = data.icon || 'smart-toy';
+  const IconComponent = iconComponents[iconId] || SmartToyIcon;
+
   const handleAddComponent = (type: NodeType, handleId: string) => {
     // Generate a unique ID
     const newId = `${type}-${Date.now()}`;
@@ -103,8 +153,6 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       position: newNodePosition,
       parentId: id, // Reference to the parent agent
       sourceHandle: handleId, // Store which diamond created this node
-      // Add default LLM model for model nodes
-      ...(type === 'model' && { llmModel: 'gpt-4o' }),
       // Add default memory type for memory nodes
       ...(type === 'memory' && { memoryType: 'conversation-buffer' }),
       // Add default tool type for tool nodes
@@ -198,7 +246,39 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       onDoubleClick={() => selectNode(id)}
     >
       <Handle type="target" position={Position.Top} style={{ background: isDarkMode ? '#4299e1' : '#63b3ed' }} />
-      <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{data.label}</div>
+      
+      {/* Agent Icon */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        color: isDarkMode ? '#4299e1' : '#3182ce',
+      }}>
+        <IconComponent fontSize="medium" />
+      </div>
+      
+      {/* Node content */}
+      <div style={{ 
+        marginTop: '5px', 
+        marginLeft: '40px', // Add space for the icon
+        fontWeight: 'normal', // Not bold
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '5px'
+      }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{data.label}</div>
+      
+        {/* Display LLM model if available */}
+        {data.llmModel && (
+          <div style={{ 
+            fontSize: '0.8rem', 
+            color: isDarkMode ? '#a0aec0' : '#4a5568',
+            marginBottom: '8px'
+          }}>
+            Model: {modelDisplayNames[data.llmModel] || data.llmModel}
+          </div>
+        )}
+      </div>
       
       {/* Small circle on the right side with connecting line and plus square */}
       <div style={{ position: 'relative' }}>
@@ -219,14 +299,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
             boxShadow: isDarkMode ? '0 2px 4px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
           }}
         >
-          <div style={{
-            fontSize: '10px',
-            fontWeight: 'bold',
-            color: isDarkMode ? '#fff' : '#2a4365',
-            userSelect: 'none',
-          }}>
-            A
-          </div>
+          <IconComponent style={{ fontSize: '14px', color: isDarkMode ? '#fff' : '#2a4365' }} />
           
           {/* Handle for the circle */}
           <Handle
@@ -299,18 +372,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       
       {/* Diamond connectors at the bottom with matching colors to their respective nodes */}
       <Diamond
-        label="Model"
-        position={12.5}
-        onClick={() => handleAddComponent('model', 'model-handle')}
-        isDarkMode={isDarkMode}
-        color="#38b2ac"
-        lightColor="#4fd1c5"
-        handleId="model-handle"
-        nodeType="model"
-      />
-      <Diamond
         label="Memory"
-        position={37.5}
+        position={25}
         onClick={() => handleAddComponent('memory', 'memory-handle')}
         isDarkMode={isDarkMode}
         color="#f39c12"
@@ -320,7 +383,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       />
       <Diamond
         label="Tools"
-        position={62.5}
+        position={75}
         onClick={() => handleAddComponent('tool', 'tool-handle')}
         isDarkMode={isDarkMode}
         color="#805ad5"

@@ -5,7 +5,6 @@ import Box from '@mui/material/Box';
 import { useWorkflowContext } from '../../context/WorkflowContext';
 import { useThemeContext } from '../../context/ThemeContext';
 import AgentDetailsForm from './details/AgentDetailsForm';
-import ModelDetailsForm from './details/ModelDetailsForm';
 import MemoryDetailsForm from './details/MemoryDetailsForm';
 import ToolDetailsForm from './details/ToolDetailsForm';
 
@@ -19,7 +18,6 @@ const DetailsPanel: React.FC = () => {
     
     switch (selectedNode.type) {
       case 'agent': return 'Agent Details';
-      case 'model': return 'Model Details';
       case 'memory': return 'Memory Details';
       case 'tool': return 'Tool Details';
       default: return 'Node Details';
@@ -33,8 +31,6 @@ const DetailsPanel: React.FC = () => {
     switch (selectedNode.type) {
       case 'agent':
         return <AgentDetailsForm node={selectedNode} />;
-      case 'model':
-        return <ModelDetailsForm node={selectedNode} />;
       case 'memory':
         return <MemoryDetailsForm node={selectedNode} />;
       case 'tool':

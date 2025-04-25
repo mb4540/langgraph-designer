@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type NodeType = 'agent' | 'tool' | 'model' | 'memory';
+export type NodeType = 'agent' | 'tool' | 'memory';
 
 export interface WorkflowNode {
   id: string;
@@ -8,7 +8,7 @@ export interface WorkflowNode {
   name: string;
   content: string;
   position: { x: number; y: number };
-  llmModel?: string; // Only for agents and models
+  llmModel?: string; // Only for agents
   memoryType?: string; // Only for memory nodes
   toolType?: string; // Only for tool nodes
   parentId?: string; // Reference to the parent node (if created from a diamond connector)

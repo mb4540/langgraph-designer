@@ -48,12 +48,18 @@ const workgroups = [
 
 // Define LLM model options
 const llmModels = [
-  { id: 'gpt-4.1', name: 'GPT-4.1' },
-  { id: 'o1-min', name: 'O1-Min' },
-  { id: 'o1', name: 'O1' },
-  { id: 'poc-llm', name: 'POC-LLM' },
-  { id: 'poc-llm-skills', name: 'POC-LLM-Skills' },
-  { id: 'text-embedding-ada-002', name: 'Text-Embedding-Ada-002' },
+  { id: 'gpt-4o', label: 'OpenAI GPT-4o' },
+  { id: 'claude-3-7-sonnet', label: 'Anthropic Claude 3.7 Sonnet' },
+  { id: 'gemini-2-5-pro', label: 'Google DeepMind Gemini 2.5 Pro' },
+  { id: 'llama-3-70b', label: 'Meta Llama 3-70B' },
+  { id: 'mistral-large', label: 'Mistral Large' },
+  { id: 'grok-3', label: 'xAI Grok 3' },
+  { id: 'deepseek-coder-v2', label: 'DeepSeek-Coder V2' },
+  { id: 'cohere-command-r', label: 'Cohere Command-R' },
+  { id: 'phi-3', label: 'Microsoft Phi-3' },
+  { id: 'jurassic-2-ultra', label: 'AI21 Labs Jurassic-2 Ultra' },
+  { id: 'pangu-2', label: 'Huawei PanGu 2.0' },
+  { id: 'ernie-4', label: 'Baidu ERNIE 4.0' },
 ];
 
 // Define agent icon options
@@ -84,7 +90,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   const [prompt, setPrompt] = useState(node.content || '');
   const [enableMarkdown, setEnableMarkdown] = useState(node.enableMarkdown || false);
   const [credentialsSource, setCredentialsSource] = useState(node.credentialsSource || 'workgroup');
-  const [llmModel, setLlmModel] = useState(node.llmModel || 'gpt-4.1');
+  const [llmModel, setLlmModel] = useState(node.llmModel || 'gpt-4o');
   const [maxConsecutiveReplies, setMaxConsecutiveReplies] = useState(node.maxConsecutiveReplies || 5);
   
   // Update form when node changes
@@ -97,7 +103,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     setPrompt(node.content || '');
     setEnableMarkdown(node.enableMarkdown || false);
     setCredentialsSource(node.credentialsSource || 'workgroup');
-    setLlmModel(node.llmModel || 'gpt-4.1');
+    setLlmModel(node.llmModel || 'gpt-4o');
     setMaxConsecutiveReplies(node.maxConsecutiveReplies || 5);
   }, [node]);
 
@@ -280,7 +286,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
           onChange={(e) => setLlmModel(e.target.value)}
         >
           {llmModels.map((model) => (
-            <MenuItem key={model.id} value={model.id}>{model.name}</MenuItem>
+            <MenuItem key={model.id} value={model.id}>{model.label}</MenuItem>
           ))}
         </Select>
       </FormControl>

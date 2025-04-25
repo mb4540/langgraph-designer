@@ -37,7 +37,6 @@ const iconComponents: Record<string, React.ComponentType<any>> = {
 
 // Define fixed positions for each node type relative to the parent agent
 const NODE_POSITIONS = {
-  model: { x: -150, y: 200 },
   memory: { x: -50, y: 200 },
   tool: { x: 50, y: 200 },
   agent: { x: 300, y: 0 } // For connected agents
@@ -269,14 +268,6 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         gap: '5px'
       }}>
         <div>{data.label}</div>
-        {data.llmModel && (
-          <div style={{ 
-            fontSize: '0.8rem', 
-            color: isDarkMode ? '#a0aec0' : '#4a5568'
-          }}>
-            Model: {data.llmModel}
-          </div>
-        )}
       </div>
       
       {/* Input handle */}
