@@ -19,14 +19,14 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import { useThemeContext } from '../context/ThemeContext';
 import { useWorkflowStore, WorkflowNode as StoreNode, WorkflowEdge as StoreEdge } from '../store/workflowStore';
-import AgentNode from './AgentNode';
-import MemoryNode from './MemoryNode';
-import ToolNode from './ToolNode';
+import MainAgentNode from './MainAgentNode';
+import MemoryNode from './nodes/MemoryNode';
+import ToolNode from './nodes/ToolNode';
 import ConfirmationDialog from './ConfirmationDialog';
 
 // Define custom node types
 const nodeTypes: NodeTypes = {
-  agent: AgentNode,
+  agent: MainAgentNode,
   memory: MemoryNode,
   tool: ToolNode,
 };
