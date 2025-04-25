@@ -148,7 +148,7 @@ const WorkflowGraph: React.FC = () => {
     
     // Set different message based on node type
     if (node && node.type === 'agent') {
-      setDeleteDialogMessage('Are you sure you want to delete this agent? This will also delete all connected model, memory, tool, and output parser nodes associated with this agent.');
+      setDeleteDialogMessage('Are you sure you want to delete this agent? This will also delete all connected model, memory, and tool nodes associated with this agent.');
     } else {
       setDeleteDialogMessage('Are you sure you want to delete this node? This action cannot be undone.');
     }
