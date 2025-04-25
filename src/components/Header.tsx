@@ -2,10 +2,7 @@ import React from 'react';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { useTheme } from '@mui/material/styles';
@@ -25,10 +22,6 @@ const Header: React.FC = () => {
       }}
     >
       <Toolbar>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <RocketLaunchIcon sx={{ mr: 1, fontSize: 32 }} />
-          <AccountTreeIcon sx={{ mr: 2, fontSize: 28 }} />
-        </Box>
         <Typography 
           variant="h5" 
           component="div" 
@@ -39,7 +32,7 @@ const Header: React.FC = () => {
             textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
           }}
         >
-          Workflow Designer
+          Agent Platform
         </Typography>
         <IconButton onClick={toggleTheme} color="inherit" aria-label="toggle theme">
           {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}

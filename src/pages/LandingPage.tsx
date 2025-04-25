@@ -9,7 +9,8 @@ import {
   CardContent, 
   CardMedia, 
   Button,
-  useTheme
+  useTheme,
+  Divider
 } from '@mui/material';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import DesignServicesIcon from '@mui/icons-material/DesignServices';
@@ -81,7 +82,7 @@ const LandingPage: React.FC = () => {
           </Typography>
         </Box>
 
-        {/* Hero Image */}
+        {/* Separator Line */}
         <Box 
           sx={{ 
             display: 'flex', 
@@ -90,29 +91,15 @@ const LandingPage: React.FC = () => {
             position: 'relative'
           }}
         >
-          <Box 
-            component="img" 
-            src="/images/ai-agents-hero.png" 
-            alt="AI Agents Network"
+          <Divider 
             sx={{
               width: '100%',
               maxWidth: 900,
-              height: 'auto',
+              height: 8,
+              backgroundColor: '#91DC00',
               borderRadius: 4,
-              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-              border: `1px solid ${theme.palette.divider}`
-            }}
-          />
-          <Box 
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'radial-gradient(circle, rgba(0,159,219,0.1) 0%, rgba(0,0,0,0) 70%)',
-              borderRadius: 4,
-              pointerEvents: 'none'
+              boxShadow: '0 4px 12px rgba(145, 220, 0, 0.3)',
+              my: 6
             }}
           />
         </Box>
@@ -148,22 +135,29 @@ const LandingPage: React.FC = () => {
                 >
                   {card.icon}
                 </Box>
-                <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                  <Typography gutterBottom variant="h5" component="h2" sx={{ fontWeight: 600, mb: 2 }}>
-                    {card.title}
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    {card.description}
-                  </Typography>
+                <CardContent sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  flexGrow: 1, 
+                  p: 3,
+                  height: '100%'
+                }}>
+                  <Box sx={{ mb: 'auto' }}>
+                    <Typography gutterBottom variant="h5" component="h2" sx={{ fontWeight: 600, mb: 2 }}>
+                      {card.title}
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                      {card.description}
+                    </Typography>
+                  </Box>
                   <Button 
                     variant="contained" 
                     fullWidth
                     onClick={() => navigate(card.path)}
                     sx={{ 
-                      mt: 'auto',
-                      backgroundColor: '#009FDB',
+                      backgroundColor: '#00388f',
                       '&:hover': {
-                        backgroundColor: '#0081b2'
+                        backgroundColor: '#002a6b'
                       },
                       py: 1.5
                     }}
