@@ -1,17 +1,25 @@
 import React from 'react';
-import { TableRow, TableCell, Chip, Link, Tooltip, Box } from '@mui/material';
+import { TableRow, TableCell, Chip, Link, Tooltip, Box, IconButton, Badge } from '@mui/material';
 import PublicIcon from '@mui/icons-material/Public';
 import LockIcon from '@mui/icons-material/Lock';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import KeyIcon from '@mui/icons-material/Key';
 import { WorkGroup } from '../types/workGroup';
 
 interface WorkGroupTableRowProps {
   group: WorkGroup;
   onOpenDetails: (group: WorkGroup) => void;
+  onRequestAccess: (group: WorkGroup) => void;
+  onViewApprovals: (group: WorkGroup) => void;
 }
 
-const WorkGroupTableRow: React.FC<WorkGroupTableRowProps> = ({ group, onOpenDetails }) => {
+const WorkGroupTableRow: React.FC<WorkGroupTableRowProps> = ({ 
+  group, 
+  onOpenDetails,
+  onRequestAccess,
+  onViewApprovals 
+}) => {
   return (
     <TableRow hover>
       <TableCell>
@@ -77,6 +85,37 @@ const WorkGroupTableRow: React.FC<WorkGroupTableRowProps> = ({ group, onOpenDeta
         />
       </TableCell>
       <TableCell>{group.description}</TableCell>
+      <TableCell align="center">
+        {(group.access === 'Admin' || group.owner === 'Current User') && group.pendingRequests && group.pendingRequests > 0 ? (
+          <Tooltip title="View pending approval requests">
+            <Chip
+              label={group.pendingRequests}
+              onClick={() => onViewApprovals(group)}
+              size="small"
+              sx={{ 
+                backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                color: '#FF9800',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                '&:hover': { backgroundColor: 'rgba(255, 152, 0, 0.2)' }
+              }}
+            />
+          </Tooltip>
+        ) : (
+          <span>0</span>
+        )}
+      </TableCell>
+      <TableCell align="center">
+        <Tooltip title="Request Access">
+          <IconButton 
+            onClick={() => onRequestAccess(group)}
+            size="small"
+            sx={{ color: '#00388f' }}
+          >
+            <KeyIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </TableCell>
     </TableRow>
   );
 };

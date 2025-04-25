@@ -4,7 +4,9 @@ import {
   Container, 
   Typography, 
   Button,
-  Paper
+  Paper,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -15,12 +17,16 @@ import BreadcrumbNavigation from '../components/BreadcrumbNavigation';
 import WorkGroupTable from '../components/WorkGroupTable';
 import CreateWorkGroupDialog from '../components/CreateWorkGroupDialog';
 import WorkGroupDetailsDialog from '../components/WorkGroupDetailsDialog';
-import { WorkGroup, sampleWorkGroups } from '../types/workGroup';
+import RequestAccessDialog from '../components/RequestAccessDialog';
+import ApprovalRequestsDialog from '../components/ApprovalRequestsDialog';
+import AccessRequestDetailsDialog from '../components/AccessRequestDetailsDialog';
+import { WorkGroup, sampleWorkGroups, EntityRolePair, AccessRequest, sampleAccessRequests } from '../types/workGroup';
 
 const AccountsPage: React.FC = () => {
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
   const [workGroups, setWorkGroups] = useState<WorkGroup[]>(sampleWorkGroups);
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>(sampleAccessRequests);
   const [newWorkGroup, setNewWorkGroup] = useState({
     name: '',
     scope: 'Restricted' as 'Public' | 'Restricted',
@@ -34,6 +40,15 @@ const AccountsPage: React.FC = () => {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [requestAccessDialogOpen, setRequestAccessDialogOpen] = useState(false);
+  const [requestWorkGroup, setRequestWorkGroup] = useState<WorkGroup | null>(null);
+  const [approvalsDialogOpen, setApprovalsDialogOpen] = useState(false);
+  const [approvalWorkGroup, setApprovalWorkGroup] = useState<WorkGroup | null>(null);
+  const [requestDetailsDialogOpen, setRequestDetailsDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success');
 
   // Handle opening and closing the dialog
   const handleOpenDialog = () => setOpenDialog(true);
@@ -55,6 +70,128 @@ const AccountsPage: React.FC = () => {
     setSelectedWorkGroup(null);
     setEditMode(false);
     setActiveTab(0); // Reset to first tab when closing
+  };
+
+  // Handle opening request access dialog
+  const handleOpenRequestAccessDialog = (workGroup: WorkGroup) => {
+    setRequestWorkGroup(workGroup);
+    setRequestAccessDialogOpen(true);
+  };
+
+  // Handle closing request access dialog
+  const handleCloseRequestAccessDialog = () => {
+    setRequestAccessDialogOpen(false);
+    setRequestWorkGroup(null);
+  };
+
+  // Handle opening approvals dialog
+  const handleOpenApprovalsDialog = (workGroup: WorkGroup) => {
+    setApprovalWorkGroup(workGroup);
+    setApprovalsDialogOpen(true);
+  };
+
+  // Handle closing approvals dialog
+  const handleCloseApprovalsDialog = () => {
+    setApprovalsDialogOpen(false);
+    setApprovalWorkGroup(null);
+  };
+
+  // Handle opening request details dialog
+  const handleOpenRequestDetailsDialog = (request: AccessRequest) => {
+    setSelectedRequest(request);
+    setRequestDetailsDialogOpen(true);
+  };
+
+  // Handle closing request details dialog
+  const handleCloseRequestDetailsDialog = () => {
+    setRequestDetailsDialogOpen(false);
+    setSelectedRequest(null);
+  };
+
+  // Handle submitting access request
+  const handleSubmitAccessRequest = (accessType: string, entityRolePairs: EntityRolePair[]) => {
+    if (!requestWorkGroup) return;
+
+    // In a real app, this would send the request to an API
+    const newRequest: AccessRequest = {
+      id: accessRequests.length + 1,
+      workGroupId: requestWorkGroup.id,
+      requestorName: 'Current User', // In a real app, this would come from authentication
+      requestorId: 'current.user@example.com', // In a real app, this would come from authentication
+      requestedDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
+      status: 'Pending',
+      accessType: accessType as 'partial' | 'admin',
+      entityRolePairs: accessType === 'partial' ? entityRolePairs : undefined
+    };
+
+    // Add the request to the list
+    setAccessRequests([...accessRequests, newRequest]);
+
+    // Update the pending requests count for the work group
+    const updatedWorkGroups = workGroups.map(group => {
+      if (group.id === requestWorkGroup.id) {
+        const pendingCount = (group.pendingRequests || 0) + 1;
+        return { ...group, pendingRequests: pendingCount };
+      }
+      return group;
+    });
+    setWorkGroups(updatedWorkGroups);
+
+    // Show success message
+    showSnackbar('Access request submitted successfully');
+    handleCloseRequestAccessDialog();
+  };
+
+  // Handle approving access request
+  const handleApproveRequest = (requestId: number) => {
+    // Update the request status
+    const updatedRequests = accessRequests.map(request => {
+      if (request.id === requestId) {
+        return { ...request, status: 'Approved' as const };
+      }
+      return request;
+    });
+    setAccessRequests(updatedRequests);
+
+    // Update the pending requests count for the work group
+    if (approvalWorkGroup) {
+      const updatedWorkGroups = workGroups.map(group => {
+        if (group.id === approvalWorkGroup.id && group.pendingRequests && group.pendingRequests > 0) {
+          return { ...group, pendingRequests: group.pendingRequests - 1 };
+        }
+        return group;
+      });
+      setWorkGroups(updatedWorkGroups);
+    }
+
+    // Show success message
+    showSnackbar('Access request approved');
+  };
+
+  // Handle rejecting access request
+  const handleRejectRequest = (requestId: number) => {
+    // Update the request status
+    const updatedRequests = accessRequests.map(request => {
+      if (request.id === requestId) {
+        return { ...request, status: 'Rejected' as const };
+      }
+      return request;
+    });
+    setAccessRequests(updatedRequests);
+
+    // Update the pending requests count for the work group
+    if (approvalWorkGroup) {
+      const updatedWorkGroups = workGroups.map(group => {
+        if (group.id === approvalWorkGroup.id && group.pendingRequests && group.pendingRequests > 0) {
+          return { ...group, pendingRequests: group.pendingRequests - 1 };
+        }
+        return group;
+      });
+      setWorkGroups(updatedWorkGroups);
+    }
+
+    // Show success message
+    showSnackbar('Access request rejected');
   };
 
   // Handle form input changes
@@ -127,6 +264,18 @@ const AccountsPage: React.FC = () => {
   // Handle tab change
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+  };
+
+  // Handle showing snackbar
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+  // Handle closing snackbar
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
   };
 
   // Filter work-groups based on filter type and search query
@@ -204,6 +353,8 @@ const AccountsPage: React.FC = () => {
           onChangePage={handleChangePage}
           onChangeRowsPerPage={handleChangeRowsPerPage}
           onOpenDetails={handleOpenDetailsDialog}
+          onRequestAccess={handleOpenRequestAccessDialog}
+          onViewApprovals={handleOpenApprovalsDialog}
         />
         
         {/* Create Work-group Dialog */}
@@ -230,6 +381,47 @@ const AccountsPage: React.FC = () => {
             onScopeChange={handleEditScopeChange}
           />
         )}
+
+        {/* Request Access Dialog */}
+        <RequestAccessDialog
+          open={requestAccessDialogOpen}
+          workGroup={requestWorkGroup}
+          onClose={handleCloseRequestAccessDialog}
+          onSubmit={handleSubmitAccessRequest}
+        />
+
+        {/* Approval Requests Dialog */}
+        <ApprovalRequestsDialog
+          open={approvalsDialogOpen}
+          workGroup={approvalWorkGroup}
+          accessRequests={accessRequests}
+          onClose={handleCloseApprovalsDialog}
+          onApprove={handleApproveRequest}
+          onReject={handleRejectRequest}
+          onViewDetails={handleOpenRequestDetailsDialog}
+        />
+
+        {/* Access Request Details Dialog */}
+        <AccessRequestDetailsDialog
+          open={requestDetailsDialogOpen}
+          request={selectedRequest}
+          onClose={handleCloseRequestDetailsDialog}
+        />
+
+        {/* Snackbar */}
+        <Snackbar 
+          open={snackbarOpen} 
+          autoHideDuration={6000} 
+          onClose={handleCloseSnackbar}
+        >
+          <Alert 
+            severity={snackbarSeverity} 
+            variant="filled" 
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
       </Container>
     </Box>
   );

@@ -31,6 +31,8 @@ interface WorkGroupTableProps {
   onChangePage: (event: unknown, newPage: number) => void;
   onChangeRowsPerPage: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onOpenDetails: (group: WorkGroup) => void;
+  onRequestAccess: (group: WorkGroup) => void;
+  onViewApprovals: (group: WorkGroup) => void;
 }
 
 const WorkGroupTable: React.FC<WorkGroupTableProps> = ({
@@ -43,7 +45,9 @@ const WorkGroupTable: React.FC<WorkGroupTableProps> = ({
   onSearchChange,
   onChangePage,
   onChangeRowsPerPage,
-  onOpenDetails
+  onOpenDetails,
+  onRequestAccess,
+  onViewApprovals
 }) => {
   return (
     <Paper sx={{ p: 3, mt: 3 }}>
@@ -84,6 +88,8 @@ const WorkGroupTable: React.FC<WorkGroupTableProps> = ({
               <TableCell sx={{ fontWeight: 600 }}>Scope</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>My Access</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="center">Pending Approvals</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="center">Request Access</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -94,6 +100,8 @@ const WorkGroupTable: React.FC<WorkGroupTableProps> = ({
                   key={group.id} 
                   group={group} 
                   onOpenDetails={onOpenDetails} 
+                  onRequestAccess={onRequestAccess}
+                  onViewApprovals={onViewApprovals}
                 />
               ))}
           </TableBody>
