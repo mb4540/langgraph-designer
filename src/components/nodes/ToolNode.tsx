@@ -3,6 +3,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { useThemeContext } from '../../context/ThemeContext';
 import { useSelectionStore } from '../../store';
 import DeleteIcon from '@mui/icons-material/Delete';
+import HandymanIcon from '@mui/icons-material/Handyman';
 
 const ToolNode: React.FC<NodeProps> = ({ id, data }) => {
   const { mode } = useThemeContext();
@@ -16,10 +17,9 @@ const ToolNode: React.FC<NodeProps> = ({ id, data }) => {
     }
   };
 
-  // Colors that match the tool diamond in AgentNode.tsx
-  const color = isDarkMode ? '#805ad5' : '#805ad5';
-  const darkColor = isDarkMode ? '#6b46c1' : '#6b46c1'; // Darker shade for outline
-  const lightColor = isDarkMode ? 'rgba(128, 90, 213, 0.2)' : 'rgba(128, 90, 213, 0.2)'; // Lighter shade for fill
+  // Colors for tool node - pastel purple
+  const darkColor = isDarkMode ? '#7e57c2' : '#9575cd'; // Medium purple for border and icon
+  const lightColor = isDarkMode ? 'rgba(126, 87, 194, 0.2)' : 'rgba(209, 196, 233, 1)'; // Pastel purple for background
 
   return (
     <div
@@ -47,16 +47,33 @@ const ToolNode: React.FC<NodeProps> = ({ id, data }) => {
         position={Position.Top} 
         style={{ background: darkColor }} 
       />
-      <div style={{ fontWeight: 'bold', color: darkColor }}>{data.label}</div>
+      
+      {/* Tool Icon - using HandymanIcon for all tool types */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        color: darkColor,
+      }}>
+        <HandymanIcon fontSize="medium" />
+      </div>
+      
+      <div style={{ 
+        fontWeight: 'bold', 
+        color: '#000000', // Black text color
+        marginLeft: '40px', // Add space for the icon
+        width: '100%',
+        textAlign: 'left'
+      }}>{data.label}</div>
       
       {/* Delete icon */}
       <div 
         style={{
           position: 'absolute',
           bottom: '5px',
-          right: '5px',
+          left: '5px',
           cursor: 'pointer',
-          color: isDarkMode ? '#e53e3e' : '#f56565',
+          color: isDarkMode ? '#e2e8f0' : '#4a5568',
         }}
         onClick={handleDelete}
         title="Delete node"

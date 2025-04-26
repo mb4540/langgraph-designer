@@ -3,6 +3,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { useThemeContext } from '../../context/ThemeContext';
 import { useSelectionStore } from '../../store';
 import DeleteIcon from '@mui/icons-material/Delete';
+import MemoryIcon from '@mui/icons-material/Memory';
 
 const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
   const { mode } = useThemeContext();
@@ -16,10 +17,9 @@ const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
     }
   };
 
-  // Colors that match the memory diamond in AgentNode.tsx
-  const color = isDarkMode ? '#f39c12' : '#f39c12';
-  const darkColor = isDarkMode ? '#d68910' : '#d68910'; // Darker shade for outline
-  const lightColor = isDarkMode ? 'rgba(243, 156, 18, 0.2)' : 'rgba(243, 156, 18, 0.2)'; // Lighter shade for fill
+  // Colors for memory node - pastel green
+  const darkColor = isDarkMode ? '#2e7d32' : '#4caf50'; // Darker green for border
+  const lightColor = isDarkMode ? 'rgba(46, 125, 50, 0.2)' : 'rgba(200, 230, 201, 1)'; // Pastel green for background
 
   return (
     <div
@@ -47,16 +47,33 @@ const MemoryNode: React.FC<NodeProps> = ({ id, data }) => {
         position={Position.Top} 
         style={{ background: darkColor }} 
       />
-      <div style={{ fontWeight: 'bold', color: darkColor }}>{data.label}</div>
+      
+      {/* Memory Icon */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        color: isDarkMode ? '#4caf50' : '#2e7d32', // Green color for the icon
+      }}>
+        <MemoryIcon fontSize="medium" />
+      </div>
+      
+      <div style={{ 
+        fontWeight: 'bold', 
+        color: '#000000', 
+        marginLeft: '40px', 
+        width: '100%',
+        textAlign: 'left'
+      }}>{data.label}</div>
       
       {/* Delete icon */}
       <div 
         style={{
           position: 'absolute',
           bottom: '5px',
-          right: '5px',
+          left: '5px',
           cursor: 'pointer',
-          color: isDarkMode ? '#e53e3e' : '#f56565',
+          color: isDarkMode ? '#e2e8f0' : '#4a5568',
         }}
         onClick={handleDelete}
         title="Delete node"

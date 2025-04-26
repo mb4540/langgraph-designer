@@ -38,8 +38,8 @@ const iconComponents: Record<string, React.ComponentType<any>> = {
 
 // Define fixed positions for each node type relative to the parent agent
 const NODE_POSITIONS = {
-  memory: { x: -50, y: 200 },
-  tool: { x: 50, y: 200 },
+  memory: { x: -50, y: 150 },
+  tool: { x: 50, y: 150 },
   agent: { x: 300, y: 0 } // For connected agents
 };
 
@@ -235,22 +235,6 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       }}
       onDoubleClick={() => selectNode(id)}
     >
-      {/* Delete button */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '5px',
-          right: '5px',
-          cursor: 'pointer',
-          color: isDarkMode ? '#e2e8f0' : '#4a5568',
-          zIndex: 10,
-        }}
-        onClick={handleDelete}
-        title="Delete Agent"
-      >
-        <DeleteIcon fontSize="small" />
-      </div>
-      
       {/* Agent Icon */}
       <div style={{
         position: 'absolute',
@@ -263,14 +247,16 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       
       {/* Node content */}
       <div style={{ 
-        marginTop: '5px', 
-        marginLeft: '40px', // Add space for the icon
+        position: 'absolute',
+        top: '50%',
+        left: '40px', // Keep space for the icon
+        transform: 'translateY(-50%)',
         fontWeight: 'normal', // Not bold
         display: 'flex',
         flexDirection: 'column',
-        gap: '5px'
+        width: 'calc(100% - 50px)' // Full width minus icon space
       }}>
-        <div>{data.label}</div>
+        <div style={{ fontWeight: 'bold' }}>{data.label}</div>
       </div>
       
       {/* Input handle */}
@@ -285,6 +271,22 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
           top: '-5px',
         }}
       />
+      
+      {/* Delete button */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '5px',
+          left: '5px',
+          cursor: 'pointer',
+          color: isDarkMode ? '#e2e8f0' : '#4a5568',
+          zIndex: 10,
+        }}
+        onClick={handleDelete}
+        title="Delete Agent"
+      >
+        <DeleteIcon fontSize="small" />
+      </div>
       
       {/* Diamonds for adding components - only Memory and Tool, positioned at 33% and 67% */}
       <Diamond
@@ -303,8 +305,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         position={67} // Repositioned to be equidistant
         onClick={() => handleAddComponent('tool', 'tool-handle')}
         isDarkMode={isDarkMode}
-        color="#dd6b20"
-        lightColor="#feebc8"
+        color="#9575cd" // Medium purple for dark mode
+        lightColor="#d1c4e9" // Pastel purple for light mode
         handleId="tool-handle"
         nodeType="tool"
       />
@@ -322,8 +324,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
             width: '20px',
             height: '20px',
             borderRadius: '4px',
-            background: isDarkMode ? '#2a4365' : '#ebf8ff',
-            border: isDarkMode ? '1px solid #4299e1' : '1px solid #63b3ed',
+            background: isDarkMode ? '#ffffff' : '#000000',
+            border: isDarkMode ? '1px solid #ffffff' : '1px solid #000000',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -333,7 +335,7 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
           }}
           title="Add connected agent"
         >
-          <AddIcon style={{ fontSize: '14px', color: isDarkMode ? '#4299e1' : '#63b3ed' }} />
+          <AddIcon style={{ fontSize: '14px', color: isDarkMode ? '#000000' : '#ffffff' }} />
           
           {/* Handle for the agent connection - moved to the right side of the plus button */}
           <Handle

@@ -70,15 +70,18 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
     // Create label based on node type
     let label = '';
     if (node.type === 'memory' && node.memoryType) {
-      // For memory nodes, show the memory type
+      // For memory nodes, show just the memory type without prefix
       const memoryName = memoryDisplayNames[node.memoryType] || node.memoryType;
-      label = `Memory: ${memoryName}`;
+      label = memoryName;
     } else if (node.type === 'tool' && node.toolType) {
-      // For tool nodes, show the tool type
+      // For tool nodes, show just the tool type without prefix
       const toolName = toolDisplayNames[node.toolType] || node.toolType;
-      label = `Tool: ${toolName}`;
+      label = toolName;
+    } else if (node.type === 'agent') {
+      // For agent nodes, just use the name without any prefix
+      label = node.name;
     } else {
-      // For other nodes, use the default format
+      // For other node types, use the default format
       label = `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.name}`;
     }
 
@@ -238,9 +241,9 @@ const WorkflowGraph: React.FC = () => {
           nodeStrokeWidth={3}
           nodeColor={(node) => {
             switch (node.type) {
-              case 'agent': return '#3182ce';
-              case 'memory': return '#38a169';
-              case 'tool': return '#dd6b20';
+              case 'agent': return '#3182ce'; 
+              case 'memory': return isDarkMode ? '#2e7d32' : '#4caf50'; 
+              case 'tool': return isDarkMode ? '#7e57c2' : '#9575cd'; 
               default: return '#718096';
             }
           }}
