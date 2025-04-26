@@ -1,12 +1,11 @@
 import React from 'react';
-import { Box, Container, Typography, Paper, Grid, Divider, Tabs, Tab, Breadcrumbs, Link } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
-import HomeIcon from '@mui/icons-material/Home';
+import { Box, Container, Typography, Paper, Grid, Divider, Tabs, Tab } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import CloudIcon from '@mui/icons-material/Cloud';
-import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
+import BreadcrumbNav from '../components/BreadcrumbNav';
 
 const CommandCenterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,45 +18,11 @@ const CommandCenterPage: React.FC = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Header />
-      <Paper 
-        elevation={0}
-        sx={{ 
-          py: 1, 
-          px: 3, 
-          borderRadius: 0, 
-          borderBottom: '1px solid', 
-          borderColor: 'divider',
-          backgroundColor: 'background.paper'
-        }}
-      >
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link 
-            component={RouterLink} 
-            to="/" 
-            color="inherit" 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              '&:hover': { color: '#009FDB' }
-            }}
-          >
-            <HomeIcon sx={{ mr: 0.5, fontSize: 18 }} />
-            Home
-          </Link>
-          <Typography 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              color: '#009FDB',
-              fontWeight: 500
-            }}
-          >
-            <TerminalIcon sx={{ mr: 0.5, fontSize: 18 }} />
-            Command Center
-          </Typography>
-        </Breadcrumbs>
-      </Paper>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
+      <BreadcrumbNav 
+        currentPage="Command Center" 
+        pageIcon="Dashboard" 
+      />
+      <Container maxWidth="lg" sx={{ flexGrow: 1, py: 4 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 600, mb: 4 }}>
           Command Center
         </Typography>

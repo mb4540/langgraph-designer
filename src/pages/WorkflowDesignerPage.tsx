@@ -10,7 +10,7 @@ const WorkflowDesignerPage: React.FC = () => {
       <Header />
       <BreadcrumbNav 
         currentPage="Workflow Designer" 
-        currentPageIcon="DesignServices" 
+        pageIcon="DesignServices" 
       />
       <WorkflowDesignerLayout />
     </Box>

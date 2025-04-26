@@ -13,7 +13,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AddIcon from '@mui/icons-material/Add';
 
 import Header from '../components/Header';
-import BreadcrumbNavigation from '../components/BreadcrumbNavigation';
+import BreadcrumbNav from '../components/BreadcrumbNav';
 import WorkGroupTable from '../components/WorkGroupTable';
 import CreateWorkGroupDialog from '../components/CreateWorkGroupDialog';
 import WorkGroupDetailsDialog from '../components/WorkGroupDetailsDialog';
@@ -364,9 +364,9 @@ const PageHeader: React.FC<{ onCreateNew: () => void }> = ({ onCreateNew }) => {
   return (
     <>
       {/* Breadcrumb Navigation */}
-      <BreadcrumbNavigation 
+      <BreadcrumbNav 
         currentPage="Manage Workflow Accounts" 
-        icon={<AccountBalanceIcon sx={{ mr: 0.5 }} fontSize="inherit" />} 
+        pageIcon="AccountBalance"
       />
       
       {/* Header with create button */}

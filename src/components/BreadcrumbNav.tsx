@@ -5,19 +5,29 @@ import HomeIcon from '@mui/icons-material/Home';
 import DesignServicesIcon from '@mui/icons-material/DesignServices';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 
 interface BreadcrumbNavProps {
   currentPage: string;
-  currentPageIcon: 'DesignServices' | 'AccountTree' | 'Dashboard';
+  pageIcon?: 'DesignServices' | 'AccountTree' | 'Dashboard' | 'AccountBalance' | React.ReactNode;
 }
 
-const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({ currentPage, currentPageIcon }) => {
+const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({ currentPage, pageIcon }) => {
   // Map of icon types to their components
   const iconMap = {
     DesignServices: <DesignServicesIcon sx={{ mr: 0.5, fontSize: 18 }} />,
     AccountTree: <AccountTreeIcon sx={{ mr: 0.5, fontSize: 18 }} />,
-    Dashboard: <DashboardIcon sx={{ mr: 0.5, fontSize: 18 }} />
+    Dashboard: <DashboardIcon sx={{ mr: 0.5, fontSize: 18 }} />,
+    AccountBalance: <AccountBalanceIcon sx={{ mr: 0.5, fontSize: 18 }} />
   };
+
+  // Determine the icon to display
+  let displayIcon;
+  if (typeof pageIcon === 'string' && pageIcon in iconMap) {
+    displayIcon = iconMap[pageIcon as keyof typeof iconMap];
+  } else if (React.isValidElement(pageIcon)) {
+    displayIcon = pageIcon;
+  }
 
   return (
     <Paper 
@@ -53,7 +63,7 @@ const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({ currentPage, currentPageI
             fontWeight: 500
           }}
         >
-          {iconMap[currentPageIcon]}
+          {displayIcon}
           {currentPage}
         </Typography>
       </Breadcrumbs>
