@@ -1,5 +1,6 @@
 import React from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import Dialog from './ui/Dialog';
+import Button from './ui/Button';
 
 interface ConfirmationDialogProps {
   open: boolean;
@@ -20,24 +21,19 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     <Dialog
       open={open}
       onClose={onCancel}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-    >
-      <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          {message}
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} color="primary">
-          Cancel
-        </Button>
-        <Button onClick={onConfirm} color="primary" autoFocus>
-          Confirm
-        </Button>
-      </DialogActions>
-    </Dialog>
+      title={title}
+      description={message}
+      actions={
+        <>
+          <Button onClick={onCancel} variant="outlined" color="default">
+            Cancel
+          </Button>
+          <Button onClick={onConfirm} color="primary" autoFocus>
+            Confirm
+          </Button>
+        </>
+      }
+    />
   );
 };
 

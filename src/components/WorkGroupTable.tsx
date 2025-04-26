@@ -1,12 +1,10 @@
 import React from 'react';
 import { 
-  Paper, 
   Box, 
   FormControl, 
   RadioGroup, 
   FormControlLabel, 
   Radio, 
-  TextField, 
   InputAdornment,
   TableContainer, 
   Table, 
@@ -19,6 +17,8 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import WorkGroupTableRow from './WorkGroupTableRow';
 import { WorkGroup } from '../types/workGroup';
+import Card from './ui/Card';
+import TextField from './ui/TextField';
 
 interface WorkGroupTableProps {
   workGroups: WorkGroup[];
@@ -50,7 +50,7 @@ const WorkGroupTable: React.FC<WorkGroupTableProps> = ({
   onViewApprovals
 }) => {
   return (
-    <Paper sx={{ p: 3, mt: 3 }}>
+    <Card sx={{ p: 3, mt: 3 }} subtle={false} bordered>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <FormControl component="fieldset">
           <RadioGroup 
@@ -65,17 +65,11 @@ const WorkGroupTable: React.FC<WorkGroupTableProps> = ({
         </FormControl>
         <TextField
           placeholder="Search work-groups..."
-          variant="outlined"
           size="small"
           value={searchQuery}
           onChange={onSearchChange}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
+          startIcon={<SearchIcon />}
+          highlightOnFocus
         />
       </Box>
       
@@ -99,7 +93,7 @@ const WorkGroupTable: React.FC<WorkGroupTableProps> = ({
                 <WorkGroupTableRow 
                   key={group.id} 
                   group={group} 
-                  onOpenDetails={onOpenDetails} 
+                  onOpenDetails={onOpenDetails}
                   onRequestAccess={onRequestAccess}
                   onViewApprovals={onViewApprovals}
                 />
@@ -117,7 +111,7 @@ const WorkGroupTable: React.FC<WorkGroupTableProps> = ({
         onPageChange={onChangePage}
         onRowsPerPageChange={onChangeRowsPerPage}
       />
-    </Paper>
+    </Card>
   );
 };
 

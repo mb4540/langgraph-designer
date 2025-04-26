@@ -1,11 +1,12 @@
 import React from 'react';
-import { TableRow, TableCell, Chip, Link, Tooltip, Box, IconButton, Badge } from '@mui/material';
+import { TableRow, TableCell, Chip, Link, Tooltip, Box, Badge } from '@mui/material';
 import PublicIcon from '@mui/icons-material/Public';
 import LockIcon from '@mui/icons-material/Lock';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import KeyIcon from '@mui/icons-material/Key';
 import { WorkGroup } from '../types/workGroup';
+import Button from './ui/Button';
 
 interface WorkGroupTableRowProps {
   group: WorkGroup;
@@ -107,13 +108,15 @@ const WorkGroupTableRow: React.FC<WorkGroupTableRowProps> = ({
       </TableCell>
       <TableCell align="center">
         <Tooltip title="Request Access">
-          <IconButton 
+          <Button 
             onClick={() => onRequestAccess(group)}
             size="small"
-            sx={{ color: '#00388f' }}
-          >
-            <KeyIcon fontSize="small" />
-          </IconButton>
+            color="primary"
+            variant="text"
+            startIcon={<KeyIcon fontSize="small" />}
+            subtle
+            sx={{ minWidth: 'auto', p: 1 }}
+          />
         </Tooltip>
       </TableCell>
     </TableRow>
