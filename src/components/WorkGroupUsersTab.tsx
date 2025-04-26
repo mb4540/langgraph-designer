@@ -19,26 +19,16 @@ import {
   FormControlLabel,
   TextField,
   FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormLabel,
-  SelectChangeEvent,
-  IconButton
+  SelectChangeEvent
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import { WorkGroup } from '../types/workGroup';
+import AccessLevelSelector from './forms/AccessLevelSelector';
+import EntityRoleSelector, { EntityRolePair } from './forms/EntityRoleSelector';
+import IdTypeSelector from './forms/IdTypeSelector';
 
 interface WorkGroupUsersTabProps {
   workGroup: WorkGroup;
-}
-
-// Interface for entity-role pair
-interface EntityRolePair {
-  entity: string;
-  role: string;
 }
 
 const WorkGroupUsersTab: React.FC<WorkGroupUsersTabProps> = ({ workGroup }) => {
@@ -71,28 +61,16 @@ const WorkGroupUsersTab: React.FC<WorkGroupUsersTabProps> = ({ workGroup }) => {
   };
 
   // Handle form input changes
-  const handleIdTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setIdType(event.target.value);
+  const handleIdTypeChange = (value: string) => {
+    setIdType(value);
   };
 
   const handleUserIdsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUserIds(event.target.value);
   };
 
-  const handleAccessTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setAccessType(event.target.value);
-  };
-
-  const handleEntityChange = (index: number, event: SelectChangeEvent) => {
-    const updatedPairs = [...entityRolePairs];
-    updatedPairs[index].entity = event.target.value as string;
-    setEntityRolePairs(updatedPairs);
-  };
-
-  const handleRoleChange = (index: number, event: SelectChangeEvent) => {
-    const updatedPairs = [...entityRolePairs];
-    updatedPairs[index].role = event.target.value as string;
-    setEntityRolePairs(updatedPairs);
+  const handleAccessTypeChange = (value: string) => {
+    setAccessType(value);
   };
 
   const handleClientEntityChange = (event: SelectChangeEvent) => {
@@ -101,17 +79,6 @@ const WorkGroupUsersTab: React.FC<WorkGroupUsersTabProps> = ({ workGroup }) => {
 
   const handleClientRoleChange = (event: SelectChangeEvent) => {
     setClientRole(event.target.value as string);
-  };
-
-  // Handle adding a new entity-role pair row
-  const handleAddEntityRolePair = () => {
-    setEntityRolePairs([...entityRolePairs, { entity: 'Skill', role: 'Read' }]);
-  };
-
-  // Handle removing an entity-role pair row
-  const handleRemoveEntityRolePair = (index: number) => {
-    const updatedPairs = entityRolePairs.filter((_, i) => i !== index);
-    setEntityRolePairs(updatedPairs);
   };
 
   // Handle adding users
@@ -189,13 +156,13 @@ const WorkGroupUsersTab: React.FC<WorkGroupUsersTabProps> = ({ workGroup }) => {
       <Dialog open={addUserDialogOpen} onClose={handleCloseAddUserDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Add User to {workGroup.name}</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
+          {/* ID Type Selector */}
           <FormControl component="fieldset" sx={{ mb: 3, width: '100%' }}>
-            <FormLabel component="legend" sx={{ mb: 1 }}>ID Type</FormLabel>
             <RadioGroup 
               row 
               name="idType" 
               value={idType} 
-              onChange={handleIdTypeChange}
+              onChange={(e) => handleIdTypeChange(e.target.value)}
             >
               <FormControlLabel value="attId" control={<Radio />} label="ATT ID" />
               <FormControlLabel value="clientId" control={<Radio />} label="Client ID" />
@@ -212,105 +179,55 @@ const WorkGroupUsersTab: React.FC<WorkGroupUsersTabProps> = ({ workGroup }) => {
           />
 
           {idType === 'attId' && (
-            <FormControl component="fieldset" sx={{ mb: 3, width: '100%' }}>
-              <FormLabel component="legend" sx={{ mb: 1 }}>Access Level</FormLabel>
-              <RadioGroup 
-                row 
-                name="accessType" 
-                value={accessType} 
-                onChange={handleAccessTypeChange}
-              >
-                <FormControlLabel value="partial" control={<Radio />} label="Partial Access" />
-                <FormControlLabel value="admin" control={<Radio />} label="Admin" />
-              </RadioGroup>
-            </FormControl>
+            <AccessLevelSelector
+              value={accessType}
+              onChange={handleAccessTypeChange}
+              options={[
+                { value: 'partial', label: 'Partial Access' },
+                { value: 'admin', label: 'Admin' }
+              ]}
+              sx={{ mb: 3, width: '100%' }}
+            />
           )}
 
           {idType === 'attId' && accessType === 'partial' && (
-            <>
-              {entityRolePairs.map((pair, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    display: 'flex', 
-                    gap: 2, 
-                    mb: 2,
-                    alignItems: 'center'
-                  }}
-                >
-                  <FormControl sx={{ minWidth: 120, flex: 1 }}>
-                    <InputLabel id={`entity-select-label-${index}`}>Entity</InputLabel>
-                    <Select
-                      labelId={`entity-select-label-${index}`}
-                      value={pair.entity}
-                      label="Entity"
-                      onChange={(e) => handleEntityChange(index, e)}
-                    >
-                      <MenuItem value="Skill">Skill</MenuItem>
-                      <MenuItem value="Team">Team</MenuItem>
-                      <MenuItem value="Agent">Agent</MenuItem>
-                      <MenuItem value="Workflow">Workflow</MenuItem>
-                    </Select>
-                  </FormControl>
-                  
-                  <FormControl sx={{ minWidth: 120, flex: 1 }}>
-                    <InputLabel id={`role-select-label-${index}`}>Role</InputLabel>
-                    <Select
-                      labelId={`role-select-label-${index}`}
-                      value={pair.role}
-                      label="Role"
-                      onChange={(e) => handleRoleChange(index, e)}
-                    >
-                      <MenuItem value="Read">Read</MenuItem>
-                      <MenuItem value="Write">Write</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  {index === 0 ? (
-                    <IconButton 
-                      onClick={handleAddEntityRolePair}
-                      sx={{ color: '#00388f' }}
-                    >
-                      <AddCircleOutlineIcon />
-                    </IconButton>
-                  ) : (
-                    <IconButton 
-                      onClick={() => handleRemoveEntityRolePair(index)}
-                      sx={{ color: '#00388f' }}
-                    >
-                      <RemoveCircleOutlineIcon />
-                    </IconButton>
-                  )}
-                </Box>
-              ))}
-            </>
+            <EntityRoleSelector
+              entityRolePairs={entityRolePairs}
+              onChange={setEntityRolePairs}
+              entityOptions={[
+                { value: 'Skill', label: 'Skill' },
+                { value: 'Team', label: 'Team' },
+                { value: 'Agent', label: 'Agent' },
+                { value: 'Workflow', label: 'Workflow' }
+              ]}
+              roleOptions={[
+                { value: 'Read', label: 'Read' },
+                { value: 'Write', label: 'Write' }
+              ]}
+            />
           )}
 
           {idType === 'clientId' && (
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-              <FormControl sx={{ minWidth: 120, flex: 1 }}>
-                <InputLabel id="client-entity-select-label">Entity</InputLabel>
-                <Select
-                  labelId="client-entity-select-label"
-                  value={clientEntity}
-                  label="Entity"
-                  onChange={handleClientEntityChange}
-                >
-                  <MenuItem value="Project">Project</MenuItem>
-                </Select>
-              </FormControl>
+              <IdTypeSelector
+                value={clientEntity}
+                onChange={(value) => setClientEntity(value)}
+                options={[
+                  { value: 'Project', label: 'Project', description: 'Project entity type' }
+                ]}
+                label="Entity"
+                sx={{ flex: 1 }}
+              />
               
-              <FormControl sx={{ minWidth: 120, flex: 1 }}>
-                <InputLabel id="client-role-select-label">Role</InputLabel>
-                <Select
-                  labelId="client-role-select-label"
-                  value={clientRole}
-                  label="Role"
-                  onChange={handleClientRoleChange}
-                >
-                  <MenuItem value="Execute">Execute</MenuItem>
-                </Select>
-              </FormControl>
+              <IdTypeSelector
+                value={clientRole}
+                onChange={(value) => setClientRole(value)}
+                options={[
+                  { value: 'Execute', label: 'Execute', description: 'Execute permission' }
+                ]}
+                label="Role"
+                sx={{ flex: 1 }}
+              />
             </Box>
           )}
         </DialogContent>
