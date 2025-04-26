@@ -13,6 +13,9 @@ import Editor from '@monaco-editor/react';
 import { WorkflowNode } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useThemeContext } from '../../../context/ThemeContext';
+import LoadingIndicator from '../../ui/LoadingIndicator';
+import ErrorMessage from '../../ui/ErrorMessage';
+import useAsyncOperation from '../../../hooks/useAsyncOperation';
 
 // Tool types with MCP code templates
 const TOOL_TYPES = [
@@ -481,7 +484,13 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
     }
   }, [node]);
 
-  const handleSave = () => {
+  // Handle saving tool details
+  const { 
+    loading: saveLoading, 
+    error: saveError, 
+    execute: executeSave,
+    reset: resetSaveError
+  } = useAsyncOperation<void>(async () => {
     const updates: any = {};
     
     // Include toolType for tool nodes
@@ -498,7 +507,41 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
     if (isEditingTool) {
       setIsEditingTool(false);
     }
+  });
+
+  const handleSave = () => {
+    executeSave();
   };
+
+  // Handle code validation
+  const { 
+    loading: validationLoading, 
+    error: validationError, 
+    execute: validateCode,
+    reset: resetValidationError
+  } = useAsyncOperation<boolean>(async (code: string) => {
+    // Simple validation - check for required imports and MCP definition
+    if (!code.includes('from langgraph.mcp import MCP')) {
+      throw new Error('Code must import MCP from langgraph.mcp');
+    }
+    
+    if (!code.includes('MCP(')) {
+      throw new Error('Code must define an MCP instance');
+    }
+    
+    return true;
+  });
+
+  // Validate code when it changes
+  useEffect(() => {
+    if (isEditingTool && toolCode) {
+      const timeoutId = setTimeout(() => {
+        validateCode(toolCode);
+      }, 1000); // Debounce validation
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [toolCode, isEditingTool, validateCode]);
 
   // Render different content based on editing mode
   const renderContent = () => {
@@ -547,19 +590,42 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
           <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
             MCP Code
           </Typography>
+          
+          {validationError && (
+            <Box sx={{ mb: 2 }}>
+              <ErrorMessage 
+                message="Code validation error" 
+                details={validationError.message}
+                compact
+                onRetry={() => resetValidationError()}
+              />
+            </Box>
+          )}
+          
           <Box sx={{ flexGrow: 1, mb: 2, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-            <Editor
-              height="400px"
-              defaultLanguage="python"
-              value={toolCode}
-              onChange={(value) => setToolCode(value || '')}
-              theme={mode === 'dark' ? 'vs-dark' : 'light'}
-              options={{
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                fontSize: 14,
-              }}
-            />
+            {validationLoading ? (
+              <Box sx={{ p: 2 }}>
+                <LoadingIndicator 
+                  type="dots" 
+                  size="small" 
+                  centered={false} 
+                  message="Validating code..."
+                />
+              </Box>
+            ) : (
+              <Editor
+                height="400px"
+                defaultLanguage="python"
+                value={toolCode}
+                onChange={(value) => setToolCode(value || '')}
+                theme={mode === 'dark' ? 'vs-dark' : 'light'}
+                options={{
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 14,
+                }}
+              />
+            )}
           </Box>
         </Box>
       );
@@ -598,6 +664,8 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
                             if (!toolCode) {
                               setToolCode(tool.code);
                             }
+                            // Reset any validation errors
+                            resetValidationError();
                           }}
                           title="Edit MCP code"
                         >
@@ -632,14 +700,36 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
     <>
       {renderContent()}
       
+      {saveError && (
+        <Box sx={{ mb: 2 }}>
+          <ErrorMessage 
+            message="Failed to save changes" 
+            details={saveError.message}
+            onRetry={() => {
+              resetSaveError();
+              executeSave();
+            }}
+          />
+        </Box>
+      )}
+      
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={handleSave}
-        >
-          Save Changes
-        </Button>
+        {saveLoading ? (
+          <LoadingIndicator 
+            type="spinner" 
+            size="small" 
+            message="Saving..."
+          />
+        ) : (
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleSave}
+            disabled={isEditingTool && Boolean(validationError)}
+          >
+            Save Changes
+          </Button>
+        )}
       </Box>
     </>
   );

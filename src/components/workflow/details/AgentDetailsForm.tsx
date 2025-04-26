@@ -33,6 +33,9 @@ import SecurityIcon from '@mui/icons-material/Security';
 
 import { WorkflowNode } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
+import LoadingIndicator from '../../ui/LoadingIndicator';
+import ErrorMessage from '../../ui/ErrorMessage';
+import useAsyncOperation from '../../../hooks/useAsyncOperation';
 
 interface AgentDetailsFormProps {
   node: WorkflowNode;
@@ -107,7 +110,41 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     setMaxConsecutiveReplies(node.maxConsecutiveReplies || 5);
   }, [node]);
 
-  const handleSave = () => {
+  // Handle validation
+  const { 
+    loading: validationLoading, 
+    error: validationError, 
+    execute: validateForm,
+    reset: resetValidationError
+  } = useAsyncOperation<boolean>(async () => {
+    // Validate required fields
+    if (!name.trim()) {
+      throw new Error('Agent name is required');
+    }
+    
+    if (!prompt.trim()) {
+      throw new Error('Agent prompt is required');
+    }
+    
+    // Validate max consecutive replies is a positive number
+    if (maxConsecutiveReplies < 0 || maxConsecutiveReplies > 20) {
+      throw new Error('Max consecutive replies must be between 0 and 20');
+    }
+    
+    return true;
+  });
+
+  // Handle saving agent details
+  const { 
+    loading: saveLoading, 
+    error: saveError, 
+    execute: executeSave,
+    reset: resetSaveError
+  } = useAsyncOperation<void>(async () => {
+    // Validate form before saving
+    await validateForm();
+    
+    // Update node with form values
     updateNode(node.id, {
       name,
       workgroup,
@@ -120,6 +157,10 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
       llmModel,
       maxConsecutiveReplies,
     });
+  });
+
+  const handleSave = () => {
+    executeSave();
   };
 
   return (
@@ -147,6 +188,8 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
           onChange={(e) => setName(e.target.value)}
           margin="normal"
           variant="outlined"
+          error={validationError?.message.includes('name')}
+          helperText={validationError?.message.includes('name') ? validationError.message : ''}
         />
 
         {/* Agent Icon Selection */}
@@ -218,7 +261,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
         Prompt (used by LLM)
       </Typography>
       
-      <Box sx={{ flexGrow: 1, mb: 2, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+      <Box sx={{ flexGrow: 1, mb: 2, border: 1, borderColor: validationError?.message.includes('prompt') ? 'error.main' : 'divider', borderRadius: 1, overflow: 'hidden' }}>
         <TextField
           multiline
           fullWidth
@@ -240,8 +283,15 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
               }
             }
           }}
+          error={validationError?.message.includes('prompt')}
         />
       </Box>
+      
+      {validationError?.message.includes('prompt') && (
+        <Typography color="error" variant="caption" sx={{ mb: 2, display: 'block' }}>
+          {validationError.message}
+        </Typography>
+      )}
 
       <FormControlLabel
         control={
@@ -301,6 +351,8 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
         variant="outlined"
         InputProps={{ inputProps: { min: 0, max: 20 } }}
         sx={{ mb: 3 }}
+        error={validationError?.message.includes('consecutive replies')}
+        helperText={validationError?.message.includes('consecutive replies') ? validationError.message : ''}
       />
 
       {/* Settings Section - Placeholder for future settings */}
@@ -312,15 +364,38 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
         Additional agent settings will be available here in future updates.
       </Typography>
       
+      {/* Error Message */}
+      {saveError && (
+        <Box sx={{ mb: 2 }}>
+          <ErrorMessage 
+            message="Failed to save agent details" 
+            details={saveError.message}
+            onRetry={() => {
+              resetSaveError();
+              executeSave();
+            }}
+          />
+        </Box>
+      )}
+      
       {/* Save Button */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={handleSave}
-        >
-          Save Changes
-        </Button>
+        {saveLoading || validationLoading ? (
+          <LoadingIndicator 
+            type="spinner" 
+            size="small" 
+            message="Saving..."
+          />
+        ) : (
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleSave}
+            disabled={Boolean(validationError)}
+          >
+            Save Changes
+          </Button>
+        )}
       </Box>
     </Box>
   );

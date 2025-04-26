@@ -3,12 +3,14 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import { Message } from '../../api/openai';
 import { NodeType } from '../../types/nodeTypes';
 import { useWorkflowContext } from '../../context/WorkflowContext';
+import LoadingIndicator from '../ui/LoadingIndicator';
+import ErrorMessage from '../ui/ErrorMessage';
+import useAsyncOperation from '../../hooks/useAsyncOperation';
 
 const initialInterview = [
   'Welcome to Workflow Designer! What workflow are you trying to build?',
@@ -24,9 +26,7 @@ const ConversationPanel: React.FC = () => {
     { role: 'assistant', content: initialInterview[0] }
   ]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
-  const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when messages change
@@ -35,67 +35,74 @@ const ConversationPanel: React.FC = () => {
   }, [messages]);
 
   // Check if API key is valid
-  useEffect(() => {
-    const checkApiKey = async () => {
-      try {
+  const { 
+    loading: apiKeyLoading, 
+    error: apiKeyError, 
+    data: apiKeyValid,
+    execute: checkApiKey 
+  } = useAsyncOperation<boolean>(async () => {
+    const { openAIChat } = await import('../../api/openai');
+    await openAIChat([{ role: 'user', content: 'Test message' }]);
+    return true;
+  }, { immediate: true });
+
+  // Handle sending messages
+  const { 
+    loading: sendLoading, 
+    error: sendError, 
+    execute: executeSend,
+    reset: resetSendError
+  } = useAsyncOperation<Message>(async (newMessages: Message[]) => {
+    if (step < initialInterview.length - 1) {
+      return { role: 'assistant', content: initialInterview[step + 1] };
+    } else {
+      // Process the conversation to extract workflow information
+      if (step === initialInterview.length - 1) {
+        // This is the response to the last interview question
+        // If user wants to build visually, we can suggest they use the middle panel
+        if (input.toLowerCase().includes('yes') || input.toLowerCase().includes('sure')) {
+          return { 
+            role: 'assistant', 
+            content: 'Great! You can now use the middle panel to visualize and edit your workflow. ' +
+                    'Double-click on any agent or tool to edit its details in the right panel. ' +
+                    'You can also continue our conversation here if you need help or want to make changes.'
+          };
+        } else {
+          return { 
+            role: 'assistant', 
+            content: 'No problem. Let\'s continue discussing your workflow here. ' +
+                    'What specific aspects would you like to focus on?'
+          };
+        }
+      } else {
+        // For all other conversations, use OpenAI
         const { openAIChat } = await import('../../api/openai');
-        await openAIChat([{ role: 'user', content: 'Test message' }]);
-        setApiKeyValid(true);
-      } catch (err) {
-        console.error('API key validation error:', err);
-        setApiKeyValid(false);
+        const reply = await openAIChat(newMessages);
+
+        // Check for agent or tool creation commands
+        processCommandsInMessage(reply.content);
+        return reply;
       }
-    };
-    checkApiKey();
-  }, []);
+    }
+  });
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || sendLoading) return;
+    
     const newMessages: Message[] = [...messages, { role: 'user', content: input }];
     setMessages(newMessages);
     setInput('');
-    setLoading(true);
+    
     try {
-      let reply: Message;
-      if (step < initialInterview.length - 1) {
-        reply = { role: 'assistant', content: initialInterview[step + 1] };
-      } else {
-        // Process the conversation to extract workflow information
-        if (step === initialInterview.length - 1) {
-          // This is the response to the last interview question
-          // If user wants to build visually, we can suggest they use the middle panel
-          if (input.toLowerCase().includes('yes') || input.toLowerCase().includes('sure')) {
-            reply = { 
-              role: 'assistant', 
-              content: 'Great! You can now use the middle panel to visualize and edit your workflow. ' +
-                      'Double-click on any agent or tool to edit its details in the right panel. ' +
-                      'You can also continue our conversation here if you need help or want to make changes.'
-            };
-          } else {
-            reply = { 
-              role: 'assistant', 
-              content: 'No problem. Let\'s continue discussing your workflow here. ' +
-                      'What specific aspects would you like to focus on?'
-            };
-          }
-        } else {
-          // For all other conversations, use OpenAI
-          const { openAIChat } = await import('../../api/openai');
-          reply = await openAIChat(newMessages);
-
-          // Check for agent or tool creation commands
-          processCommandsInMessage(reply.content);
-        }
+      const reply = await executeSend(newMessages);
+      if (reply) {
+        setMessages([...newMessages, reply]);
+        setStep(step + 1);
       }
-      setMessages([...newMessages, reply]);
-      setStep(step + 1);
-    } catch (err: any) {
-      setMessages([...newMessages, { 
-        role: 'assistant', 
-        content: 'Error contacting OpenAI. Please check your API key and network connection.'
-      }]);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      // Error is already handled by useAsyncOperation
+      // Just log for debugging purposes
+      console.error('Error in handleSend:', error);
     }
   };
 
@@ -155,13 +162,25 @@ const ConversationPanel: React.FC = () => {
         <Typography variant="h6">
           Conversation
         </Typography>
-        {apiKeyValid !== null && (
+        {apiKeyLoading ? (
           <Chip 
-            label={apiKeyValid ? "API Key Valid" : "API Key Invalid"} 
-            color={apiKeyValid ? "success" : "error"} 
+            label="Checking API Key" 
+            color="primary" 
             size="small" 
           />
-        )}
+        ) : apiKeyError ? (
+          <Chip 
+            label="API Key Invalid" 
+            color="error" 
+            size="small" 
+          />
+        ) : apiKeyValid ? (
+          <Chip 
+            label="API Key Valid" 
+            color="success" 
+            size="small" 
+          />
+        ) : null}
       </Box>
       
       <Box sx={{ flex: 1, overflowY: 'auto', mb: 2 }}>
@@ -185,13 +204,48 @@ const ConversationPanel: React.FC = () => {
             </Typography>
           </Box>
         ))}
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-            <CircularProgress size={20} />
+        
+        {sendLoading && (
+          <Box sx={{ my: 2 }}>
+            <LoadingIndicator 
+              type="dots" 
+              size="small" 
+              centered={false} 
+              message="AI is thinking..."
+            />
           </Box>
         )}
+        
+        {sendError && (
+          <Box sx={{ my: 2 }}>
+            <ErrorMessage 
+              message="Failed to get a response" 
+              details={sendError.message}
+              compact
+              onRetry={() => {
+                resetSendError();
+                const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+                if (lastUserMessage) {
+                  const newMessages = [...messages.filter(m => m !== lastUserMessage), lastUserMessage];
+                  executeSend(newMessages);
+                }
+              }}
+            />
+          </Box>
+        )}
+        
         <div ref={messagesEndRef} />
       </Box>
+      
+      {apiKeyError && (
+        <Box sx={{ mb: 2 }}>
+          <ErrorMessage 
+            message="OpenAI API Key is invalid or missing" 
+            details="Please check your API key configuration and try again."
+            onRetry={() => checkApiKey()}
+          />
+        </Box>
+      )}
       
       <Box sx={{ display: 'flex', gap: 1 }}>
         <TextField
@@ -202,12 +256,12 @@ const ConversationPanel: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          disabled={loading}
+          disabled={sendLoading || apiKeyLoading || Boolean(apiKeyError)}
         />
         <Button 
           variant="contained" 
           onClick={handleSend}
-          disabled={loading || !input.trim()}
+          disabled={sendLoading || !input.trim() || apiKeyLoading || Boolean(apiKeyError)}
         >
           Send
         </Button>
