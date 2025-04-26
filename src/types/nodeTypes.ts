@@ -22,6 +22,11 @@ export interface WorkflowNode {
   parentId?: string; // Reference to the parent node (if created from a diamond connector)
   sourceHandle?: string; // The handle ID from which this node was created
   
+  // Version control fields
+  version?: string; // Semantic version (MAJOR.MINOR.PATCH)
+  versionedId?: string; // Generated ULID for this version
+  createdAt?: string; // ISO timestamp when this version was created
+  
   // Additional fields for agent details
   workgroup?: string; // Work-group the agent belongs to
   icon?: string; // Icon identifier for the agent

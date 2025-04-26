@@ -8,6 +8,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardActionArea from '@mui/material/CardActionArea';
 import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
 import EditIcon from '@mui/icons-material/Edit';
 import Editor from '@monaco-editor/react';
 import { WorkflowNode } from '../../../types/nodeTypes';
@@ -16,6 +17,8 @@ import { useThemeContext } from '../../../context/ThemeContext';
 import LoadingIndicator from '../../ui/LoadingIndicator';
 import ErrorMessage from '../../ui/ErrorMessage';
 import useAsyncOperation from '../../../hooks/useAsyncOperation';
+import { useVersionedId } from '../../../hooks/useVersionedId';
+import { VersionedEntity } from '../../../utils/idGenerator';
 
 // Tool types with MCP code templates
 const TOOL_TYPES = [
@@ -467,11 +470,16 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
   const [toolType, setToolType] = useState(node.toolType || '');
   const [isEditingTool, setIsEditingTool] = useState(false);
   const [toolCode, setToolCode] = useState('');
+  const [version, setVersion] = useState(node.version || '1.0.0');
+  
+  // Generate versioned ID for the tool
+  const versionedTool: VersionedEntity | null = useVersionedId('tool', version);
   
   // Update form when node changes
   useEffect(() => {
     setToolType(node.toolType || '');
     setIsEditingTool(false);
+    setVersion(node.version || '1.0.0');
     
     // Set tool code based on selected tool type
     if (node.toolType) {
@@ -491,7 +499,7 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
     execute: executeSave,
     reset: resetSaveError
   } = useAsyncOperation<void>(async () => {
-    const updates: any = {};
+    const updates: Partial<WorkflowNode> = {};
     
     // Include toolType for tool nodes
     updates.toolType = toolType;
@@ -499,6 +507,15 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
     // For tools in edit mode, save the tool code as content
     if (isEditingTool) {
       updates.content = toolCode;
+    }
+    
+    // Add version information
+    updates.version = version;
+    
+    // Add versioned ID information if available
+    if (versionedTool) {
+      updates.versionedId = versionedTool.id;
+      updates.createdAt = versionedTool.createdAt;
     }
     
     updateNode(node.id, updates);
@@ -586,6 +603,37 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
             </Card>
           )}
           
+          {/* Version Information */}
+          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+            <TextField
+              label="Version"
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              margin="normal"
+              variant="outlined"
+              placeholder="1.0.0"
+              helperText="Semantic version (MAJOR.MINOR.PATCH)"
+              sx={{ width: '50%' }}
+            />
+            
+            <TextField
+              label="Versioned ID"
+              value={versionedTool?.id || 'Generating...'}
+              margin="normal"
+              variant="outlined"
+              InputProps={{
+                readOnly: true,
+              }}
+              sx={{ width: '50%' }}
+            />
+          </Box>
+          
+          {versionedTool && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              Created: {new Date(versionedTool.createdAt).toLocaleString()}
+            </Typography>
+          )}
+          
           {/* Code editor for the selected tool */}
           <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
             MCP Code
@@ -633,6 +681,37 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
       // Show the list of tool cards with edit buttons
       return (
         <Box sx={{ mb: 2, mt: 2 }}>
+          {/* Version Information */}
+          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+            <TextField
+              label="Version"
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              margin="normal"
+              variant="outlined"
+              placeholder="1.0.0"
+              helperText="Semantic version (MAJOR.MINOR.PATCH)"
+              sx={{ width: '50%' }}
+            />
+            
+            <TextField
+              label="Versioned ID"
+              value={versionedTool?.id || 'Generating...'}
+              margin="normal"
+              variant="outlined"
+              InputProps={{
+                readOnly: true,
+              }}
+              sx={{ width: '50%' }}
+            />
+          </Box>
+          
+          {versionedTool && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              Created: {new Date(versionedTool.createdAt).toLocaleString()}
+            </Typography>
+          )}
+
           <FormControl component="fieldset" fullWidth>
             <FormLabel component="legend">Tool Type</FormLabel>
             <Box sx={{ mt: 2 }}>

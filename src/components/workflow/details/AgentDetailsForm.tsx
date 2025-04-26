@@ -36,6 +36,8 @@ import { useWorkflowContext } from '../../../context/WorkflowContext';
 import LoadingIndicator from '../../ui/LoadingIndicator';
 import ErrorMessage from '../../ui/ErrorMessage';
 import useAsyncOperation from '../../../hooks/useAsyncOperation';
+import { useVersionedId } from '../../../hooks/useVersionedId';
+import { VersionedEntity } from '../../../utils/idGenerator';
 
 interface AgentDetailsFormProps {
   node: WorkflowNode;
@@ -95,6 +97,10 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   const [credentialsSource, setCredentialsSource] = useState(node.credentialsSource || 'workgroup');
   const [llmModel, setLlmModel] = useState(node.llmModel || 'gpt-4o');
   const [maxConsecutiveReplies, setMaxConsecutiveReplies] = useState(node.maxConsecutiveReplies || 5);
+  const [version, setVersion] = useState(node.version || '1.0.0');
+  
+  // Generate versioned ID for the agent
+  const versionedAgent: VersionedEntity | null = useVersionedId('agent', version);
   
   // Update form when node changes
   useEffect(() => {
@@ -108,6 +114,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     setCredentialsSource(node.credentialsSource || 'workgroup');
     setLlmModel(node.llmModel || 'gpt-4o');
     setMaxConsecutiveReplies(node.maxConsecutiveReplies || 5);
+    setVersion(node.version || '1.0.0');
   }, [node]);
 
   // Handle validation
@@ -144,8 +151,8 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     // Validate form before saving
     await validateForm();
     
-    // Update node with form values
-    updateNode(node.id, {
+    // Update node with form values and include versioned ID information
+    const updates: Partial<WorkflowNode> = {
       name,
       workgroup,
       icon: selectedIcon,
@@ -156,7 +163,16 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
       credentialsSource,
       llmModel,
       maxConsecutiveReplies,
-    });
+      version
+    };
+    
+    // Add versioned ID information if available
+    if (versionedAgent) {
+      updates.versionedId = versionedAgent.id;
+      updates.createdAt = versionedAgent.createdAt;
+    }
+    
+    updateNode(node.id, updates);
   });
 
   const handleSave = () => {
@@ -191,6 +207,37 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
           error={validationError?.message.includes('name')}
           helperText={validationError?.message.includes('name') ? validationError.message : ''}
         />
+
+        {/* Version Information */}
+        <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+          <TextField
+            label="Version"
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            margin="normal"
+            variant="outlined"
+            placeholder="1.0.0"
+            helperText="Semantic version (MAJOR.MINOR.PATCH)"
+            sx={{ width: '50%' }}
+          />
+          
+          <TextField
+            label="Versioned ID"
+            value={versionedAgent?.id || 'Generating...'}
+            margin="normal"
+            variant="outlined"
+            InputProps={{
+              readOnly: true,
+            }}
+            sx={{ width: '50%' }}
+          />
+        </Box>
+        
+        {versionedAgent && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            Created: {new Date(versionedAgent.createdAt).toLocaleString()}
+          </Typography>
+        )}
 
         {/* Agent Icon Selection */}
         <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>

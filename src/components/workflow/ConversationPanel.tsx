@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import { Message } from '../../api/openai';
@@ -11,6 +9,9 @@ import { useWorkflowContext } from '../../context/WorkflowContext';
 import LoadingIndicator from '../ui/LoadingIndicator';
 import ErrorMessage from '../ui/ErrorMessage';
 import useAsyncOperation from '../../hooks/useAsyncOperation';
+import TextField from '../ui/TextField';
+import Button from '../ui/Button';
+import Dialog from '../ui/Dialog';
 
 const initialInterview = [
   'Welcome to Workflow Designer! What workflow are you trying to build?',
@@ -20,6 +21,9 @@ const initialInterview = [
   'Would you like to start building this workflow visually now?'
 ];
 
+// Local storage key for the API key
+const API_KEY_STORAGE_KEY = 'openai_api_key';
+
 const ConversationPanel: React.FC = () => {
   const { addNode, addEdge } = useWorkflowContext();
   const [messages, setMessages] = useState<Message[]>([
@@ -28,6 +32,20 @@ const ConversationPanel: React.FC = () => {
   const [input, setInput] = useState('');
   const [step, setStep] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // API key state
+  const [apiKey, setApiKey] = useState<string>(() => {
+    // Initialize from localStorage if available
+    return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
+  });
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState<boolean>(!apiKey);
+  
+  // Save API key to localStorage when it changes
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+    }
+  }, [apiKey]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -41,10 +59,15 @@ const ConversationPanel: React.FC = () => {
     data: apiKeyValid,
     execute: checkApiKey 
   } = useAsyncOperation<boolean>(async () => {
+    if (!apiKey) {
+      throw new Error('API key is required');
+    }
+    
     const { openAIChat } = await import('../../api/openai');
-    await openAIChat([{ role: 'user', content: 'Test message' }]);
+    // Override the environment API key with our stored one
+    await openAIChat([{ role: 'user', content: 'Test message' }], undefined, apiKey);
     return true;
-  }, { immediate: true });
+  }, { immediate: !!apiKey });
 
   // Handle sending messages
   const { 
@@ -77,7 +100,7 @@ const ConversationPanel: React.FC = () => {
       } else {
         // For all other conversations, use OpenAI
         const { openAIChat } = await import('../../api/openai');
-        const reply = await openAIChat(newMessages);
+        const reply = await openAIChat(newMessages, undefined, apiKey);
 
         // Check for agent or tool creation commands
         processCommandsInMessage(reply.content);
@@ -155,6 +178,24 @@ const ConversationPanel: React.FC = () => {
       ...(type === 'agent' ? { llmModel: 'gpt-4o-mini' } : {})
     });
   };
+  
+  // Handle API key changes
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setApiKey(e.target.value);
+  };
+  
+  // Save API key and close dialog
+  const handleSaveApiKey = () => {
+    if (apiKey.trim()) {
+      checkApiKey();
+      setShowApiKeyDialog(false);
+    }
+  };
+  
+  // Show API key dialog
+  const handleShowApiKeyDialog = () => {
+    setShowApiKeyDialog(true);
+  };
 
   return (
     <Paper elevation={3} sx={{ height: '100%', padding: 2, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
@@ -173,14 +214,26 @@ const ConversationPanel: React.FC = () => {
             label="API Key Invalid" 
             color="error" 
             size="small" 
+            onClick={handleShowApiKeyDialog}
+            sx={{ cursor: 'pointer' }}
           />
         ) : apiKeyValid ? (
           <Chip 
             label="API Key Valid" 
             color="success" 
             size="small" 
+            onClick={handleShowApiKeyDialog}
+            sx={{ cursor: 'pointer' }}
           />
-        ) : null}
+        ) : (
+          <Chip 
+            label="Set API Key" 
+            color="primary" 
+            size="small" 
+            onClick={handleShowApiKeyDialog}
+            sx={{ cursor: 'pointer' }}
+          />
+        )}
       </Box>
       
       <Box sx={{ flex: 1, overflowY: 'auto', mb: 2 }}>
@@ -241,8 +294,9 @@ const ConversationPanel: React.FC = () => {
         <Box sx={{ mb: 2 }}>
           <ErrorMessage 
             message="OpenAI API Key is invalid or missing" 
-            details="Please check your API key configuration and try again."
-            onRetry={() => checkApiKey()}
+            details="Please set your API key to use the conversation feature."
+            onRetry={handleShowApiKeyDialog}
+            onDismiss={() => {}}
           />
         </Box>
       )}
@@ -251,21 +305,93 @@ const ConversationPanel: React.FC = () => {
         <TextField
           fullWidth
           size="small"
-          variant="outlined"
           placeholder="Type your message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          disabled={sendLoading || apiKeyLoading || Boolean(apiKeyError)}
+          disabled={sendLoading || apiKeyLoading || Boolean(apiKeyError) || !apiKeyValid}
         />
         <Button 
           variant="contained" 
           onClick={handleSend}
-          disabled={sendLoading || !input.trim() || apiKeyLoading || Boolean(apiKeyError)}
+          disabled={sendLoading || !input.trim() || apiKeyLoading || Boolean(apiKeyError) || !apiKeyValid}
         >
           Send
         </Button>
       </Box>
+      
+      {/* API Key Dialog */}
+      <Dialog
+        open={showApiKeyDialog}
+        onClose={() => apiKeyValid && setShowApiKeyDialog(false)}
+        title="OpenAI API Key"
+        maxWidth="sm"
+        fullWidth
+        actions={
+          <>
+            {apiKeyValid && (
+              <Button 
+                onClick={() => setShowApiKeyDialog(false)} 
+                variant="outlined" 
+                color="default"
+              >
+                Close
+              </Button>
+            )}
+            <Button 
+              onClick={handleSaveApiKey} 
+              color="primary"
+              disabled={!apiKey.trim() || apiKeyLoading}
+            >
+              Save API Key
+            </Button>
+          </>
+        }
+      >
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          Enter your OpenAI API key to enable the conversation feature. Your key will be stored locally in your browser and is not sent to our servers.
+        </Typography>
+        
+        <TextField
+          fullWidth
+          label="OpenAI API Key"
+          value={apiKey}
+          onChange={handleApiKeyChange}
+          placeholder="sk-..."
+          type="password"
+          autoFocus
+          highlightOnFocus
+        />
+        
+        {apiKeyLoading && (
+          <Box sx={{ mt: 2 }}>
+            <LoadingIndicator 
+              type="dots" 
+              size="small" 
+              centered={false} 
+              message="Validating API key..."
+            />
+          </Box>
+        )}
+        
+        {apiKeyError && (
+          <Box sx={{ mt: 2 }}>
+            <ErrorMessage 
+              message="Invalid API Key" 
+              details={apiKeyError.message}
+              compact
+            />
+          </Box>
+        )}
+        
+        {apiKeyValid && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" color="success.main">
+              API key is valid! You can now use the conversation feature.
+            </Typography>
+          </Box>
+        )}
+      </Dialog>
     </Paper>
   );
 };
