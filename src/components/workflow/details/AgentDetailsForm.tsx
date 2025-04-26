@@ -80,7 +80,7 @@ const agentIcons = [
   { id: 'terminal', name: 'Code Agent', icon: TerminalIcon },
   { id: 'account-tree', name: 'Workflow Agent', icon: AccountTreeIcon },
   { id: 'description', name: 'RAG Agent', icon: DescriptionIcon },
-  { id: 'security', name: 'Security/Governance Agent', icon: SecurityIcon },
+  { id: 'security', name: 'Security/Governance', icon: SecurityIcon },
 ];
 
 const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
