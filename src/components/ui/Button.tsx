@@ -105,9 +105,14 @@ const Button: React.FC<ButtonProps> = ({
   large = false,
   ...props 
 }) => {
+  // Convert our custom color to MUI's expected color
+  // MUI expects 'inherit', 'primary', 'secondary', 'success', 'error', 'info', 'warning'
+  // We need to handle our custom 'default' color
+  const muiColor = color === 'default' ? undefined : color;
+  
   return (
     <StyledButton
-      color={color as any} // Type cast to satisfy MUI types
+      color={muiColor}
       variant={variant}
       subtle={subtle}
       small={small}
