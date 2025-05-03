@@ -49,7 +49,7 @@ interface WorkflowDetails {
 const WorkflowDetailsForm: React.FC = () => {
   const { nodes, edges, workflowDetails, updateWorkflowDetails } = useWorkflowContext();
   const { mode } = useThemeContext();
-  const { runtimeType, setRuntimeType } = useRuntimeContext();
+  const { runtimeType, updateRuntimeType } = useRuntimeContext();
   const isDarkMode = mode === 'dark';
   
   const [formData, setFormData] = useState<WorkflowDetails>({
@@ -138,7 +138,7 @@ const WorkflowDetailsForm: React.FC = () => {
     
     // If changing runtime type, update the context
     if (name === 'runtimeType') {
-      setRuntimeType(value as RuntimeType);
+      updateRuntimeType(value as RuntimeType);
     }
     
     setFormData(prev => ({

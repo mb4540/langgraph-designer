@@ -1,43 +1,46 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { RuntimeType } from '../utils/workflowValidator';
 
 interface RuntimeSettings {
   checkpointStore?: string;
+  // Add other runtime settings as needed
 }
 
 interface RuntimeContextType {
   runtimeType: RuntimeType;
-  setRuntimeType: (type: RuntimeType) => void;
   runtimeSettings: RuntimeSettings;
+  updateRuntimeType: (type: RuntimeType) => void;
   updateRuntimeSettings: (settings: RuntimeSettings) => void;
 }
 
-const RuntimeContext = createContext<RuntimeContextType | undefined>(undefined);
+const defaultRuntimeSettings: RuntimeSettings = {
+  checkpointStore: 'memory'
+};
 
-export const RuntimeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+const RuntimeContext = createContext<RuntimeContextType>({
+  runtimeType: 'langgraph',
+  runtimeSettings: defaultRuntimeSettings,
+  updateRuntimeType: () => {},
+  updateRuntimeSettings: () => {}
+});
+
+export const RuntimeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [runtimeType, setRuntimeType] = useState<RuntimeType>('langgraph');
-  const [runtimeSettings, setRuntimeSettings] = useState<RuntimeSettings>({});
+  const [runtimeSettings, setRuntimeSettings] = useState<RuntimeSettings>(defaultRuntimeSettings);
+
+  const updateRuntimeType = (type: RuntimeType) => {
+    setRuntimeType(type);
+  };
 
   const updateRuntimeSettings = (settings: RuntimeSettings) => {
     setRuntimeSettings(settings);
   };
 
   return (
-    <RuntimeContext.Provider value={{ 
-      runtimeType, 
-      setRuntimeType,
-      runtimeSettings,
-      updateRuntimeSettings
-    }}>
+    <RuntimeContext.Provider value={{ runtimeType, runtimeSettings, updateRuntimeType, updateRuntimeSettings }}>
       {children}
     </RuntimeContext.Provider>
   );
 };
 
-export const useRuntimeContext = (): RuntimeContextType => {
-  const context = useContext(RuntimeContext);
-  if (context === undefined) {
-    throw new Error('useRuntimeContext must be used within a RuntimeProvider');
-  }
-  return context;
-};
+export const useRuntimeContext = () => useContext(RuntimeContext);

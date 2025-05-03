@@ -223,9 +223,6 @@ const WorkflowGraph: React.FC = () => {
   // State for workflow name (now from context)
   const [workflowName, setWorkflowName] = useState(workflowDetails.name);
   
-  // State for runtime type (autogen or langgraph)
-  const [runtime, setRuntime] = useState<RuntimeType>(runtimeType);
-  
   // State for validation errors
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
@@ -399,7 +396,7 @@ const WorkflowGraph: React.FC = () => {
         targetNode,
         storeNodes,
         storeEdges,
-        runtime
+        runtimeType
       );
       
       if (!validationResult.canConnect) {
@@ -434,10 +431,10 @@ const WorkflowGraph: React.FC = () => {
       setTimeout(() => setConnectionMessage(null), 3000);
       
       // Validate the entire workflow
-      const workflowValidation = validateWorkflow(storeNodes, [...storeEdges, newEdge], runtime);
+      const workflowValidation = validateWorkflow(storeNodes, [...storeEdges, newEdge], runtimeType);
       setValidationErrors(workflowValidation.errors);
     },
-    [addStoreEdge, storeNodes, storeEdges, runtime]
+    [addStoreEdge, storeNodes, storeEdges, runtimeType]
   );
 
   // Handle node selection
@@ -471,7 +468,7 @@ const WorkflowGraph: React.FC = () => {
           targetNode,
           storeNodes,
           storeEdges,
-          runtime
+          runtimeType
         );
         
         if (!validationResult.canConnect) {
@@ -511,7 +508,7 @@ const WorkflowGraph: React.FC = () => {
       // Clear message after a delay
       setTimeout(() => setConnectionMessage(null), 3000);
     },
-    [storeNodes, storeEdges, addStoreEdge, removeEdge, runtime]
+    [storeNodes, storeEdges, addStoreEdge, removeEdge, runtimeType]
   );
 
   // Save the ReactFlow instance
@@ -605,13 +602,13 @@ const WorkflowGraph: React.FC = () => {
   // Handle validating the workflow
   const handleValidateWorkflow = useCallback(() => {
     // Validate the workflow
-    const workflowValidation = validateWorkflow(storeNodes, storeEdges, runtime);
+    const workflowValidation = validateWorkflow(storeNodes, storeEdges, runtimeType);
     setValidationErrors(workflowValidation.errors);
     
     // Show a message about the validation result
     if (workflowValidation.isValid) {
       setConnectionMessage({
-        message: 'Workflow is valid for ' + runtime + ' runtime',
+        message: 'Workflow is valid for ' + runtimeType + ' runtime',
         isError: false
       });
     } else {
@@ -623,7 +620,7 @@ const WorkflowGraph: React.FC = () => {
     
     // Clear message after a delay
     setTimeout(() => setConnectionMessage(null), 3000);
-  }, [storeNodes, storeEdges, runtime]);
+  }, [storeNodes, storeEdges, runtimeType]);
 
   return (
     <Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
