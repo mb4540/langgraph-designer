@@ -16,6 +16,13 @@ import CardContent from '@mui/material/CardContent';
 import Divider from '@mui/material/Divider';
 import InputLabel from '@mui/material/InputLabel';
 import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Chip from '@mui/material/Chip';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { useTheme } from '@mui/material/styles';
 
 // Import icons for agent icon selection
 import SmartToyIcon from '@mui/icons-material/SmartToy';
@@ -31,8 +38,9 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SecurityIcon from '@mui/icons-material/Security';
 
-import { WorkflowNode } from '../../../types/nodeTypes';
+import { WorkflowNode, AgentSetting } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
+import { useThemeContext } from '../../../context/ThemeContext';
 import LoadingIndicator from '../../ui/LoadingIndicator';
 import ErrorMessage from '../../ui/ErrorMessage';
 import ActionButtons from '../../ui/ActionButtons';
@@ -86,6 +94,8 @@ const agentIcons = [
 
 const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   const { updateNode } = useWorkflowContext();
+  const theme = useTheme();
+  const { mode } = useThemeContext();
   
   // Form state
   const [name, setName] = useState(node.name || '');
@@ -98,6 +108,33 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   const [llmModel, setLlmModel] = useState(node.llmModel || 'gpt-4o');
   const [maxConsecutiveReplies, setMaxConsecutiveReplies] = useState(node.maxConsecutiveReplies || 5);
   const [version, setVersion] = useState(node.version || '1.0.0');
+  
+  // Settings state
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
+  const [settings, setSettings] = useState<AgentSetting[]>(node.settings || []);
+  const [newSetting, setNewSetting] = useState<AgentSetting>({
+    key: '',
+    dataType: '',
+    defaultValue: '',
+    description: '',
+    allowedValues: [],
+    isRequired: false,
+    isSecret: false,
+    isRuntimeConfig: false
+  });
+  const [newAllowedValue, setNewAllowedValue] = useState('');
+  const [keyError, setKeyError] = useState('');
+  const [dataTypeError, setDataTypeError] = useState('');
+  
+  // Data type options
+  const dataTypes = [
+    'String',
+    'Number',
+    'Boolean',
+    'JSON',
+    'Array',
+    'Date'
+  ];
   
   // Generate versioned ID for the agent
   const versionedAgent: VersionedEntity | null = useVersionedId('agent', version);
@@ -114,6 +151,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     setLlmModel(node.llmModel || 'gpt-4o');
     setMaxConsecutiveReplies(node.maxConsecutiveReplies || 5);
     setVersion(node.version || '1.0.0');
+    setSettings(node.settings || []);
   }, [node]);
 
   // Handle validation
@@ -161,7 +199,8 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
       credentialsSource,
       llmModel,
       maxConsecutiveReplies,
-      version
+      version,
+      settings
     };
     
     // Add versioned ID information if available
@@ -189,6 +228,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     setLlmModel(node.llmModel || 'gpt-4o');
     setMaxConsecutiveReplies(node.maxConsecutiveReplies || 5);
     setVersion(node.version || '1.0.0');
+    setSettings(node.settings || []);
   };
 
   // Expose the functions to save and cancel changes
@@ -204,7 +244,8 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
       credentialsSource !== (node.credentialsSource || 'workgroup') ||
       llmModel !== (node.llmModel || 'gpt-4o') ||
       maxConsecutiveReplies !== (node.maxConsecutiveReplies || 5) ||
-      version !== (node.version || '1.0.0');
+      version !== (node.version || '1.0.0') ||
+      JSON.stringify(settings) !== JSON.stringify(node.settings || []);
 
     // Expose functions for the DetailsPanel to call
     (window as any).saveNodeChanges = handleSave;
@@ -220,7 +261,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   }, [
     name, selectedIcon, agentType, description, prompt, 
     enableMarkdown, credentialsSource, llmModel, maxConsecutiveReplies, version,
-    node
+    node, settings
   ]);
 
   return (
@@ -432,15 +473,291 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
         helperText={validationError?.message.includes('consecutive replies') ? validationError.message : ''}
       />
 
-      {/* Settings Section - Placeholder for future settings */}
-      <Divider sx={{ my: 2 }} />
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Settings
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Additional agent settings will be available here in future updates.
-      </Typography>
-      
+      {/* Settings Section */}
+      <Box sx={{ mb: 3 }}>
+        <Button
+          variant="text"
+          startIcon={settingsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          onClick={() => setSettingsExpanded(!settingsExpanded)}
+          sx={{ mb: 1 }}
+        >
+          Agent Settings
+        </Button>
+      </Box>
+
+      {settingsExpanded && (
+        <Paper 
+          sx={{ 
+            p: 3, 
+            mb: 3, 
+            bgcolor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            border: `1px solid ${theme.palette.divider}`
+          }}
+        >
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Add New Setting
+          </Typography>
+
+          <Box sx={{ mb: 2 }}>
+            <FormControlLabel
+              control={<Checkbox checked={newSetting.isRequired} onChange={(e) => 
+                setNewSetting({...newSetting, isRequired: e.target.checked})
+              } />}
+              label="Required"
+            />
+            <FormControlLabel
+              control={<Checkbox checked={newSetting.isSecret} onChange={(e) => 
+                setNewSetting({...newSetting, isSecret: e.target.checked})
+              } />}
+              label="Secret"
+            />
+            <FormControlLabel
+              control={<Checkbox checked={newSetting.isRuntimeConfig} onChange={(e) => 
+                setNewSetting({...newSetting, isRuntimeConfig: e.target.checked})
+              } />}
+              label="Runtime Config"
+            />
+          </Box>
+
+          <TextField
+            fullWidth
+            label="Key"
+            required
+            value={newSetting.key}
+            onChange={(e) => {
+              setNewSetting({...newSetting, key: e.target.value});
+              setKeyError(e.target.value ? '' : 'Key is required');
+            }}
+            margin="normal"
+            variant="outlined"
+            error={!!keyError}
+            helperText={keyError || 'Key is required'}
+            sx={{ mb: 2 }}
+          />
+
+          <FormControl fullWidth margin="normal" sx={{ mb: 2 }}>
+            <InputLabel id="data-type-label">Select Data Types</InputLabel>
+            <Select
+              labelId="data-type-label"
+              value={newSetting.dataType}
+              label="Select Data Types"
+              onChange={(e) => {
+                setNewSetting({...newSetting, dataType: e.target.value});
+                setDataTypeError(e.target.value ? '' : 'Please select an Data Type');
+              }}
+              error={!!dataTypeError}
+            >
+              {dataTypes.map((type) => (
+                <MenuItem key={type} value={type}>{type}</MenuItem>
+              ))}
+            </Select>
+            {dataTypeError && (
+              <Typography variant="caption" color="error">
+                {dataTypeError}
+              </Typography>
+            )}
+          </FormControl>
+
+          <TextField
+            fullWidth
+            label="Default Value"
+            value={newSetting.defaultValue}
+            onChange={(e) => setNewSetting({...newSetting, defaultValue: e.target.value})}
+            margin="normal"
+            variant="outlined"
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Description"
+            value={newSetting.description}
+            onChange={(e) => setNewSetting({...newSetting, description: e.target.value})}
+            margin="normal"
+            variant="outlined"
+            multiline
+            rows={2}
+            sx={{ mb: 2 }}
+          />
+
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Allowed Values
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+              {newSetting.allowedValues.map((value, index) => (
+                <Chip
+                  key={index}
+                  label={value}
+                  onDelete={() => {
+                    const updatedValues = [...newSetting.allowedValues];
+                    updatedValues.splice(index, 1);
+                    setNewSetting({...newSetting, allowedValues: updatedValues});
+                  }}
+                  sx={{ mb: 1 }}
+                />
+              ))}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <TextField
+                value={newAllowedValue}
+                onChange={(e) => setNewAllowedValue(e.target.value)}
+                placeholder="Add a value"
+                size="small"
+                sx={{ flexGrow: 1, mr: 1 }}
+              />
+              <Button 
+                variant="contained" 
+                size="small"
+                onClick={() => {
+                  if (newAllowedValue.trim()) {
+                    setNewSetting({
+                      ...newSetting, 
+                      allowedValues: [...(newSetting.allowedValues || []), newAllowedValue.trim()]
+                    });
+                    setNewAllowedValue('');
+                  }
+                }}
+                sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#1976d2' : '#00388f', 
+                  '&:hover': { 
+                    bgcolor: theme.palette.mode === 'dark' ? '#1565c0' : '#002a6b' 
+                  },
+                  color: '#ffffff'
+                }}
+              >
+                Add Value
+              </Button>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+            <Button 
+              variant="outlined" 
+              onClick={() => {
+                setNewSetting({
+                  key: '',
+                  dataType: '',
+                  defaultValue: '',
+                  description: '',
+                  allowedValues: [],
+                  isRequired: false,
+                  isSecret: false,
+                  isRuntimeConfig: false
+                });
+                setNewAllowedValue('');
+                setKeyError('');
+                setDataTypeError('');
+              }}
+            >
+              Undo
+            </Button>
+            <Button 
+              variant="contained"
+              onClick={() => {
+                if (!newSetting.key) {
+                  setKeyError('Key is required');
+                  return;
+                }
+                if (!newSetting.dataType) {
+                  setDataTypeError('Please select an Data Type');
+                  return;
+                }
+                
+                setSettings([...settings, {...newSetting}]);
+                setNewSetting({
+                  key: '',
+                  dataType: '',
+                  defaultValue: '',
+                  description: '',
+                  allowedValues: [],
+                  isRequired: false,
+                  isSecret: false,
+                  isRuntimeConfig: false
+                });
+                setNewAllowedValue('');
+                setKeyError('');
+                setDataTypeError('');
+              }}
+              sx={{ 
+                bgcolor: theme.palette.mode === 'dark' ? '#1976d2' : '#00388f', 
+                '&:hover': { 
+                  bgcolor: theme.palette.mode === 'dark' ? '#1565c0' : '#002a6b' 
+                },
+                color: '#ffffff'
+              }}
+            >
+              Add
+            </Button>
+          </Box>
+        </Paper>
+      )}
+
+      {/* Display existing settings */}
+      {settings.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+            Current Settings:
+          </Typography>
+          {settings.map((setting: AgentSetting, index: number) => (
+            <Paper 
+              key={index} 
+              sx={{ 
+                p: 2, 
+                mb: 2,
+                bgcolor: theme.palette.background.paper,
+                color: theme.palette.text.primary,
+                border: `1px solid ${theme.palette.divider}`
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="subtitle2">
+                  {setting.key} <Typography component="span" variant="caption">({setting.dataType})</Typography>
+                </Typography>
+                <IconButton 
+                  size="small" 
+                  onClick={() => {
+                    const updatedSettings = [...settings];
+                    updatedSettings.splice(index, 1);
+                    setSettings(updatedSettings);
+                  }}
+                >
+                  <RemoveCircleIcon color="error" fontSize="small" />
+                </IconButton>
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                {setting.isRequired && <Chip label="Required" size="small" color="primary" variant="outlined" />}
+                {setting.isSecret && <Chip label="Secret" size="small" color="secondary" variant="outlined" />}
+                {setting.isRuntimeConfig && <Chip label="Runtime Config" size="small" color="info" variant="outlined" />}
+              </Box>
+              {setting.defaultValue && (
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  Default: {setting.defaultValue}
+                </Typography>
+              )}
+              {setting.description && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  {setting.description}
+                </Typography>
+              )}
+              {setting.allowedValues && setting.allowedValues.length > 0 && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Allowed Values:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {setting.allowedValues.map((value: string, valueIndex: number) => (
+                      <Chip key={valueIndex} label={value} size="small" />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Paper>
+          ))}
+        </Box>
+      )}
+
       {/* Error Message */}
       {saveError && (
         <Box sx={{ mb: 2 }}>

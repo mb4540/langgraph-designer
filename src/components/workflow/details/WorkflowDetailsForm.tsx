@@ -47,17 +47,17 @@ interface WorkflowDetails {
 }
 
 const WorkflowDetailsForm: React.FC = () => {
-  const { nodes, edges } = useWorkflowContext();
+  const { nodes, edges, workflowDetails, updateWorkflowDetails } = useWorkflowContext();
   const { mode } = useThemeContext();
   const { runtimeType, setRuntimeType } = useRuntimeContext();
   const isDarkMode = mode === 'dark';
   
   const [formData, setFormData] = useState<WorkflowDetails>({
-    name: 'My Workflow',
-    description: '',
-    version: '1.0.0',
+    name: workflowDetails.name || 'My Workflow',
+    description: workflowDetails.description || '',
+    version: workflowDetails.version || '1.0.0',
     runtimeType: runtimeType,
-    workgroup: '',
+    workgroup: workflowDetails.workgroup || '',
     githubRepo: '',
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -78,6 +78,17 @@ const WorkflowDetailsForm: React.FC = () => {
 
   // Generate versioned ID for the workflow
   const versionedWorkflow = useVersionedId('agent', formData.version); // Using 'agent' type as placeholder
+
+  // Update formData when workflowDetails changes
+  useEffect(() => {
+    setFormData(prevData => ({
+      ...prevData,
+      name: workflowDetails.name || prevData.name,
+      description: workflowDetails.description || prevData.description,
+      version: workflowDetails.version || prevData.version,
+      workgroup: workflowDetails.workgroup || prevData.workgroup
+    }));
+  }, [workflowDetails]);
 
   // Format the nodes and edges as a pretty JSON string
   const getGraphJson = () => {
@@ -112,14 +123,6 @@ const WorkflowDetailsForm: React.FC = () => {
     return JSON.stringify(graphData, null, 2);
   };
 
-  // Update formData when runtimeType changes in context
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      runtimeType
-    }));
-  }, [runtimeType]);
-
   useEffect(() => {
     setIsEditing(true);
   }, []);
@@ -152,6 +155,7 @@ const WorkflowDetailsForm: React.FC = () => {
     
     // In a real implementation, we would save the workflow details to the store
     // Example: updateWorkflowDetails(formData);
+    updateWorkflowDetails(formData);
   };
 
   const handleCancel = () => {

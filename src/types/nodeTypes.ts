@@ -29,6 +29,20 @@ export enum OperatorType {
 }
 
 /**
+ * Interface for agent setting
+ */
+export interface AgentSetting {
+  key: string;
+  dataType: string;
+  defaultValue: string;
+  description: string;
+  allowedValues: string[];
+  isRequired: boolean;
+  isSecret: boolean;
+  isRuntimeConfig: boolean;
+}
+
+/**
  * Interface for workflow nodes
  */
 export interface WorkflowNode {
@@ -57,6 +71,7 @@ export interface WorkflowNode {
   enableMarkdown?: boolean; // Whether to enable markdown response format
   credentialsSource?: string; // Source of LLM credentials
   maxConsecutiveReplies?: number; // Maximum number of consecutive auto replies
+  settings?: AgentSetting[]; // Agent configuration settings
 }
 
 /**

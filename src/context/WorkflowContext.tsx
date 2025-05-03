@@ -1,6 +1,13 @@
-import React, { createContext, useContext, ReactNode, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, ReactNode, useCallback, useMemo, useState } from 'react';
 import { useNodeStore, useEdgeStore, useSelectionStore } from '../store';
 import { WorkflowNode, WorkflowEdge } from '../types/nodeTypes';
+
+interface WorkflowDetails {
+  name: string;
+  workgroup: string;
+  description?: string;
+  version?: string;
+}
 
 interface WorkflowContextType {
   selectedNode: WorkflowNode | null;
@@ -12,6 +19,8 @@ interface WorkflowContextType {
   removeEdge: (id: string) => void;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
+  workflowDetails: WorkflowDetails;
+  updateWorkflowDetails: (details: Partial<WorkflowDetails>) => void;
 }
 
 const WorkflowContext = createContext<WorkflowContextType | null>(null);
@@ -33,6 +42,22 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
   const { nodes, addNode: storeAddNode, updateNode: storeUpdateNode, removeNode: storeRemoveNode } = useNodeStore();
   const { edges, addEdge: storeAddEdge, removeEdge: storeRemoveEdge } = useEdgeStore();
   const { selectedNode, selectNode: storeSelectNode } = useSelectionStore();
+
+  // Add workflow details state
+  const [workflowDetails, setWorkflowDetails] = useState<WorkflowDetails>({
+    name: 'My Workflow',
+    workgroup: 'General Workgroup',
+    description: '',
+    version: '1.0.0'
+  });
+
+  // Update workflow details
+  const updateWorkflowDetails = useCallback((details: Partial<WorkflowDetails>) => {
+    setWorkflowDetails(prevDetails => ({
+      ...prevDetails,
+      ...details
+    }));
+  }, []);
 
   // Wrap the store functions with useCallback to prevent unnecessary re-renders
   const selectNodeCallback = useCallback((id: string | null) => {
@@ -95,6 +120,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
     removeEdge: removeEdgeCallback,
     nodes,
     edges,
+    workflowDetails,
+    updateWorkflowDetails
   }), [
     selectedNode,
     selectNodeCallback,
@@ -105,6 +132,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
     removeEdgeCallback,
     nodes,
     edges,
+    workflowDetails,
+    updateWorkflowDetails
   ]);
 
   return (

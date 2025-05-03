@@ -215,13 +215,13 @@ const storeEdgesToFlowEdges = (edges: WorkflowEdge[], nodes: StoreNode[], isDark
 };
 
 const WorkflowGraph: React.FC = () => {
-  const { nodes: storeNodes, edges: storeEdges, selectNode, removeNode, addNode, addEdge: addStoreEdge, removeEdge, updateNode } = useWorkflowContext();
+  const { nodes: storeNodes, edges: storeEdges, selectNode, removeNode, addNode, addEdge: addStoreEdge, removeEdge, updateNode, workflowDetails } = useWorkflowContext();
   const { mode } = useThemeContext();
   const { runtimeType } = useRuntimeContext();
   const isDarkMode = mode === 'dark';
   
-  // State for workflow name (in a real app, this would come from a store)
-  const [workflowName, setWorkflowName] = useState('My Workflow');
+  // State for workflow name (now from context)
+  const [workflowName, setWorkflowName] = useState(workflowDetails.name);
   
   // State for runtime type (autogen or langgraph)
   const [runtime, setRuntime] = useState<RuntimeType>(runtimeType);
@@ -248,6 +248,11 @@ const WorkflowGraph: React.FC = () => {
 
   // Reference to the ReactFlow instance
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
+
+  // Update workflowName when workflowDetails changes
+  useEffect(() => {
+    setWorkflowName(workflowDetails.name);
+  }, [workflowDetails]);
 
   // Handle showing workflow details
   const handleEditWorkflowDetails = useCallback(() => {
@@ -632,7 +637,7 @@ const WorkflowGraph: React.FC = () => {
         borderColor: 'divider' 
       }}>
         <Typography variant="h6" component="div">
-          {workflowName}
+          {workflowDetails.workgroup}: {workflowName}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
