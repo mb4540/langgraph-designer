@@ -11,8 +11,11 @@ import ReactFlow, {
   Connection,
   NodeTypes,
   NodeMouseHandler,
-  MarkerType, // Import MarkerType for edge styling
-  ReactFlowInstance
+  MarkerType,
+  ReactFlowInstance,
+  EdgeChange,
+  updateEdge,
+  EdgeMouseHandler
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Paper from '@mui/material/Paper';
@@ -26,6 +29,8 @@ import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 
 // Import operator-related icons
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -50,6 +55,7 @@ import GridOnIcon from '@mui/icons-material/GridOn';
 import { useThemeContext } from '../../context/ThemeContext';
 import { useRuntimeContext } from '../../context/RuntimeContext';
 import { useWorkflowContext } from '../../context/WorkflowContext';
+import { useNodeStore } from '../../store';
 import { NodeType, OperatorType, WorkflowEdge, WorkflowNode as StoreNode } from '../../types/nodeTypes';
 import AgentNode from '../nodes/AgentNode';
 import MemoryNode from '../nodes/MemoryNode';
@@ -209,7 +215,7 @@ const storeEdgesToFlowEdges = (edges: WorkflowEdge[], nodes: StoreNode[], isDark
 };
 
 const WorkflowGraph: React.FC = () => {
-  const { nodes: storeNodes, edges: storeEdges, selectNode, removeNode, addNode, addEdge: addStoreEdge } = useWorkflowContext();
+  const { nodes: storeNodes, edges: storeEdges, selectNode, removeNode, addNode, addEdge: addStoreEdge, removeEdge, updateNode } = useWorkflowContext();
   const { mode } = useThemeContext();
   const { runtimeType } = useRuntimeContext();
   const isDarkMode = mode === 'dark';
@@ -229,6 +235,7 @@ const WorkflowGraph: React.FC = () => {
   // State for deletion confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
+  const [edgeToDelete, setEdgeToDelete] = useState<string | null>(null);
   const [deleteDialogMessage, setDeleteDialogMessage] = useState('');
 
   // State for operator menu
@@ -308,13 +315,50 @@ const WorkflowGraph: React.FC = () => {
       removeNode(nodeToDelete);
       setNodeToDelete(null);
       setDeleteDialogOpen(false);
+      
+      // Show success message
+      setConnectionMessage({
+        message: 'Node deleted successfully',
+        isError: false
+      });
+      
+      // Clear message after a delay
+      setTimeout(() => setConnectionMessage(null), 3000);
+    } else if (edgeToDelete) {
+      removeEdge(edgeToDelete);
+      setEdgeToDelete(null);
+      setDeleteDialogOpen(false);
+      
+      // Show success message
+      setConnectionMessage({
+        message: 'Connection deleted successfully',
+        isError: false
+      });
+      
+      // Clear message after a delay
+      setTimeout(() => setConnectionMessage(null), 3000);
     }
-  }, [nodeToDelete, removeNode]);
+  }, [nodeToDelete, edgeToDelete, removeNode, removeEdge]);
 
   const cancelDelete = useCallback(() => {
     setNodeToDelete(null);
+    setEdgeToDelete(null);
     setDeleteDialogOpen(false);
   }, []);
+
+  // Handle edge deletion on click
+  const onEdgeClick: EdgeMouseHandler = useCallback(
+    (event, edge) => {
+      // Find the edge in the store
+      const edgeToRemove = storeEdges.find(e => e.id === edge.id);
+      if (edgeToRemove) {
+        setEdgeToDelete(edgeToRemove.id);
+        setDeleteDialogMessage('Are you sure you want to delete this connection? This action cannot be undone.');
+        setDeleteDialogOpen(true);
+      }
+    },
+    [storeEdges]
+  );
 
   // Convert store nodes and edges to ReactFlow format
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -400,6 +444,71 @@ const WorkflowGraph: React.FC = () => {
     [selectNode]
   );
 
+  // Handle edge updates (moving connection points)
+  const onEdgeUpdate = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      // Validate the new connection
+      const sourceNode = storeNodes.find(node => node.id === newConnection.source);
+      const targetNode = storeNodes.find(node => node.id === newConnection.target);
+      
+      if (!sourceNode || !targetNode) {
+        setConnectionMessage({
+          message: 'Cannot update connection: Source or target node not found',
+          isError: true
+        });
+        return;
+      }
+      
+      // Validate the connection if we're connecting between operator nodes
+      if (sourceNode.type === 'operator' && targetNode.type === 'operator') {
+        const validationResult = canConnect(
+          sourceNode,
+          targetNode,
+          storeNodes,
+          storeEdges,
+          runtime
+        );
+        
+        if (!validationResult.canConnect) {
+          setConnectionMessage({
+            message: validationResult.message || 'Invalid connection',
+            isError: true
+          });
+          return;
+        }
+      }
+      
+      // Remove the old edge
+      const edgeToRemove = storeEdges.find(e => e.id === oldEdge.id);
+      if (edgeToRemove) {
+        removeEdge(edgeToRemove.id);
+      }
+      
+      // Create the new edge with the updated connection
+      const newEdge = {
+        id: oldEdge.id,
+        source: newConnection.source || '',
+        target: newConnection.target || '',
+        sourceHandle: newConnection.sourceHandle || undefined,
+        targetHandle: newConnection.targetHandle || undefined,
+        animated: true,
+      };
+      
+      // Add the updated edge
+      addStoreEdge(newEdge);
+      
+      // Show success message
+      setConnectionMessage({
+        message: 'Connection updated successfully',
+        isError: false
+      });
+      
+      // Clear message after a delay
+      setTimeout(() => setConnectionMessage(null), 3000);
+    },
+    [storeNodes, storeEdges, addStoreEdge, removeEdge, runtime]
+  );
+
   // Save the ReactFlow instance
   const onInit = useCallback((instance: ReactFlowInstance) => {
     reactFlowInstanceRef.current = instance;
@@ -409,13 +518,13 @@ const WorkflowGraph: React.FC = () => {
   const defaultEdgeOptions = {
     style: {
       strokeWidth: 2,
-      stroke: isDarkMode ? '#64748b' : '#94a3b8', // Slate colors
+      stroke: isDarkMode ? '#64748b' : '#4a5568', // Slate colors
     },
     markerEnd: {
       type: MarkerType.ArrowClosed,
       width: 15,
       height: 15,
-      color: isDarkMode ? '#64748b' : '#94a3b8',
+      color: isDarkMode ? '#64748b' : '#4a5568',
     },
     animated: true,
   };
@@ -511,191 +620,6 @@ const WorkflowGraph: React.FC = () => {
     setTimeout(() => setConnectionMessage(null), 3000);
   }, [storeNodes, storeEdges, runtime]);
 
-  // Handle smart layout
-  const handleSmartLayout = useCallback(() => {
-    if (!reactFlowInstanceRef.current) return;
-    
-    // Create a copy of the current nodes
-    const currentNodes = [...storeNodes];
-    
-    // Sort nodes by type to ensure proper layering
-    // START nodes come first, then agent/tool/memory nodes, then END nodes
-    const startNodes = currentNodes.filter(node => 
-      node.type === 'operator' && node.operatorType === OperatorType.Start
-    );
-    const endNodes = currentNodes.filter(node => 
-      node.type === 'operator' && node.operatorType === OperatorType.Stop
-    );
-    const otherNodes = currentNodes.filter(node => 
-      !(node.type === 'operator' && 
-        (node.operatorType === OperatorType.Start || node.operatorType === OperatorType.Stop))
-    );
-    
-    // Create a map of node connections
-    const nodeConnections: Record<string, { incoming: string[], outgoing: string[] }> = {};
-    
-    // Initialize the connection map
-    currentNodes.forEach(node => {
-      nodeConnections[node.id] = { incoming: [], outgoing: [] };
-    });
-    
-    // Populate the connection map
-    storeEdges.forEach(edge => {
-      if (nodeConnections[edge.source]) {
-        nodeConnections[edge.source].outgoing.push(edge.target);
-      }
-      if (nodeConnections[edge.target]) {
-        nodeConnections[edge.target].incoming.push(edge.source);
-      }
-    });
-    
-    // Assign layers to nodes based on their connections
-    const nodeLayers: Record<string, number> = {};
-    
-    // Start nodes are in layer 0
-    startNodes.forEach(node => {
-      nodeLayers[node.id] = 0;
-    });
-    
-    // Assign layers to other nodes using a breadth-first approach
-    const assignLayers = () => {
-      let changed = false;
-      
-      otherNodes.forEach(node => {
-        // If the node already has a layer, skip it
-        if (nodeLayers[node.id] !== undefined) return;
-        
-        // Check if all incoming nodes have layers assigned
-        const incomingLayers = nodeConnections[node.id].incoming
-          .map(id => nodeLayers[id])
-          .filter(layer => layer !== undefined);
-        
-        // If all incoming nodes have layers, assign this node to the next layer
-        if (incomingLayers.length > 0 && 
-            incomingLayers.length === nodeConnections[node.id].incoming.length) {
-          const maxIncomingLayer = Math.max(...incomingLayers);
-          nodeLayers[node.id] = maxIncomingLayer + 1;
-          changed = true;
-        }
-      });
-      
-      return changed;
-    };
-    
-    // Keep assigning layers until no more changes can be made
-    while (assignLayers()) {}
-    
-    // Handle nodes that couldn't be assigned a layer (no incoming connections)
-    otherNodes.forEach(node => {
-      if (nodeLayers[node.id] === undefined) {
-        // If no incoming connections, place in layer 1
-        if (nodeConnections[node.id].incoming.length === 0) {
-          nodeLayers[node.id] = 1;
-        } else {
-          // Otherwise, find the maximum layer and add 1
-          const maxLayer = Math.max(
-            ...Object.values(nodeLayers).filter(layer => layer !== undefined)
-          );
-          nodeLayers[node.id] = maxLayer + 1;
-        }
-      }
-    });
-    
-    // End nodes go in the final layer
-    const maxLayer = Math.max(
-      ...Object.values(nodeLayers).filter(layer => layer !== undefined),
-      0
-    );
-    endNodes.forEach(node => {
-      nodeLayers[node.id] = maxLayer + 1;
-    });
-    
-    // Count nodes in each layer
-    const layerCounts: Record<number, number> = {};
-    Object.values(nodeLayers).forEach(layer => {
-      layerCounts[layer] = (layerCounts[layer] || 0) + 1;
-    });
-    
-    // Calculate positions based on layers
-    const verticalSpacing = 150; // Vertical spacing between layers
-    const horizontalSpacing = 200; // Horizontal spacing between nodes in the same layer
-    
-    // Track node positions within each layer
-    const layerPositions: Record<number, number> = {};
-    
-    // Update node positions
-    const updatedNodes = currentNodes.map(node => {
-      const layer = nodeLayers[node.id] || 0;
-      
-      // Initialize layer position counter if not exists
-      if (layerPositions[layer] === undefined) {
-        layerPositions[layer] = 0;
-      }
-      
-      // Calculate horizontal position within the layer
-      const nodesInLayer = layerCounts[layer] || 1;
-      const totalWidth = (nodesInLayer - 1) * horizontalSpacing;
-      const startX = -totalWidth / 2;
-      const x = startX + (layerPositions[layer] * horizontalSpacing);
-      
-      // Calculate vertical position based on layer
-      const y = layer * verticalSpacing;
-      
-      // Increment the position counter for this layer
-      layerPositions[layer]++;
-      
-      // Return the updated node with new position
-      return {
-        ...node,
-        position: { x, y }
-      };
-    });
-    
-    // Update nodes in the store
-    updatedNodes.forEach(node => {
-      const { id, position } = node;
-      // Find the node in the store
-      const storeNode = storeNodes.find(n => n.id === id);
-      if (storeNode) {
-        // Update the node position
-        const updatedNode = { ...storeNode, position };
-        // Replace the node in the store
-        removeNode(id);
-        addNode(updatedNode);
-      }
-    });
-    
-    // Show success message
-    setConnectionMessage({
-      message: 'Smart layout applied successfully',
-      isError: false
-    });
-    
-    // Clear message after a delay
-    setTimeout(() => setConnectionMessage(null), 3000);
-    
-    // Fit view to show all nodes
-    setTimeout(() => {
-      if (reactFlowInstanceRef.current) {
-        reactFlowInstanceRef.current.fitView({ padding: 0.2 });
-      }
-    }, 100);
-  }, [storeNodes, storeEdges, addNode, removeNode]);
-
-  // Toggle grid snap
-  const handleToggleGridSnap = useCallback(() => {
-    setSnapToGrid(prev => !prev);
-    
-    // Show message about grid snap status
-    setConnectionMessage({
-      message: snapToGrid ? 'Grid snap disabled' : 'Grid snap enabled',
-      isError: false
-    });
-    
-    // Clear message after a delay
-    setTimeout(() => setConnectionMessage(null), 3000);
-  }, [snapToGrid]);
-
   return (
     <Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Workflow Header */}
@@ -738,22 +662,6 @@ const WorkflowGraph: React.FC = () => {
             size="small"
           >
             Validate Workflow
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<AutoFixHighIcon />}
-            onClick={handleSmartLayout}
-            size="small"
-          >
-            Smart Layout
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<GridOnIcon />}
-            onClick={handleToggleGridSnap}
-            size="small"
-          >
-            Toggle Grid Snap
           </Button>
         </Box>
       </Box>
@@ -850,8 +758,12 @@ const WorkflowGraph: React.FC = () => {
           onConnect={onConnect}
           onInit={onInit}
           onNodeClick={onNodeClick}
+          onEdgeUpdate={onEdgeUpdate}
+          onEdgeClick={onEdgeClick}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={defaultEdgeOptions} // Add custom edge styles
+          edgesFocusable={true}
+          edgesUpdatable={true}
           fitView={false}
           fitViewOptions={{ duration: 0 }}
           minZoom={0.1}
