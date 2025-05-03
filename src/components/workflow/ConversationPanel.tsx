@@ -3,6 +3,8 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import { Message } from '../../api/openai';
 import { NodeType } from '../../types/nodeTypes';
 import { useWorkflowContext } from '../../context/WorkflowContext';
@@ -26,8 +28,12 @@ const API_KEY_STORAGE_KEY = 'openai_api_key';
 
 const ConversationPanel: React.FC = () => {
   const { addNode, addEdge } = useWorkflowContext();
+  const [activeTab, setActiveTab] = useState<'build' | 'test'>('build');
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: initialInterview[0] }
+  ]);
+  const [testMessages, setTestMessages] = useState<Message[]>([
+    { role: 'assistant', content: 'Welcome to the Test Workflow mode. Here you can test your workflow and see the interactions between agents and tools.' }
   ]);
   const [input, setInput] = useState('');
   const [step, setStep] = useState(0);
@@ -50,7 +56,7 @@ const ConversationPanel: React.FC = () => {
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, testMessages, activeTab]);
 
   // Check if API key is valid
   const { 
@@ -112,20 +118,38 @@ const ConversationPanel: React.FC = () => {
   const handleSend = async () => {
     if (!input.trim() || sendLoading) return;
     
-    const newMessages: Message[] = [...messages, { role: 'user', content: input }];
-    setMessages(newMessages);
-    setInput('');
-    
-    try {
-      const reply = await executeSend(newMessages);
-      if (reply) {
-        setMessages([...newMessages, reply]);
-        setStep(step + 1);
+    if (activeTab === 'build') {
+      const newMessages: Message[] = [...messages, { role: 'user', content: input }];
+      setMessages(newMessages);
+      setInput('');
+      
+      try {
+        const reply = await executeSend(newMessages);
+        if (reply) {
+          setMessages([...newMessages, reply]);
+          setStep(step + 1);
+        }
+      } catch (error) {
+        // Error is already handled by useAsyncOperation
+        // Just log for debugging purposes
+        console.error('Error in handleSend:', error);
       }
-    } catch (error) {
-      // Error is already handled by useAsyncOperation
-      // Just log for debugging purposes
-      console.error('Error in handleSend:', error);
+    } else {
+      // Test workflow mode
+      const newMessages: Message[] = [...testMessages, { role: 'user', content: input }];
+      setTestMessages(newMessages);
+      setInput('');
+      
+      try {
+        // In a real implementation, this would execute the workflow and show agent interactions
+        // For now, we'll simulate a response
+        setTimeout(() => {
+          const agentResponse: Message = { role: 'assistant', content: `Agent response to: ${input}` };
+          setTestMessages([...newMessages, agentResponse]);
+        }, 1000);
+      } catch (error) {
+        console.error('Error in test workflow:', error);
+      }
     }
   };
 
@@ -236,8 +260,39 @@ const ConversationPanel: React.FC = () => {
         )}
       </Box>
       
+      <Tabs
+        value={activeTab}
+        onChange={(_, newValue) => setActiveTab(newValue)}
+        textColor="primary"
+        indicatorColor="primary"
+        variant="fullWidth"
+        sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Tab value="build" label="Build Workflow" />
+        <Tab value="test" label="Test Workflow" />
+      </Tabs>
+      
       <Box sx={{ flex: 1, overflowY: 'auto', mb: 2 }}>
-        {messages.map((msg, idx) => (
+        {activeTab === 'build' ? messages.map((msg, idx) => (
+          <Box 
+            key={idx} 
+            sx={{ 
+              mb: 1, 
+              p: 1.5,
+              borderRadius: 2,
+              maxWidth: '85%',
+              backgroundColor: msg.role === 'user' ? 'primary.light' : 'background.paper',
+              color: msg.role === 'user' ? 'white' : 'text.primary',
+              alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+              boxShadow: 1,
+              ml: msg.role === 'user' ? 'auto' : 0,
+            }}
+          >
+            <Typography variant="body2">
+              {msg.content}
+            </Typography>
+          </Box>
+        )) : testMessages.map((msg, idx) => (
           <Box 
             key={idx} 
             sx={{ 
@@ -305,7 +360,7 @@ const ConversationPanel: React.FC = () => {
         <TextField
           fullWidth
           size="small"
-          placeholder="Type your message..."
+          placeholder={activeTab === 'build' ? "Ask about building your workflow..." : "Test your workflow..."}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}

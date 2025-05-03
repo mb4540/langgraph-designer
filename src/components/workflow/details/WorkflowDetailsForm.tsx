@@ -15,6 +15,20 @@ import CircularProgress from '@mui/material/CircularProgress';
 import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
+import IconButton from '@mui/material/IconButton';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Tooltip from '@mui/material/Tooltip';
+import Divider from '@mui/material/Divider';
+// Git related icons
+import GitHubIcon from '@mui/icons-material/GitHub';
+import AddIcon from '@mui/icons-material/Add';
+import PullIcon from '@mui/icons-material/Download';
+import PushIcon from '@mui/icons-material/Upload';
+import CommitIcon from '@mui/icons-material/Save';
+import TerminalIcon from '@mui/icons-material/Terminal';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useThemeContext } from '../../../context/ThemeContext';
 import { useRuntimeContext } from '../../../context/RuntimeContext';
@@ -29,6 +43,7 @@ interface WorkflowDetails {
   version: string;
   runtimeType: RuntimeType;
   workgroup: string;
+  githubRepo: string;
 }
 
 const WorkflowDetailsForm: React.FC = () => {
@@ -43,10 +58,15 @@ const WorkflowDetailsForm: React.FC = () => {
     version: '1.0.0',
     runtimeType: runtimeType,
     workgroup: '',
+    githubRepo: '',
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isModified, setIsModified] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [terminalDialogOpen, setTerminalDialogOpen] = useState(false);
+  const [terminalOutput, setTerminalOutput] = useState('');
+  const [terminalCommand, setTerminalCommand] = useState('');
+  const [isExecutingCommand, setIsExecutingCommand] = useState(false);
 
   // Define workgroup options (placeholder)
   const workgroups = [
@@ -189,6 +209,95 @@ const WorkflowDetailsForm: React.FC = () => {
     }
   };
 
+  // Git functionality handlers
+  const handleOpenTerminal = () => {
+    setTerminalOutput('');
+    setTerminalCommand('');
+    setTerminalDialogOpen(true);
+  };
+
+  const handleCloseTerminal = () => {
+    setTerminalDialogOpen(false);
+  };
+
+  const handleTerminalCommandChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setTerminalCommand(e.target.value);
+  };
+
+  const executeGitCommand = async (command: string) => {
+    setIsExecutingCommand(true);
+    setTerminalOutput(prev => prev + `\n$ ${command}\n`);
+    
+    try {
+      // In a real implementation, this would execute the command on the server
+      // For now, we'll simulate a response
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      let output = '';
+      if (command.includes('git clone')) {
+        output = `Cloning into '${formData.githubRepo.split('/').pop()?.replace('.git', '')}'...\nremote: Enumerating objects: 1463, done.\nremote: Counting objects: 100% (1463/1463), done.\nremote: Compressing objects: 100% (843/843), done.\nremote: Total 1463 (delta 620), reused 1463 (delta 620), pack-reused 0\nReceiving objects: 100% (1463/1463), 2.5 MiB | 8.42 MiB/s, done.\nResolving deltas: 100% (620/620), done.`;
+      } else if (command.includes('git pull')) {
+        output = 'Already up to date.';
+      } else if (command.includes('git push')) {
+        output = 'Everything up-to-date';
+      } else if (command.includes('git commit')) {
+        output = '[main 3e4f982] Updated workflow\n 1 file changed, 10 insertions(+), 2 deletions(-)';
+      } else if (command.includes('git add')) {
+        output = ''; // git add typically doesn't produce output unless there's an error
+      } else if (command.includes('git status')) {
+        output = 'On branch main\nYour branch is up to date with \'origin/main\'.\n\nChanges not staged for commit:\n  (use "git add <file>..." to update what will be committed)\n  (use "git restore <file>..." to discard changes in working directory)\n\t modified:   src/workflow.py\n\nno changes added to commit (use "git add" and/or "git commit -a")';
+      } else {
+        output = `Command not recognized: ${command}`;
+      }
+      
+      setTerminalOutput(prev => prev + output + '\n');
+    } catch (error) {
+      console.error('Error executing command:', error);
+      setTerminalOutput(prev => prev + `Error: ${error}\n`);
+    } finally {
+      setIsExecutingCommand(false);
+    }
+  };
+
+  const handleExecuteCommand = () => {
+    if (terminalCommand.trim()) {
+      executeGitCommand(terminalCommand.trim());
+      setTerminalCommand('');
+    }
+  };
+
+  const handleGitClone = () => {
+    if (formData.githubRepo) {
+      const command = `git clone ${formData.githubRepo}`;
+      executeGitCommand(command);
+      if (!terminalDialogOpen) setTerminalDialogOpen(true);
+    }
+  };
+
+  const handleGitPull = () => {
+    const command = 'git pull';
+    executeGitCommand(command);
+    if (!terminalDialogOpen) setTerminalDialogOpen(true);
+  };
+
+  const handleGitAdd = () => {
+    const command = 'git add .';
+    executeGitCommand(command);
+    if (!terminalDialogOpen) setTerminalDialogOpen(true);
+  };
+
+  const handleGitCommit = () => {
+    const command = 'git commit -m "Updated workflow"';
+    executeGitCommand(command);
+    if (!terminalDialogOpen) setTerminalDialogOpen(true);
+  };
+
+  const handleGitPush = () => {
+    const command = 'git push';
+    executeGitCommand(command);
+    if (!terminalDialogOpen) setTerminalDialogOpen(true);
+  };
+
   // Expose the functions to save and cancel changes
   useEffect(() => {
     // Expose functions for the DetailsPanel to call
@@ -268,7 +377,95 @@ const WorkflowDetailsForm: React.FC = () => {
           />
         </Grid>
       </Grid>
-      
+
+      {/* GitHub Repository Field */}
+      <Paper elevation={1} sx={{ p: 2, mt: 2, mb: 2 }}>
+        <Typography variant="subtitle1" gutterBottom>
+          GitHub Repository
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <GitHubIcon sx={{ mr: 1, color: 'text.secondary' }} />
+          <TextField
+            label="Repository URL"
+            name="githubRepo"
+            value={formData.githubRepo}
+            onChange={handleChange}
+            placeholder="https://github.com/username/repo.git"
+            fullWidth
+            margin="normal"
+            disabled={!isEditing}
+            helperText="Enter the URL of the GitHub repository where the workflow code will be stored"
+          />
+        </Box>
+        
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Tooltip title="Clone the repository">
+            <span>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<GitHubIcon />}
+                onClick={handleGitClone}
+                disabled={!formData.githubRepo}
+              >
+                Clone
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Pull latest changes">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<PullIcon />}
+              onClick={handleGitPull}
+            >
+              Pull
+            </Button>
+          </Tooltip>
+          <Tooltip title="Add all changes">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={handleGitAdd}
+            >
+              Add
+            </Button>
+          </Tooltip>
+          <Tooltip title="Commit changes">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<CommitIcon />}
+              onClick={handleGitCommit}
+            >
+              Commit
+            </Button>
+          </Tooltip>
+          <Tooltip title="Push changes">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<PushIcon />}
+              onClick={handleGitPush}
+            >
+              Push
+            </Button>
+          </Tooltip>
+          <Tooltip title="Open terminal">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<TerminalIcon />}
+              onClick={handleOpenTerminal}
+              color="secondary"
+            >
+              Terminal
+            </Button>
+          </Tooltip>
+        </Box>
+      </Paper>
+
       {/* Description Field with AutoGenerate Button */}
       <Box sx={{ position: 'relative' }}>
         <TextField
@@ -414,6 +611,36 @@ const WorkflowDetailsForm: React.FC = () => {
           Cancel
         </Button>
       </Box>
+      
+      <Dialog
+        open={terminalDialogOpen}
+        onClose={handleCloseTerminal}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>Terminal</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Command"
+            value={terminalCommand}
+            onChange={handleTerminalCommandChange}
+            fullWidth
+            margin="normal"
+            variant="outlined"
+            disabled={isExecutingCommand}
+          />
+          <Typography variant="body2" sx={{ mt: 2 }}>
+            Output:
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+            {terminalOutput}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseTerminal}>Close</Button>
+          <Button onClick={handleExecuteCommand} disabled={isExecutingCommand}>Execute</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

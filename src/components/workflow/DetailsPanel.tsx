@@ -120,20 +120,32 @@ const DetailsPanel: React.FC = () => {
         <Typography variant="h6">
           {getNodeTitle()}
         </Typography>
-        {showWorkflowDetails && (
+        {(showWorkflowDetails || selectedNode) && (
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               variant="outlined"
               color="primary"
-              onClick={() => (window as any).saveWorkflowChanges?.()}
-              disabled={(window as any).isWorkflowModified === false}
+              onClick={() => {
+                if (showWorkflowDetails) {
+                  (window as any).saveWorkflowChanges?.();
+                } else if (selectedNode) {
+                  (window as any).saveNodeChanges?.();
+                }
+              }}
+              disabled={showWorkflowDetails ? (window as any).isWorkflowModified === false : (window as any).isNodeModified === false}
             >
               Save Changes
             </Button>
             <Button
               variant="outlined"
               color="secondary"
-              onClick={() => (window as any).cancelWorkflowChanges?.()}
+              onClick={() => {
+                if (showWorkflowDetails) {
+                  (window as any).cancelWorkflowChanges?.();
+                } else if (selectedNode) {
+                  (window as any).cancelNodeChanges?.();
+                }
+              }}
             >
               Cancel
             </Button>

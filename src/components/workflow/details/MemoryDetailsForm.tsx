@@ -4,11 +4,11 @@ import FormLabel from '@mui/material/FormLabel';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
-import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { WorkflowNode } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
+import ActionButtons from '../../ui/ActionButtons';
 
 // Memory types
 const MEMORY_TYPES = [
@@ -105,6 +105,29 @@ const MemoryDetailsForm: React.FC<MemoryDetailsFormProps> = ({ node }) => {
     });
   };
 
+  const handleCancel = () => {
+    // Reset form to original values
+    setMemoryType(node.memoryType || 'conversation-buffer');
+  };
+
+  // Expose the functions to save and cancel changes
+  useEffect(() => {
+    // Track if there are unsaved changes
+    const isModified = memoryType !== (node.memoryType || 'conversation-buffer');
+
+    // Expose functions for the DetailsPanel to call
+    (window as any).saveNodeChanges = handleSave;
+    (window as any).cancelNodeChanges = handleCancel;
+    (window as any).isNodeModified = isModified;
+
+    return () => {
+      // Clean up
+      delete (window as any).saveNodeChanges;
+      delete (window as any).cancelNodeChanges;
+      delete (window as any).isNodeModified;
+    };
+  }, [memoryType, node]);
+
   return (
     <>
       <Box sx={{ mb: 2, mt: 2 }}>
@@ -138,13 +161,10 @@ const MemoryDetailsForm: React.FC<MemoryDetailsFormProps> = ({ node }) => {
       </Box>
       
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={handleSave}
-        >
-          Save Changes
-        </Button>
+        <ActionButtons
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
       </Box>
     </>
   );

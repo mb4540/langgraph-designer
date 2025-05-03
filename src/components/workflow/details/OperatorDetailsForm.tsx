@@ -10,6 +10,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Grid from '@mui/material/Grid';
 import { WorkflowNode, OperatorType } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
+import ActionButtons from '../../ui/ActionButtons';
 
 interface OperatorDetailsFormProps {
   node: WorkflowNode;
@@ -38,6 +39,34 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
       content: description,
     });
   };
+
+  const handleCancel = () => {
+    // Reset form to original values
+    setName(node.name || '');
+    setOperatorType(node.operatorType || OperatorType.Sequential);
+    setDescription(node.content || '');
+  };
+
+  // Expose the functions to save and cancel changes
+  useEffect(() => {
+    // Track if there are unsaved changes
+    const isModified = 
+      name !== (node.name || '') ||
+      operatorType !== (node.operatorType || OperatorType.Sequential) ||
+      description !== (node.content || '');
+
+    // Expose functions for the DetailsPanel to call
+    (window as any).saveNodeChanges = handleSave;
+    (window as any).cancelNodeChanges = handleCancel;
+    (window as any).isNodeModified = isModified;
+
+    return () => {
+      // Clean up
+      delete (window as any).saveNodeChanges;
+      delete (window as any).cancelNodeChanges;
+      delete (window as any).isNodeModified;
+    };
+  }, [name, operatorType, description, node]);
 
   return (
     <Box sx={{ p: 1 }}>
@@ -83,13 +112,10 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
       />
       
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={handleSave}
-        >
-          Save Changes
-        </Button>
+        <ActionButtons
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
       </Box>
     </Box>
   );

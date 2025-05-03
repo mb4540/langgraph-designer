@@ -16,6 +16,7 @@ import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useThemeContext } from '../../../context/ThemeContext';
 import LoadingIndicator from '../../ui/LoadingIndicator';
 import ErrorMessage from '../../ui/ErrorMessage';
+import ActionButtons from '../../ui/ActionButtons';
 import useAsyncOperation from '../../../hooks/useAsyncOperation';
 import { useVersionedId } from '../../../hooks/useVersionedId';
 import { VersionedEntity } from '../../../utils/idGenerator';
@@ -527,8 +528,63 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
   });
 
   const handleSave = () => {
-    executeSave();
+    if (isEditingTool) {
+      validateCode().then(() => {
+        executeSave();
+      }).catch(() => {
+        // Validation failed, don't save
+      });
+    } else {
+      executeSave();
+    }
   };
+
+  const handleCancel = () => {
+    // Reset form to original values
+    setToolType(node.toolType || '');
+    setIsEditingTool(false);
+    setVersion(node.version || '1.0.0');
+    
+    // Set tool code based on selected tool type
+    if (node.toolType) {
+      const selectedTool = TOOL_TYPES.find(tool => tool.value === node.toolType);
+      if (selectedTool) {
+        // If the node has custom code, use it, otherwise use the template
+        setToolCode(node.content && node.content !== `This is a tool component.` ? 
+          node.content : selectedTool.code);
+      }
+    }
+  };
+
+  // Expose the functions to save and cancel changes
+  useEffect(() => {
+    // Track if there are unsaved changes
+    let isModified = false;
+    
+    if (toolType !== (node.toolType || '')) {
+      isModified = true;
+    }
+    
+    if (isEditingTool && toolCode !== (node.content || '')) {
+      isModified = true;
+    }
+    
+    if (version !== (node.version || '1.0.0')) {
+      isModified = true;
+    }
+
+    // Expose functions for the DetailsPanel to call
+    (window as any).saveNodeChanges = handleSave;
+    (window as any).cancelNodeChanges = handleCancel;
+    (window as any).isNodeModified = isModified;
+
+    return () => {
+      // Clean up
+      delete (window as any).saveNodeChanges;
+      delete (window as any).cancelNodeChanges;
+      delete (window as any).isNodeModified;
+    };
+  }, [toolType, toolCode, isEditingTool, version, node]);
 
   // Handle code validation
   const { 
@@ -800,14 +856,11 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
             message="Saving..."
           />
         ) : (
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={handleSave}
-            disabled={isEditingTool && Boolean(validationError)}
-          >
-            Save Changes
-          </Button>
+          <ActionButtons
+            onSave={handleSave}
+            onCancel={handleCancel}
+            isSaveDisabled={isEditingTool && Boolean(validationError)}
+          />
         )}
       </Box>
     </>

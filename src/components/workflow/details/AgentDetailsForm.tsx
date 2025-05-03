@@ -35,6 +35,7 @@ import { WorkflowNode } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import LoadingIndicator from '../../ui/LoadingIndicator';
 import ErrorMessage from '../../ui/ErrorMessage';
+import ActionButtons from '../../ui/ActionButtons';
 import useAsyncOperation from '../../../hooks/useAsyncOperation';
 import { useVersionedId } from '../../../hooks/useVersionedId';
 import { VersionedEntity } from '../../../utils/idGenerator';
@@ -175,6 +176,52 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   const handleSave = () => {
     executeSave();
   };
+
+  const handleCancel = () => {
+    // Reset form to original values
+    setName(node.name || '');
+    setSelectedIcon(node.icon || 'smart-toy');
+    setAgentType(node.agentType || 'assistant');
+    setDescription(node.description || '');
+    setPrompt(node.content || '');
+    setEnableMarkdown(node.enableMarkdown || false);
+    setCredentialsSource(node.credentialsSource || 'workgroup');
+    setLlmModel(node.llmModel || 'gpt-4o');
+    setMaxConsecutiveReplies(node.maxConsecutiveReplies || 5);
+    setVersion(node.version || '1.0.0');
+  };
+
+  // Expose the functions to save and cancel changes
+  useEffect(() => {
+    // Track if there are unsaved changes
+    const isModified = 
+      name !== (node.name || '') ||
+      selectedIcon !== (node.icon || 'smart-toy') ||
+      agentType !== (node.agentType || 'assistant') ||
+      description !== (node.description || '') ||
+      prompt !== (node.content || '') ||
+      enableMarkdown !== (node.enableMarkdown || false) ||
+      credentialsSource !== (node.credentialsSource || 'workgroup') ||
+      llmModel !== (node.llmModel || 'gpt-4o') ||
+      maxConsecutiveReplies !== (node.maxConsecutiveReplies || 5) ||
+      version !== (node.version || '1.0.0');
+
+    // Expose functions for the DetailsPanel to call
+    (window as any).saveNodeChanges = handleSave;
+    (window as any).cancelNodeChanges = handleCancel;
+    (window as any).isNodeModified = isModified;
+
+    return () => {
+      // Clean up
+      delete (window as any).saveNodeChanges;
+      delete (window as any).cancelNodeChanges;
+      delete (window as any).isNodeModified;
+    };
+  }, [
+    name, selectedIcon, agentType, description, prompt, 
+    enableMarkdown, credentialsSource, llmModel, maxConsecutiveReplies, version,
+    node
+  ]);
 
   return (
     <Box sx={{ p: 1 }}>
@@ -417,14 +464,11 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
             message="Saving..."
           />
         ) : (
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={handleSave}
-            disabled={Boolean(validationError)}
-          >
-            Save Changes
-          </Button>
+          <ActionButtons
+            onSave={handleSave}
+            onCancel={handleCancel}
+            isSaveDisabled={Boolean(validationError)}
+          />
         )}
       </Box>
     </Box>
