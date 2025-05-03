@@ -52,6 +52,7 @@ import MemoryNode from '../nodes/MemoryNode';
 import ToolNode from '../nodes/ToolNode';
 import OperatorNode from '../nodes/OperatorNode';
 import ConfirmationDialog from '../ConfirmationDialog';
+import { canConnect, validateWorkflow, RuntimeType } from '../../utils/workflowValidator';
 
 // Define custom node types
 const nodeTypes: NodeTypes = {
@@ -198,6 +199,7 @@ const storeEdgesToFlowEdges = (edges: WorkflowEdge[], nodes: StoreNode[], isDark
         type: MarkerType.ArrowClosed,
         color: isDarkMode ? '#718096' : '#4a5568',
       },
+      animated: true,
     };
   });
 };
@@ -209,6 +211,15 @@ const WorkflowGraph: React.FC = () => {
   
   // State for workflow name (in a real app, this would come from a store)
   const [workflowName, setWorkflowName] = useState('My Workflow');
+  
+  // State for runtime type (autogen or langgraph)
+  const [runtimeType, setRuntimeType] = useState<RuntimeType>('langgraph');
+  
+  // State for validation errors
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  
+  // State for connection validation message
+  const [connectionMessage, setConnectionMessage] = useState<{ message: string, isError: boolean } | null>(null);
   
   // State for deletion confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -312,6 +323,35 @@ const WorkflowGraph: React.FC = () => {
   // Handle connecting nodes
   const onConnect = useCallback(
     (params: Connection) => {
+      // Find the source and target nodes
+      const sourceNode = storeNodes.find(node => node.id === params.source);
+      const targetNode = storeNodes.find(node => node.id === params.target);
+      
+      if (!sourceNode || !targetNode) {
+        setConnectionMessage({
+          message: 'Cannot connect: Source or target node not found',
+          isError: true
+        });
+        return;
+      }
+      
+      // Validate the connection
+      const validationResult = canConnect(
+        sourceNode,
+        targetNode,
+        storeNodes,
+        storeEdges,
+        runtimeType
+      );
+      
+      if (!validationResult.canConnect) {
+        setConnectionMessage({
+          message: validationResult.message || 'Invalid connection',
+          isError: true
+        });
+        return;
+      }
+      
       // Create a new edge with the connection parameters
       const edgeId = `edge-${Date.now()}`;
       const newEdge = {
@@ -325,8 +365,21 @@ const WorkflowGraph: React.FC = () => {
       
       // Add the edge to the store
       addStoreEdge(newEdge);
+      
+      // Show success message
+      setConnectionMessage({
+        message: 'Connection created successfully',
+        isError: false
+      });
+      
+      // Clear message after a delay
+      setTimeout(() => setConnectionMessage(null), 3000);
+      
+      // Validate the entire workflow
+      const workflowValidation = validateWorkflow(storeNodes, [...storeEdges, newEdge], runtimeType);
+      setValidationErrors(workflowValidation.errors);
     },
-    [addStoreEdge]
+    [addStoreEdge, storeNodes, storeEdges, runtimeType]
   );
 
   // Handle node selection
@@ -358,6 +411,65 @@ const WorkflowGraph: React.FC = () => {
     animated: true,
   };
 
+  // Add a component to display validation errors and connection messages
+  const ValidationMessages = () => {
+    if (connectionMessage) {
+      return (
+        <Paper
+          elevation={3}
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            padding: 2,
+            backgroundColor: connectionMessage.isError ? '#FEE2E2' : '#ECFDF5',
+            borderLeft: connectionMessage.isError ? '4px solid #EF4444' : '4px solid #10B981',
+            maxWidth: '80%',
+          }}
+        >
+          <Typography color={connectionMessage.isError ? 'error' : 'success'}>
+            {connectionMessage.message}
+          </Typography>
+        </Paper>
+      );
+    }
+
+    if (validationErrors.length > 0) {
+      return (
+        <Paper
+          elevation={3}
+          sx={{
+            position: 'absolute',
+            top: 70,
+            right: 16,
+            zIndex: 1000,
+            padding: 2,
+            backgroundColor: '#FEE2E2',
+            borderLeft: '4px solid #EF4444',
+            maxWidth: '30%',
+            maxHeight: '50%',
+            overflow: 'auto',
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight="bold" color="error" gutterBottom>
+            Workflow Validation Errors
+          </Typography>
+          <Box component="ul" sx={{ pl: 2, mt: 1 }}>
+            {validationErrors.map((error, index) => (
+              <Typography component="li" key={index} color="error" fontSize="0.875rem">
+                {error}
+              </Typography>
+            ))}
+          </Box>
+        </Paper>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Workflow Header */}
@@ -365,30 +477,66 @@ const WorkflowGraph: React.FC = () => {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        px: 2, 
-        py: 1, 
+        p: 2, 
         borderBottom: 1, 
-        borderColor: 'divider'
+        borderColor: 'divider' 
       }}>
-        <Typography variant="subtitle1" fontWeight="medium">
-          Workflow Name: {workflowName}
+        <Typography variant="h6" component="div">
+          {workflowName}
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button 
-            variant="outlined" 
-            size="small" 
-            startIcon={<AddIcon />} 
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {/* Runtime Type Selector */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+            <Typography variant="body2" sx={{ mr: 1 }}>
+              Runtime:
+            </Typography>
+            <Button
+              variant={runtimeType === 'langgraph' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => {
+                setRuntimeType('langgraph');
+                // Re-validate the workflow with the new runtime type
+                const workflowValidation = validateWorkflow(storeNodes, storeEdges, 'langgraph');
+                setValidationErrors(workflowValidation.errors);
+              }}
+              sx={{ mr: 1, textTransform: 'none' }}
+            >
+              LangGraph
+            </Button>
+            <Button
+              variant={runtimeType === 'autogen' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => {
+                setRuntimeType('autogen');
+                // Re-validate the workflow with the new runtime type
+                const workflowValidation = validateWorkflow(storeNodes, storeEdges, 'autogen');
+                setValidationErrors(workflowValidation.errors);
+              }}
+              sx={{ textTransform: 'none' }}
+            >
+              Autogen
+            </Button>
+          </Box>
+          
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon />}
+            onClick={handleEditWorkflowDetails}
+            size="small"
+          >
+            Edit Workflow Details
+          </Button>
+          
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
             onClick={handleOpenOperatorMenu}
+            size="small"
+            aria-controls={operatorMenuOpen ? 'operator-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={operatorMenuOpen ? 'true' : undefined}
           >
             Add Operator
-          </Button>
-          <Button 
-            variant="outlined" 
-            size="small" 
-            startIcon={<EditIcon />} 
-            onClick={handleEditWorkflowDetails}
-          >
-            Edit Workflow Detail
           </Button>
         </Box>
       </Box>
@@ -476,6 +624,7 @@ const WorkflowGraph: React.FC = () => {
       
       {/* ReactFlow Container */}
       <Box sx={{ flexGrow: 1, position: 'relative' }}>
+        <ValidationMessages />
         <ReactFlow
           nodes={nodes}
           edges={edges}
