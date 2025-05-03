@@ -45,6 +45,7 @@ const ConversationPanel: React.FC = () => {
     return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
   });
   const [showApiKeyDialog, setShowApiKeyDialog] = useState<boolean>(!apiKey);
+  const [showApiKeyStatus, setShowApiKeyStatus] = useState<boolean>(false);
   
   // Save API key to localStorage when it changes
   useEffect(() => {
@@ -73,7 +74,18 @@ const ConversationPanel: React.FC = () => {
     // Override the environment API key with our stored one
     await openAIChat([{ role: 'user', content: 'Test message' }], undefined, apiKey);
     return true;
-  }, { immediate: !!apiKey, autoRetry: true, maxRetries: 1 });
+  }, { 
+    immediate: false, 
+    autoRetry: true, 
+    maxRetries: 1,
+    onSuccess: () => {
+      // Hide the status after 2 seconds on success
+      setTimeout(() => setShowApiKeyStatus(false), 2000);
+    },
+    onError: () => {
+      // Keep status visible on error so user can see the error
+    }
+  });
 
   // Handle sending messages
   const { 
@@ -211,6 +223,7 @@ const ConversationPanel: React.FC = () => {
   // Save API key and close dialog
   const handleSaveApiKey = () => {
     if (apiKey.trim()) {
+      setShowApiKeyStatus(true);
       checkApiKey();
       setShowApiKeyDialog(false);
     }
@@ -227,28 +240,30 @@ const ConversationPanel: React.FC = () => {
         <Typography variant="h6">
           Conversation
         </Typography>
-        {apiKeyLoading ? (
-          <Chip 
-            label="Checking API Key" 
-            color="primary" 
-            size="small" 
-          />
-        ) : apiKeyError ? (
-          <Chip 
-            label="API Key Invalid" 
-            color="error" 
-            size="small" 
-            onClick={handleShowApiKeyDialog}
-            sx={{ cursor: 'pointer' }}
-          />
-        ) : apiKeyValid ? (
-          <Chip 
-            label="API Key Valid" 
-            color="success" 
-            size="small" 
-            onClick={handleShowApiKeyDialog}
-            sx={{ cursor: 'pointer' }}
-          />
+        {showApiKeyStatus ? (
+          apiKeyLoading ? (
+            <Chip 
+              label="Checking API Key" 
+              color="primary" 
+              size="small" 
+            />
+          ) : apiKeyError ? (
+            <Chip 
+              label="API Key Invalid" 
+              color="error" 
+              size="small" 
+              onClick={handleShowApiKeyDialog}
+              sx={{ cursor: 'pointer' }}
+            />
+          ) : apiKeyValid ? (
+            <Chip 
+              label="API Key Valid" 
+              color="success" 
+              size="small" 
+              onClick={handleShowApiKeyDialog}
+              sx={{ cursor: 'pointer' }}
+            />
+          ) : null
         ) : (
           <Chip 
             label="Set API Key" 
