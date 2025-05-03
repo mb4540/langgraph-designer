@@ -11,7 +11,7 @@ import ReactFlow, {
   Connection,
   NodeTypes,
   NodeMouseHandler,
-  MarkerType,
+  MarkerType, // Import MarkerType for edge styling
   ReactFlowInstance
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -45,7 +45,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 
 import { useThemeContext } from '../../context/ThemeContext';
-import { WorkflowNode as StoreNode, WorkflowEdge as StoreEdge, OperatorType } from '../../types/nodeTypes';
+import { NodeType, OperatorType, WorkflowEdge, WorkflowNode as StoreNode } from '../../types/nodeTypes';
 import { useWorkflowContext } from '../../context/WorkflowContext';
 import AgentNode from '../nodes/AgentNode';
 import MemoryNode from '../nodes/MemoryNode';
@@ -173,7 +173,7 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
 };
 
 // Convert store edges to ReactFlow edges, preserving handle information
-const storeEdgesToFlowEdges = (edges: StoreEdge[], nodes: StoreNode[], isDarkMode: boolean): Edge[] => {
+const storeEdgesToFlowEdges = (edges: WorkflowEdge[], nodes: StoreNode[], isDarkMode: boolean): Edge[] => {
   return edges.map(edge => {
     // Find the target node to determine its type
     const targetNode = nodes.find(node => node.id === edge.target);
@@ -312,7 +312,7 @@ const WorkflowGraph: React.FC = () => {
   // Handle connecting nodes
   const onConnect = useCallback(
     (params: Connection) => {
-      // Add the edge to the store
+      // Create a new edge with the connection parameters
       const edgeId = `edge-${Date.now()}`;
       const newEdge = {
         id: edgeId,
@@ -320,6 +320,7 @@ const WorkflowGraph: React.FC = () => {
         target: params.target || '',
         sourceHandle: params.sourceHandle || undefined,
         targetHandle: params.targetHandle || undefined,
+        animated: true,
       };
       
       // Add the edge to the store
@@ -341,6 +342,21 @@ const WorkflowGraph: React.FC = () => {
   const onInit = useCallback((instance: ReactFlowInstance) => {
     reactFlowInstanceRef.current = instance;
   }, []);
+
+  // Custom default edge
+  const defaultEdgeOptions = {
+    style: {
+      strokeWidth: 2,
+      stroke: isDarkMode ? '#64748b' : '#94a3b8', // Slate colors
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      width: 15,
+      height: 15,
+      color: isDarkMode ? '#64748b' : '#94a3b8',
+    },
+    animated: true,
+  };
 
   return (
     <Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -469,6 +485,7 @@ const WorkflowGraph: React.FC = () => {
           onInit={onInit}
           onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
+          defaultEdgeOptions={defaultEdgeOptions} // Add custom edge styles
           fitView={false}
           fitViewOptions={{ duration: 0 }}
           minZoom={0.1}

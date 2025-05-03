@@ -47,16 +47,32 @@ const DeleteButton = styled(IconButton)(({ theme }) => ({
   zIndex: 10,
 }));
 
-const StyledHandle = styled(Handle)(({ theme, position }) => ({
-  width: 12,
-  height: 12,
-  borderRadius: 6,
+// Main connection handles (top and bottom)
+const MainHandle = styled(Handle)(({ theme, position }) => ({
+  width: 14,
+  height: 14,
+  borderRadius: 7,
   background: theme.palette.primary.main,
   border: `2px solid ${theme.palette.background.paper}`,
-  top: position === Position.Top ? '-6px' : 'auto',
-  bottom: position === Position.Bottom ? '-6px' : 'auto',
-  left: position === Position.Left ? '-6px' : 'auto',
-  right: position === Position.Right ? '-6px' : 'auto',
+  top: position === Position.Top ? '-7px' : 'auto',
+  bottom: position === Position.Bottom ? '-7px' : 'auto',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  zIndex: 5,
+}));
+
+// Secondary connection handles (left and right)
+const SecondaryHandle = styled(Handle)(({ theme, position }) => ({
+  width: 10,
+  height: 10,
+  borderRadius: 5,
+  background: theme.palette.grey[400],
+  border: `2px solid ${theme.palette.background.paper}`,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  left: position === Position.Left ? '-5px' : 'auto',
+  right: position === Position.Right ? '-5px' : 'auto',
+  zIndex: 4,
 }));
 
 // Map operator types to their corresponding icons
@@ -114,11 +130,13 @@ const OperatorNode: React.FC<NodeProps<OperatorNodeData>> = ({ id, data }) => {
         <DeleteIcon fontSize="small" />
       </DeleteButton>
       
-      {/* Connection handles - one on each side for flexibility */}
-      <StyledHandle type="target" position={Position.Top} id="target-top" />
-      <StyledHandle type="source" position={Position.Bottom} id="source-bottom" />
-      <StyledHandle type="target" position={Position.Left} id="target-left" />
-      <StyledHandle type="source" position={Position.Right} id="source-right" />
+      {/* Primary Connection Handles - Top and Bottom */}
+      <MainHandle type="target" position={Position.Top} id="target-top" />
+      <MainHandle type="source" position={Position.Bottom} id="source-bottom" />
+      
+      {/* Secondary Connection Handles - Left and Right */}
+      <SecondaryHandle type="target" position={Position.Left} id="target-left" />
+      <SecondaryHandle type="source" position={Position.Right} id="source-right" />
       
       <CardContent sx={{ padding: 2, paddingBottom: '16px !important' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
