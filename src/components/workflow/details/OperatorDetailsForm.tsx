@@ -10,6 +10,10 @@ import { WorkflowNode, OperatorType } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useRuntimeContext } from '../../../context/RuntimeContext';
 
+// Import common components
+import BaseNodeForm from './common/BaseNodeForm';
+import FormField from './common/FormField';
+
 // Import operator config components
 import StartOperatorConfig from './StartOperatorConfig';
 import EndOperatorConfig from './EndOperatorConfig';
@@ -91,7 +95,14 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
     }
   }
 
-  const handleSave = () => {
+  // Check if form has been modified
+  const isModified = 
+    operatorType !== (node.operatorType || OperatorType.Start) ||
+    description !== (node.content || '') ||
+    JSON.stringify(operatorConfig) !== JSON.stringify(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
+
+  // Handle save operation
+  const handleSave = async () => {
     // Update node with form values
     const updates: Partial<WorkflowNode> = {
       operatorType,
@@ -102,33 +113,13 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
     updateNode(node.id, updates);
   };
 
+  // Handle cancel operation
   const handleCancel = () => {
     // Reset form to original values
     setOperatorType(node.operatorType || OperatorType.Start);
     setDescription(node.content || '');
     setOperatorConfig(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
   };
-
-  // Expose the functions to save and cancel changes
-  useEffect(() => {
-    // Track if there are unsaved changes
-    const isModified = 
-      operatorType !== (node.operatorType || OperatorType.Start) ||
-      description !== (node.content || '') ||
-      JSON.stringify(operatorConfig) !== JSON.stringify(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
-
-    // Expose functions for the DetailsPanel to call
-    (window as any).saveNodeChanges = handleSave;
-    (window as any).cancelNodeChanges = handleCancel;
-    (window as any).isNodeModified = isModified;
-
-    return () => {
-      // Clean up
-      delete (window as any).saveNodeChanges;
-      delete (window as any).cancelNodeChanges;
-      delete (window as any).isNodeModified;
-    };
-  }, [operatorType, description, operatorConfig, node]);
 
   // Render the appropriate config component based on operator type
   const renderOperatorConfig = () => {
@@ -167,30 +158,49 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
   };
 
   return (
-    <Box sx={{ p: 1 }}>
-      <FormControl fullWidth margin="normal">
-        <InputLabel id="operator-type-label">Operator Type</InputLabel>
-        <Select
-          labelId="operator-type-label"
-          value={operatorType}
-          label="Operator Type"
-          onChange={(e) => setOperatorType(e.target.value as OperatorType)}
-        >
-          {Object.values(OperatorType).map((type) => (
-            <MenuItem key={type} value={type}>{type}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      
-      {/* Render operator-specific configuration */}
-      <Box sx={{ mt: 3 }}>
+    <BaseNodeForm
+      node={node}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      isModified={isModified}
+    >
+      <Box sx={{ mb: 3 }}>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel id="operator-type-label">Operator Type</InputLabel>
+          <Select
+            labelId="operator-type-label"
+            id="operator-type"
+            value={operatorType}
+            label="Operator Type"
+            onChange={(e) => setOperatorType(e.target.value as OperatorType)}
+          >
+            {Object.values(OperatorType).map((type) => (
+              <MenuItem key={type} value={type}>
+                {type}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormField
+          id="operator-description"
+          label="Description"
+          value={description}
+          onChange={setDescription}
+          multiline
+          rows={3}
+          placeholder="Enter a description for this operator"
+        />
+
         <Divider sx={{ my: 2 }} />
-        <Typography variant="subtitle1" gutterBottom>
+        
+        <Typography variant="subtitle1" sx={{ mb: 2 }}>
           {operatorType} Configuration
         </Typography>
+        
         {renderOperatorConfig()}
       </Box>
-    </Box>
+    </BaseNodeForm>
   );
 };
 

@@ -300,4 +300,8 @@ export interface ToolType {
   description: string;
   source: string;
   code: string;
+  version?: string;
+  versionedId?: string;
+  createdAt?: string;
+  tags?: string[];
 }
