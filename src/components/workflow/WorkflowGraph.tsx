@@ -44,6 +44,8 @@ import TimerIcon from '@mui/icons-material/Timer';
 import PauseIcon from '@mui/icons-material/Pause';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import GridOnIcon from '@mui/icons-material/GridOn';
 
 import { useThemeContext } from '../../context/ThemeContext';
 import { useRuntimeContext } from '../../context/RuntimeContext';
@@ -232,6 +234,10 @@ const WorkflowGraph: React.FC = () => {
   // State for operator menu
   const [operatorMenuAnchorEl, setOperatorMenuAnchorEl] = useState<null | HTMLElement>(null);
   const operatorMenuOpen = Boolean(operatorMenuAnchorEl);
+
+  // State for grid snap feature
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const [snapGrid, setSnapGrid] = useState<[number, number]>([15, 15]); // Grid size in pixels
 
   // Reference to the ReactFlow instance
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
@@ -427,12 +433,21 @@ const WorkflowGraph: React.FC = () => {
             transform: 'translateX(-50%)',
             zIndex: 1000,
             padding: 2,
-            backgroundColor: connectionMessage.isError ? '#FEE2E2' : '#ECFDF5',
-            borderLeft: connectionMessage.isError ? '4px solid #EF4444' : '4px solid #10B981',
+            backgroundColor: connectionMessage.isError ? 
+              (isDarkMode ? '#3B0D0D' : '#FEE2E2') : 
+              (isDarkMode ? '#0D312B' : '#ECFDF5'),
+            borderLeft: connectionMessage.isError ? 
+              '4px solid #EF4444' : 
+              '4px solid #10B981',
             maxWidth: '80%',
           }}
         >
-          <Typography color={connectionMessage.isError ? 'error' : 'success'}>
+          <Typography 
+            color={connectionMessage.isError ? 
+              (isDarkMode ? '#F87171' : 'error') : 
+              (isDarkMode ? '#34D399' : 'success')
+            }
+          >
             {connectionMessage.message}
           </Typography>
         </Paper>
@@ -449,19 +464,19 @@ const WorkflowGraph: React.FC = () => {
             right: 16,
             zIndex: 1000,
             padding: 2,
-            backgroundColor: '#FEE2E2',
+            backgroundColor: isDarkMode ? '#3B0D0D' : '#FEE2E2',
             borderLeft: '4px solid #EF4444',
             maxWidth: '30%',
             maxHeight: '50%',
             overflow: 'auto',
           }}
         >
-          <Typography variant="subtitle1" fontWeight="bold" color="error" gutterBottom>
+          <Typography variant="subtitle1" fontWeight="bold" color={isDarkMode ? '#F87171' : 'error'} gutterBottom>
             Workflow Validation Errors
           </Typography>
           <Box component="ul" sx={{ pl: 2, mt: 1 }}>
             {validationErrors.map((error, index) => (
-              <Typography component="li" key={index} color="error" fontSize="0.875rem">
+              <Typography component="li" key={index} color={isDarkMode ? '#F87171' : 'error'} fontSize="0.875rem">
                 {error}
               </Typography>
             ))}
@@ -495,6 +510,191 @@ const WorkflowGraph: React.FC = () => {
     // Clear message after a delay
     setTimeout(() => setConnectionMessage(null), 3000);
   }, [storeNodes, storeEdges, runtime]);
+
+  // Handle smart layout
+  const handleSmartLayout = useCallback(() => {
+    if (!reactFlowInstanceRef.current) return;
+    
+    // Create a copy of the current nodes
+    const currentNodes = [...storeNodes];
+    
+    // Sort nodes by type to ensure proper layering
+    // START nodes come first, then agent/tool/memory nodes, then END nodes
+    const startNodes = currentNodes.filter(node => 
+      node.type === 'operator' && node.operatorType === OperatorType.Start
+    );
+    const endNodes = currentNodes.filter(node => 
+      node.type === 'operator' && node.operatorType === OperatorType.Stop
+    );
+    const otherNodes = currentNodes.filter(node => 
+      !(node.type === 'operator' && 
+        (node.operatorType === OperatorType.Start || node.operatorType === OperatorType.Stop))
+    );
+    
+    // Create a map of node connections
+    const nodeConnections: Record<string, { incoming: string[], outgoing: string[] }> = {};
+    
+    // Initialize the connection map
+    currentNodes.forEach(node => {
+      nodeConnections[node.id] = { incoming: [], outgoing: [] };
+    });
+    
+    // Populate the connection map
+    storeEdges.forEach(edge => {
+      if (nodeConnections[edge.source]) {
+        nodeConnections[edge.source].outgoing.push(edge.target);
+      }
+      if (nodeConnections[edge.target]) {
+        nodeConnections[edge.target].incoming.push(edge.source);
+      }
+    });
+    
+    // Assign layers to nodes based on their connections
+    const nodeLayers: Record<string, number> = {};
+    
+    // Start nodes are in layer 0
+    startNodes.forEach(node => {
+      nodeLayers[node.id] = 0;
+    });
+    
+    // Assign layers to other nodes using a breadth-first approach
+    const assignLayers = () => {
+      let changed = false;
+      
+      otherNodes.forEach(node => {
+        // If the node already has a layer, skip it
+        if (nodeLayers[node.id] !== undefined) return;
+        
+        // Check if all incoming nodes have layers assigned
+        const incomingLayers = nodeConnections[node.id].incoming
+          .map(id => nodeLayers[id])
+          .filter(layer => layer !== undefined);
+        
+        // If all incoming nodes have layers, assign this node to the next layer
+        if (incomingLayers.length > 0 && 
+            incomingLayers.length === nodeConnections[node.id].incoming.length) {
+          const maxIncomingLayer = Math.max(...incomingLayers);
+          nodeLayers[node.id] = maxIncomingLayer + 1;
+          changed = true;
+        }
+      });
+      
+      return changed;
+    };
+    
+    // Keep assigning layers until no more changes can be made
+    while (assignLayers()) {}
+    
+    // Handle nodes that couldn't be assigned a layer (no incoming connections)
+    otherNodes.forEach(node => {
+      if (nodeLayers[node.id] === undefined) {
+        // If no incoming connections, place in layer 1
+        if (nodeConnections[node.id].incoming.length === 0) {
+          nodeLayers[node.id] = 1;
+        } else {
+          // Otherwise, find the maximum layer and add 1
+          const maxLayer = Math.max(
+            ...Object.values(nodeLayers).filter(layer => layer !== undefined)
+          );
+          nodeLayers[node.id] = maxLayer + 1;
+        }
+      }
+    });
+    
+    // End nodes go in the final layer
+    const maxLayer = Math.max(
+      ...Object.values(nodeLayers).filter(layer => layer !== undefined),
+      0
+    );
+    endNodes.forEach(node => {
+      nodeLayers[node.id] = maxLayer + 1;
+    });
+    
+    // Count nodes in each layer
+    const layerCounts: Record<number, number> = {};
+    Object.values(nodeLayers).forEach(layer => {
+      layerCounts[layer] = (layerCounts[layer] || 0) + 1;
+    });
+    
+    // Calculate positions based on layers
+    const verticalSpacing = 150; // Vertical spacing between layers
+    const horizontalSpacing = 200; // Horizontal spacing between nodes in the same layer
+    
+    // Track node positions within each layer
+    const layerPositions: Record<number, number> = {};
+    
+    // Update node positions
+    const updatedNodes = currentNodes.map(node => {
+      const layer = nodeLayers[node.id] || 0;
+      
+      // Initialize layer position counter if not exists
+      if (layerPositions[layer] === undefined) {
+        layerPositions[layer] = 0;
+      }
+      
+      // Calculate horizontal position within the layer
+      const nodesInLayer = layerCounts[layer] || 1;
+      const totalWidth = (nodesInLayer - 1) * horizontalSpacing;
+      const startX = -totalWidth / 2;
+      const x = startX + (layerPositions[layer] * horizontalSpacing);
+      
+      // Calculate vertical position based on layer
+      const y = layer * verticalSpacing;
+      
+      // Increment the position counter for this layer
+      layerPositions[layer]++;
+      
+      // Return the updated node with new position
+      return {
+        ...node,
+        position: { x, y }
+      };
+    });
+    
+    // Update nodes in the store
+    updatedNodes.forEach(node => {
+      const { id, position } = node;
+      // Find the node in the store
+      const storeNode = storeNodes.find(n => n.id === id);
+      if (storeNode) {
+        // Update the node position
+        const updatedNode = { ...storeNode, position };
+        // Replace the node in the store
+        removeNode(id);
+        addNode(updatedNode);
+      }
+    });
+    
+    // Show success message
+    setConnectionMessage({
+      message: 'Smart layout applied successfully',
+      isError: false
+    });
+    
+    // Clear message after a delay
+    setTimeout(() => setConnectionMessage(null), 3000);
+    
+    // Fit view to show all nodes
+    setTimeout(() => {
+      if (reactFlowInstanceRef.current) {
+        reactFlowInstanceRef.current.fitView({ padding: 0.2 });
+      }
+    }, 100);
+  }, [storeNodes, storeEdges, addNode, removeNode]);
+
+  // Toggle grid snap
+  const handleToggleGridSnap = useCallback(() => {
+    setSnapToGrid(prev => !prev);
+    
+    // Show message about grid snap status
+    setConnectionMessage({
+      message: snapToGrid ? 'Grid snap disabled' : 'Grid snap enabled',
+      isError: false
+    });
+    
+    // Clear message after a delay
+    setTimeout(() => setConnectionMessage(null), 3000);
+  }, [snapToGrid]);
 
   return (
     <Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -538,6 +738,22 @@ const WorkflowGraph: React.FC = () => {
             size="small"
           >
             Validate Workflow
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<AutoFixHighIcon />}
+            onClick={handleSmartLayout}
+            size="small"
+          >
+            Smart Layout
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<GridOnIcon />}
+            onClick={handleToggleGridSnap}
+            size="small"
+          >
+            Toggle Grid Snap
           </Button>
         </Box>
       </Box>
@@ -641,6 +857,8 @@ const WorkflowGraph: React.FC = () => {
           minZoom={0.1}
           maxZoom={2}
           defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+          snapToGrid={snapToGrid}
+          snapGrid={snapGrid}
         >
           <MiniMap
             nodeStrokeWidth={3}

@@ -38,6 +38,7 @@ const WorkflowDetailsForm: React.FC = () => {
     runtimeType: runtimeType,
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [isModified, setIsModified] = useState(false);
 
   // Generate versioned ID for the workflow
   const versionedWorkflow = useVersionedId('agent', formData.version); // Using 'agent' type as placeholder
@@ -83,6 +84,16 @@ const WorkflowDetailsForm: React.FC = () => {
     }));
   }, [runtimeType]);
 
+  useEffect(() => {
+    setIsEditing(true);
+  }, []);
+
+  useEffect(() => {
+    if (isEditing) {
+      setIsModified(false);
+    }
+  }, [isEditing]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
@@ -95,6 +106,7 @@ const WorkflowDetailsForm: React.FC = () => {
       ...prev,
       [name]: value
     }));
+    setIsModified(true);
   };
 
   const handleSave = () => {
@@ -114,9 +126,33 @@ const WorkflowDetailsForm: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Typography variant="subtitle1" gutterBottom>
-        Workflow Details
-      </Typography>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mb: 2 
+      }}>
+        <Typography variant="subtitle1" fontWeight="medium">
+          Workflow Details
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={handleSave}
+            disabled={!isModified}
+          >
+            Save Changes
+          </Button>
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={handleCancel}
+          >
+            Cancel
+          </Button>
+        </Box>
+      </Box>
       
       <TextField
         label="Workflow Name"
@@ -251,22 +287,23 @@ const WorkflowDetailsForm: React.FC = () => {
         </SyntaxHighlighter>
       </Paper>
       
-      {isEditing ? (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
-          <Button variant="outlined" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button variant="contained" onClick={handleSave} color="primary">
-            Save Changes
-          </Button>
-        </Box>
-      ) : (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-          <Button variant="contained" onClick={() => setIsEditing(true)} color="primary">
-            Edit Details
-          </Button>
-        </Box>
-      )}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={handleSave}
+          disabled={!isModified}
+        >
+          Save Changes
+        </Button>
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={handleCancel}
+        >
+          Cancel
+        </Button>
+      </Box>
     </Box>
   );
 };
