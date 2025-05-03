@@ -11,6 +11,14 @@ import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import EditIcon from '@mui/icons-material/Edit';
 import Editor from '@monaco-editor/react';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import Chip from '@mui/material/Chip';
+import InputAdornment from '@mui/material/InputAdornment';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Checkbox from '@mui/material/Checkbox';
+import ListItemText from '@mui/material/ListItemText';
 import { WorkflowNode } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useThemeContext } from '../../../context/ThemeContext';
@@ -31,6 +39,35 @@ const generateToolId = (version: string) => {
   };
 };
 
+// Tool tags for filtering
+const TOOL_TAGS = [
+  // Categories
+  { value: 'Database', category: 'Technology' },
+  { value: 'API', category: 'Technology' },
+  { value: 'Vector', category: 'Technology' },
+  { value: 'Storage', category: 'Technology' },
+  { value: 'Cloud', category: 'Technology' },
+  { value: 'Kubernetes', category: 'Technology' },
+  
+  // Types
+  { value: 'Official', category: 'Source' },
+  { value: 'Community', category: 'Source' },
+  
+  // Functionality
+  { value: 'Data', category: 'Functionality' },
+  { value: 'Agent', category: 'Functionality' },
+  { value: 'AI', category: 'Functionality' },
+  { value: 'Image', category: 'Functionality' },
+  { value: 'Time', category: 'Functionality' },
+  { value: 'Automation', category: 'Functionality' },
+  { value: 'Scraping', category: 'Functionality' },
+  { value: 'Search', category: 'Functionality' },
+  { value: 'Location', category: 'Functionality' },
+  { value: 'Google', category: 'Functionality' },
+  { value: 'HTTP', category: 'Functionality' },
+  { value: 'Monitoring', category: 'Functionality' }
+];
+
 // Tool types with MCP code templates
 const TOOL_TYPES = [
   {
@@ -41,6 +78,7 @@ const TOOL_TYPES = [
     version: '1.0.0',
     versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
+    tags: ['Automation', 'Scraping', 'Community'],
     code: `from langgraph.mcp import MCP
 from stagehand.browserbase import BrowserBase
 
@@ -64,6 +102,7 @@ browser_tool = MCP(
     version: '1.0.0',
     versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
+    tags: ['Database', 'Vector', 'Community'],
     code: `from langgraph.mcp import MCP
 from langchain_community.vectorstores import Qdrant
 from langchain_openai import OpenAIEmbeddings
@@ -92,6 +131,7 @@ retriever_tool = MCP(
     version: '1.0.0',
     versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
+    tags: ['Data', 'Community'],
     code: `from langgraph.mcp import MCP
 import sympy
 import re
@@ -126,6 +166,7 @@ calculator_tool = MCP(
     version: '1.0.0',
     versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
+    tags: ['Database', 'Storage', 'Community'],
     code: `from langgraph.mcp import MCP
 import sqlalchemy
 import pandas as pd
@@ -193,6 +234,7 @@ sql_tool = MCP(
     version: '1.0.0',
     versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
+    tags: ['Automation', 'Community'],
     code: `from langgraph.mcp import MCP
 import imaplib
 import smtplib
@@ -384,6 +426,7 @@ email_tool = MCP(
     version: '1.0.0',
     versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
+    tags: ['Cloud', 'Community'],
     code: `from langgraph.mcp import MCP
 import requests
 import json
@@ -463,6 +506,70 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
   const [isEditingTool, setIsEditingTool] = useState(false);
   const [toolCode, setToolCode] = useState('');
   
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'category'>('name');
+  
+  // Filter menu handlers
+  const handleFilterOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag) 
+        : [...prev, tag]
+    );
+  };
+  
+  const handleCategoryToggle = (category: string) => {
+    const categoryTags = TOOL_TAGS
+      .filter(tag => tag.category === category)
+      .map(tag => tag.value);
+    
+    const allSelected = categoryTags.every(tag => selectedTags.includes(tag));
+    
+    if (allSelected) {
+      // Remove all tags in this category
+      setSelectedTags(prev => prev.filter(tag => !categoryTags.includes(tag)));
+    } else {
+      // Add all tags in this category that aren't already selected
+      const tagsToAdd = categoryTags.filter(tag => !selectedTags.includes(tag));
+      setSelectedTags(prev => [...prev, ...tagsToAdd]);
+    }
+  };
+
+  // Filter tools based on search query and selected tags
+  const filteredTools = TOOL_TYPES.filter(tool => {
+    // Filter by search query
+    const matchesSearch = 
+      searchQuery === '' || 
+      tool.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tool.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tool.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tool.tags && tool.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
+    
+    // Filter by selected tags
+    const matchesTags = 
+      selectedTags.length === 0 || 
+      selectedTags.some(tag => tool.tags?.includes(tag));
+    
+    return matchesSearch && matchesTags;
+  }).sort((a, b) => {
+    if (sortBy === 'name') {
+      return a.label.localeCompare(b.label);
+    } else {
+      return a.source.localeCompare(b.source);
+    }
+  });
+
   // Update form when node changes
   useEffect(() => {
     setToolType(node.toolType || '');
@@ -700,10 +807,145 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
       // Show the list of tool cards with edit buttons
       return (
         <Box sx={{ mb: 2, mt: 2 }}>
-          <FormControl component="fieldset" fullWidth>
-            <FormLabel component="legend">Tool Type</FormLabel>
-            <Box sx={{ mt: 2 }}>
-              {TOOL_TYPES.map(tool => (
+          {/* Search and filter bar */}
+          <Box sx={{ display: 'flex', mb: 3, gap: 1 }}>
+            <TextField
+              fullWidth
+              placeholder="Search tools..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="small"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <IconButton 
+              onClick={handleFilterOpen} 
+              color={selectedTags.length > 0 ? "primary" : "default"}
+              title="Filter by tags"
+            >
+              <FilterListIcon />
+            </IconButton>
+            <Menu
+              anchorEl={filterAnchorEl}
+              open={Boolean(filterAnchorEl)}
+              onClose={handleFilterClose}
+              PaperProps={{
+                style: {
+                  maxHeight: 400,
+                  width: 280,
+                },
+              }}
+            >
+              {/* Sort options */}
+              <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Sort by
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Chip 
+                    label="Name" 
+                    onClick={() => setSortBy('name')} 
+                    color={sortBy === 'name' ? 'primary' : 'default'}
+                    size="small"
+                    variant={sortBy === 'name' ? 'filled' : 'outlined'}
+                  />
+                  <Chip 
+                    label="Source" 
+                    onClick={() => setSortBy('category')} 
+                    color={sortBy === 'category' ? 'primary' : 'default'}
+                    size="small"
+                    variant={sortBy === 'category' ? 'filled' : 'outlined'}
+                  />
+                </Box>
+              </Box>
+              
+              {/* Filter by category */}
+              {['Source', 'Technology', 'Functionality'].map(category => {
+                const categoryTags = TOOL_TAGS.filter(tag => tag.category === category);
+                const allSelected = categoryTags.every(tag => selectedTags.includes(tag.value));
+                const someSelected = categoryTags.some(tag => selectedTags.includes(tag.value)) && !allSelected;
+                
+                return (
+                  <Box key={category} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <MenuItem 
+                      dense 
+                      onClick={() => handleCategoryToggle(category)}
+                      sx={{ bgcolor: someSelected ? 'action.selected' : 'inherit' }}
+                    >
+                      <Checkbox 
+                        checked={allSelected} 
+                        indeterminate={someSelected}
+                        sx={{ p: 0.5 }}
+                      />
+                      <ListItemText 
+                        primary={category} 
+                        primaryTypographyProps={{ variant: 'subtitle2' }} 
+                      />
+                    </MenuItem>
+                    {categoryTags.map(tag => (
+                      <MenuItem 
+                        key={tag.value} 
+                        onClick={() => handleTagToggle(tag.value)}
+                        dense
+                        sx={{ pl: 4 }}
+                      >
+                        <Checkbox 
+                          checked={selectedTags.includes(tag.value)} 
+                          sx={{ p: 0.5 }}
+                        />
+                        <ListItemText primary={tag.value} />
+                      </MenuItem>
+                    ))}
+                  </Box>
+                );
+              })}
+            </Menu>
+          </Box>
+
+          {/* Selected tags display and result count */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, flex: 1 }}>
+              {selectedTags.length > 0 && (
+                <>
+                  {selectedTags.map(tag => (
+                    <Chip 
+                      key={tag} 
+                      label={tag} 
+                      onDelete={() => handleTagToggle(tag)} 
+                      size="small" 
+                      color="primary" 
+                      variant="outlined"
+                    />
+                  ))}
+                  <Chip 
+                    label="Clear all" 
+                    onClick={() => setSelectedTags([])} 
+                    size="small" 
+                    variant="outlined"
+                  />
+                </>
+              )}
+            </Box>
+            {filteredTools.length > 0 && (
+              <Typography variant="caption" color="text.secondary">
+                {filteredTools.length} {filteredTools.length === 1 ? 'tool' : 'tools'} found
+              </Typography>
+            )}
+          </Box>
+
+          {/* Tool cards */}
+          <Box sx={{ mt: 2 }}>
+            {filteredTools.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No tools match your search criteria
+              </Typography>
+            ) : (
+              filteredTools.map(tool => (
                 <Card 
                   key={tool.value} 
                   sx={{ 
@@ -752,6 +994,28 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
                           Source: {tool.source}
                         </Typography>
                       )}
+                      
+                      {/* Display tags */}
+                      {tool.tags && tool.tags.length > 0 && (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                          {tool.tags.map(tag => (
+                            <Chip 
+                              key={tag} 
+                              label={tag} 
+                              size="small" 
+                              variant="outlined"
+                              sx={{ height: 20, '& .MuiChip-label': { px: 1, py: 0 } }}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent card selection
+                                if (!selectedTags.includes(tag)) {
+                                  setSelectedTags(prev => [...prev, tag]);
+                                }
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                      
                       {/* Display version information in each tool card */}
                       <Box sx={{ display: 'flex', mt: 2 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ flexGrow: 1 }}>
@@ -764,9 +1028,9 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
                     </CardActionArea>
                   </CardContent>
                 </Card>
-              ))}
-            </Box>
-          </FormControl>
+              ))
+            )}
+          </Box>
         </Box>
       );
     }
