@@ -3,22 +3,67 @@ import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
+import { useThemeContext } from '../../../context/ThemeContext';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useVersionedId } from '../../../hooks/useVersionedId';
 
 interface WorkflowDetails {
   name: string;
   description: string;
+  version: string;
 }
 
 const WorkflowDetailsForm: React.FC = () => {
+  const { nodes, edges } = useWorkflowContext();
+  const { mode } = useThemeContext();
+  const isDarkMode = mode === 'dark';
+  
   const [formData, setFormData] = useState<WorkflowDetails>({
     name: 'My Workflow',
     description: '',
+    version: '1.0.0',
   });
   const [isEditing, setIsEditing] = useState(false);
 
-  // In a real implementation, we would get and update workflow details from a store
-  // For now, we'll just use local state as a placeholder
+  // Generate versioned ID for the workflow
+  const versionedWorkflow = useVersionedId('agent', formData.version); // Using 'agent' type as placeholder
+
+  // Format the nodes and edges as a pretty JSON string
+  const getGraphJson = () => {
+    const graphData = {
+      nodes: nodes.map(node => ({
+        id: node.id,
+        type: node.type,
+        name: node.name,
+        position: node.position,
+        // Include type-specific properties
+        ...(node.type === 'agent' && { 
+          icon: node.icon,
+          llmModel: node.llmModel,
+        }),
+        ...(node.type === 'memory' && { 
+          memoryType: node.memoryType,
+        }),
+        ...(node.type === 'tool' && { 
+          toolType: node.toolType,
+        }),
+        parentId: node.parentId,
+      })),
+      edges: edges.map(edge => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+      })),
+    };
+    
+    return JSON.stringify(graphData, null, 2);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -60,6 +105,34 @@ const WorkflowDetailsForm: React.FC = () => {
         disabled={!isEditing}
       />
       
+      {/* Version Fields */}
+      <Grid container spacing={2}>
+        <Grid item xs={6}>
+          <TextField
+            label="Version"
+            name="version"
+            value={formData.version}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            variant="outlined"
+            disabled={!isEditing}
+            helperText="Semantic version (MAJOR.MINOR.PATCH)"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <TextField
+            label="Version ID"
+            value={versionedWorkflow?.id || 'Not generated yet'}
+            fullWidth
+            margin="normal"
+            variant="outlined"
+            disabled={true}
+            helperText={versionedWorkflow?.createdAt ? `Created: ${new Date(versionedWorkflow.createdAt).toLocaleString()}` : ''}
+          />
+        </Grid>
+      </Grid>
+      
       <TextField
         label="Description"
         name="description"
@@ -73,6 +146,57 @@ const WorkflowDetailsForm: React.FC = () => {
         disabled={!isEditing}
         placeholder="Enter a description for your workflow"
       />
+      
+      <Typography variant="subtitle1" sx={{ mt: 2 }}>
+        Graph JSON
+      </Typography>
+      
+      <Paper 
+        elevation={1} 
+        sx={{ 
+          maxHeight: '300px', 
+          overflow: 'auto',
+          borderRadius: 1,
+          border: theme => `1px solid ${theme.palette.divider}`,
+          '& pre': {
+            margin: 0,
+          },
+          position: 'relative'
+        }}
+      >
+        <Box 
+          sx={{ 
+            position: 'absolute', 
+            top: 0, 
+            right: 0, 
+            backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(248, 250, 252, 0.8)', 
+            px: 1, 
+            py: 0.5, 
+            borderBottomLeftRadius: 4,
+            fontSize: '0.75rem',
+            color: 'text.secondary',
+            fontFamily: 'monospace',
+            borderLeft: theme => `1px solid ${theme.palette.divider}`,
+            borderBottom: theme => `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          JSON
+        </Box>
+        <SyntaxHighlighter
+          language="json"
+          style={isDarkMode ? vscDarkPlus : vs}
+          customStyle={{
+            margin: 0,
+            padding: '16px',
+            fontSize: '0.875rem',
+            borderRadius: '4px',
+          }}
+          wrapLines={true}
+          wrapLongLines={true}
+        >
+          {getGraphJson()}
+        </SyntaxHighlighter>
+      </Paper>
       
       {isEditing ? (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
