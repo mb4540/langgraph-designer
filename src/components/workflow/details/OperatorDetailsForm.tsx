@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import FormControl from '@mui/material/FormControl';
@@ -10,7 +9,6 @@ import Divider from '@mui/material/Divider';
 import { WorkflowNode, OperatorType } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useRuntimeContext } from '../../../context/RuntimeContext';
-import ActionButtons from '../../ui/ActionButtons';
 
 // Import operator config components
 import StartOperatorConfig from './StartOperatorConfig';
@@ -37,7 +35,6 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
   const { runtimeType } = useRuntimeContext();
   
   // Form state
-  const [name, setName] = useState(node.name || '');
   const [operatorType, setOperatorType] = useState<OperatorType>(node.operatorType || OperatorType.Start);
   const [description, setDescription] = useState(node.content || '');
   
@@ -46,7 +43,6 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
 
   // Update form when node changes
   useEffect(() => {
-    setName(node.name || '');
     setOperatorType(node.operatorType || OperatorType.Start);
     setDescription(node.content || '');
     setOperatorConfig(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
@@ -98,9 +94,8 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
   const handleSave = () => {
     // Update node with form values
     const updates: Partial<WorkflowNode> = {
-      name,
       operatorType,
-      content: description,
+      content: description, // Keep this to maintain the description in the node
       operatorConfig
     };
 
@@ -109,7 +104,6 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
 
   const handleCancel = () => {
     // Reset form to original values
-    setName(node.name || '');
     setOperatorType(node.operatorType || OperatorType.Start);
     setDescription(node.content || '');
     setOperatorConfig(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
@@ -119,7 +113,6 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
   useEffect(() => {
     // Track if there are unsaved changes
     const isModified = 
-      name !== (node.name || '') ||
       operatorType !== (node.operatorType || OperatorType.Start) ||
       description !== (node.content || '') ||
       JSON.stringify(operatorConfig) !== JSON.stringify(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
@@ -135,7 +128,7 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
       delete (window as any).cancelNodeChanges;
       delete (window as any).isNodeModified;
     };
-  }, [name, operatorType, description, operatorConfig, node]);
+  }, [operatorType, description, operatorConfig, node]);
 
   // Render the appropriate config component based on operator type
   const renderOperatorConfig = () => {
@@ -175,19 +168,6 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
 
   return (
     <Box sx={{ p: 1 }}>
-      <Typography variant="subtitle1" gutterBottom>
-        Basic Information
-      </Typography>
-      
-      <TextField
-        fullWidth
-        label="Operator Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        margin="normal"
-        variant="outlined"
-      />
-      
       <FormControl fullWidth margin="normal">
         <InputLabel id="operator-type-label">Operator Type</InputLabel>
         <Select
@@ -209,27 +189,6 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
           {operatorType} Configuration
         </Typography>
         {renderOperatorConfig()}
-      </Box>
-      
-      <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
-        Description
-      </Typography>
-      
-      <TextField
-        fullWidth
-        multiline
-        rows={4}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        variant="outlined"
-        placeholder="Enter a description for this operator"
-      />
-      
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-        <ActionButtons
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
       </Box>
     </Box>
   );
