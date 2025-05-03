@@ -10,7 +10,6 @@ import { NodeType } from '../../types/nodeTypes';
 import { useWorkflowContext } from '../../context/WorkflowContext';
 import LoadingIndicator from '../ui/LoadingIndicator';
 import ErrorMessage from '../ui/ErrorMessage';
-import useAsyncOperation from '../../hooks/useAsyncOperation';
 import TextField from '../ui/TextField';
 import Button from '../ui/Button';
 import Dialog from '../ui/Dialog';
@@ -46,6 +45,7 @@ const ConversationPanel: React.FC = () => {
   });
   const [showApiKeyDialog, setShowApiKeyDialog] = useState<boolean>(!apiKey);
   const [showApiKeyStatus, setShowApiKeyStatus] = useState<boolean>(false);
+  const [apiKeyValidationState, setApiKeyValidationState] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle');
   
   // Save API key to localStorage when it changes
   useEffect(() => {
@@ -59,33 +59,32 @@ const ConversationPanel: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, testMessages, activeTab]);
 
-  // Check if API key is valid
-  const { 
-    loading: apiKeyLoading, 
-    error: apiKeyError, 
-    data: apiKeyValid,
-    execute: checkApiKey 
-  } = useAsyncOperation<boolean>(async () => {
+  // Manual API key validation function
+  const validateApiKey = async () => {
     if (!apiKey) {
-      throw new Error('API key is required');
+      setApiKeyValidationState('invalid');
+      return false;
     }
     
-    const { openAIChat } = await import('../../api/openai');
-    // Override the environment API key with our stored one
-    await openAIChat([{ role: 'user', content: 'Test message' }], undefined, apiKey);
-    return true;
-  }, { 
-    immediate: false, 
-    autoRetry: true, 
-    maxRetries: 1,
-    onSuccess: () => {
+    try {
+      setApiKeyValidationState('loading');
+      const { openAIChat } = await import('../../api/openai');
+      // Override the environment API key with our stored one
+      await openAIChat([{ role: 'user', content: 'Test message' }], undefined, apiKey);
+      setApiKeyValidationState('valid');
+      
       // Hide the status after 2 seconds on success
-      setTimeout(() => setShowApiKeyStatus(false), 2000);
-    },
-    onError: () => {
-      // Keep status visible on error so user can see the error
+      setTimeout(() => {
+        setShowApiKeyStatus(false);
+        setApiKeyValidationState('idle');
+      }, 2000);
+      
+      return true;
+    } catch (error) {
+      setApiKeyValidationState('invalid');
+      return false;
     }
-  });
+  };
 
   // Handle sending messages
   const { 
@@ -221,10 +220,10 @@ const ConversationPanel: React.FC = () => {
   };
   
   // Save API key and close dialog
-  const handleSaveApiKey = () => {
+  const handleSaveApiKey = async () => {
     if (apiKey.trim()) {
       setShowApiKeyStatus(true);
-      checkApiKey();
+      await validateApiKey();
       setShowApiKeyDialog(false);
     }
   };
@@ -241,13 +240,13 @@ const ConversationPanel: React.FC = () => {
           Conversation
         </Typography>
         {showApiKeyStatus ? (
-          apiKeyLoading ? (
+          apiKeyValidationState === 'loading' ? (
             <Chip 
               label="Checking API Key" 
               color="primary" 
               size="small" 
             />
-          ) : apiKeyError ? (
+          ) : apiKeyValidationState === 'invalid' ? (
             <Chip 
               label="API Key Invalid" 
               color="error" 
@@ -255,7 +254,7 @@ const ConversationPanel: React.FC = () => {
               onClick={handleShowApiKeyDialog}
               sx={{ cursor: 'pointer' }}
             />
-          ) : apiKeyValid ? (
+          ) : apiKeyValidationState === 'valid' ? (
             <Chip 
               label="API Key Valid" 
               color="success" 
@@ -379,12 +378,12 @@ const ConversationPanel: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          disabled={sendLoading || apiKeyLoading || Boolean(apiKeyError) || !apiKeyValid}
+          disabled={sendLoading || apiKeyValidationState === 'loading' || apiKeyValidationState === 'invalid' || !apiKey}
         />
         <Button 
           variant="contained" 
           onClick={handleSend}
-          disabled={sendLoading || !input.trim() || apiKeyLoading || Boolean(apiKeyError) || !apiKeyValid}
+          disabled={sendLoading || !input.trim() || apiKeyValidationState === 'loading' || apiKeyValidationState === 'invalid' || !apiKey}
         >
           Send
         </Button>
@@ -393,13 +392,13 @@ const ConversationPanel: React.FC = () => {
       {/* API Key Dialog */}
       <Dialog
         open={showApiKeyDialog}
-        onClose={() => apiKeyValid && setShowApiKeyDialog(false)}
+        onClose={() => apiKeyValidationState === 'valid' && setShowApiKeyDialog(false)}
         title="OpenAI API Key"
         maxWidth="sm"
         fullWidth
         actions={
           <>
-            {apiKeyValid && (
+            {apiKeyValidationState === 'valid' && (
               <Button 
                 onClick={() => setShowApiKeyDialog(false)} 
                 variant="outlined" 
@@ -411,7 +410,7 @@ const ConversationPanel: React.FC = () => {
             <Button 
               onClick={handleSaveApiKey} 
               color="primary"
-              disabled={!apiKey.trim() || apiKeyLoading}
+              disabled={!apiKey.trim() || apiKeyValidationState === 'loading'}
             >
               Save API Key
             </Button>
@@ -433,7 +432,7 @@ const ConversationPanel: React.FC = () => {
           highlightOnFocus
         />
         
-        {apiKeyLoading && (
+        {apiKeyValidationState === 'loading' && (
           <Box sx={{ mt: 2 }}>
             <LoadingIndicator 
               type="dots" 
@@ -444,17 +443,17 @@ const ConversationPanel: React.FC = () => {
           </Box>
         )}
         
-        {apiKeyError && (
+        {apiKeyValidationState === 'invalid' && (
           <Box sx={{ mt: 2 }}>
             <ErrorMessage 
               message="Invalid API Key" 
-              details={apiKeyError.message}
+              details="Please try again."
               compact
             />
           </Box>
         )}
         
-        {apiKeyValid && (
+        {apiKeyValidationState === 'valid' && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" color="success.main">
               API key is valid! You can now use the conversation feature.
