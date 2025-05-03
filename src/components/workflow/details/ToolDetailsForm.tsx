@@ -19,7 +19,17 @@ import ErrorMessage from '../../ui/ErrorMessage';
 import ActionButtons from '../../ui/ActionButtons';
 import useAsyncOperation from '../../../hooks/useAsyncOperation';
 import { useVersionedId } from '../../../hooks/useVersionedId';
-import { VersionedEntity, generateVersionedId } from '../../../utils/idGenerator';
+import { VersionedEntity, newToolVersion } from '../../../utils/idGenerator';
+import { ulid } from 'ulid';
+
+// Helper function to generate unique tool IDs
+const generateToolId = (version: string) => {
+  return {
+    id: ulid(),
+    version,
+    createdAt: new Date().toISOString()
+  };
+};
 
 // Tool types with MCP code templates
 const TOOL_TYPES = [
@@ -29,7 +39,7 @@ const TOOL_TYPES = [
     description: 'Gives an agent full, headless-browser super-powers (navigate, click, scrape, screenshot) through Browserbase; ideal for web search, form-filling, and UI testing workflows.',
     source: 'Stagehand',
     version: '1.0.0',
-    versionedId: generateVersionedId('tool', '1.0.0').id,
+    versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 from stagehand.browserbase import BrowserBase
@@ -52,7 +62,7 @@ browser_tool = MCP(
     description: 'Lets the agent embed a query, hit a vector DB (e.g., Qdrant, Pinecone) and pull back the top-k chunks for Retrieval-Augmented Generation (RAG).',
     source: 'Data Science Daily',
     version: '1.0.0',
-    versionedId: generateVersionedId('tool', '1.0.0').id,
+    versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 from langchain_community.vectorstores import Qdrant
@@ -80,7 +90,7 @@ retriever_tool = MCP(
     description: 'Provides precise mathematical operations, equation solving, and symbolic computation capabilities through the SymPy library.',
     source: 'LangChain',
     version: '1.0.0',
-    versionedId: generateVersionedId('tool', '1.0.0').id,
+    versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 import sympy
@@ -114,7 +124,7 @@ calculator_tool = MCP(
     description: 'Executes SQL queries across different database engines (PostgreSQL, MySQL, SQLite, etc.) with connection pooling and error handling.',
     source: 'Database Toolkit',
     version: '1.0.0',
-    versionedId: generateVersionedId('tool', '1.0.0').id,
+    versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 import sqlalchemy
@@ -181,7 +191,7 @@ sql_tool = MCP(
     description: 'Enables reading from IMAP mailboxes and sending emails via SMTP with attachment handling and HTML content support.',
     source: 'Email Automation Suite',
     version: '1.0.0',
-    versionedId: generateVersionedId('tool', '1.0.0').id,
+    versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 import imaplib
@@ -372,7 +382,7 @@ email_tool = MCP(
     description: 'Invokes Azure Functions serverless compute with authentication, payload transformation, and response handling.',
     source: 'Microsoft',
     version: '1.0.0',
-    versionedId: generateVersionedId('tool', '1.0.0').id,
+    versionedId: generateToolId('1.0.0').id,
     createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 import requests
@@ -628,12 +638,12 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
                   </Typography>
                 )}
                 {/* Display version information in the selected tool card */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Version: {selectedToolInfo.version}
+                <Box sx={{ display: 'flex', mt: 2 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ flexGrow: 1 }}>
+                    ID: {selectedToolInfo.versionedId}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    ID: {selectedToolInfo.versionedId.substring(0, 8)}...
+                    Version: {selectedToolInfo.version}
                   </Typography>
                 </Box>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
@@ -743,12 +753,12 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
                         </Typography>
                       )}
                       {/* Display version information in each tool card */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Version: {tool.version}
+                      <Box sx={{ display: 'flex', mt: 2 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ flexGrow: 1 }}>
+                          ID: {tool.versionedId}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          ID: {tool.versionedId.substring(0, 8)}...
+                          Version: {tool.version}
                         </Typography>
                       </Box>
                     </CardActionArea>
