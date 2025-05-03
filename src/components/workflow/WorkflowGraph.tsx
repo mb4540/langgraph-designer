@@ -43,10 +43,12 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import TimerIcon from '@mui/icons-material/Timer';
 import PauseIcon from '@mui/icons-material/Pause';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import VerifiedIcon from '@mui/icons-material/Verified';
 
 import { useThemeContext } from '../../context/ThemeContext';
-import { NodeType, OperatorType, WorkflowEdge, WorkflowNode as StoreNode } from '../../types/nodeTypes';
+import { useRuntimeContext } from '../../context/RuntimeContext';
 import { useWorkflowContext } from '../../context/WorkflowContext';
+import { NodeType, OperatorType, WorkflowEdge, WorkflowNode as StoreNode } from '../../types/nodeTypes';
 import AgentNode from '../nodes/AgentNode';
 import MemoryNode from '../nodes/MemoryNode';
 import ToolNode from '../nodes/ToolNode';
@@ -207,13 +209,14 @@ const storeEdgesToFlowEdges = (edges: WorkflowEdge[], nodes: StoreNode[], isDark
 const WorkflowGraph: React.FC = () => {
   const { nodes: storeNodes, edges: storeEdges, selectNode, removeNode, addNode, addEdge: addStoreEdge } = useWorkflowContext();
   const { mode } = useThemeContext();
+  const { runtimeType } = useRuntimeContext();
   const isDarkMode = mode === 'dark';
   
   // State for workflow name (in a real app, this would come from a store)
   const [workflowName, setWorkflowName] = useState('My Workflow');
   
   // State for runtime type (autogen or langgraph)
-  const [runtimeType, setRuntimeType] = useState<RuntimeType>('langgraph');
+  const [runtime, setRuntime] = useState<RuntimeType>(runtimeType);
   
   // State for validation errors
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -341,7 +344,7 @@ const WorkflowGraph: React.FC = () => {
         targetNode,
         storeNodes,
         storeEdges,
-        runtimeType
+        runtime
       );
       
       if (!validationResult.canConnect) {
@@ -376,10 +379,10 @@ const WorkflowGraph: React.FC = () => {
       setTimeout(() => setConnectionMessage(null), 3000);
       
       // Validate the entire workflow
-      const workflowValidation = validateWorkflow(storeNodes, [...storeEdges, newEdge], runtimeType);
+      const workflowValidation = validateWorkflow(storeNodes, [...storeEdges, newEdge], runtime);
       setValidationErrors(workflowValidation.errors);
     },
-    [addStoreEdge, storeNodes, storeEdges, runtimeType]
+    [addStoreEdge, storeNodes, storeEdges, runtime]
   );
 
   // Handle node selection
@@ -470,6 +473,29 @@ const WorkflowGraph: React.FC = () => {
     return null;
   };
 
+  // Handle validating the workflow
+  const handleValidateWorkflow = useCallback(() => {
+    // Validate the workflow
+    const workflowValidation = validateWorkflow(storeNodes, storeEdges, runtime);
+    setValidationErrors(workflowValidation.errors);
+    
+    // Show a message about the validation result
+    if (workflowValidation.isValid) {
+      setConnectionMessage({
+        message: 'Workflow is valid for ' + runtime + ' runtime',
+        isError: false
+      });
+    } else {
+      setConnectionMessage({
+        message: `Workflow has ${workflowValidation.errors.length} validation errors`,
+        isError: true
+      });
+    }
+    
+    // Clear message after a delay
+    setTimeout(() => setConnectionMessage(null), 3000);
+  }, [storeNodes, storeEdges, runtime]);
+
   return (
     <Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Workflow Header */}
@@ -485,39 +511,6 @@ const WorkflowGraph: React.FC = () => {
           {workflowName}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          {/* Runtime Type Selector */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-            <Typography variant="body2" sx={{ mr: 1 }}>
-              Runtime:
-            </Typography>
-            <Button
-              variant={runtimeType === 'langgraph' ? 'contained' : 'outlined'}
-              size="small"
-              onClick={() => {
-                setRuntimeType('langgraph');
-                // Re-validate the workflow with the new runtime type
-                const workflowValidation = validateWorkflow(storeNodes, storeEdges, 'langgraph');
-                setValidationErrors(workflowValidation.errors);
-              }}
-              sx={{ mr: 1, textTransform: 'none' }}
-            >
-              LangGraph
-            </Button>
-            <Button
-              variant={runtimeType === 'autogen' ? 'contained' : 'outlined'}
-              size="small"
-              onClick={() => {
-                setRuntimeType('autogen');
-                // Re-validate the workflow with the new runtime type
-                const workflowValidation = validateWorkflow(storeNodes, storeEdges, 'autogen');
-                setValidationErrors(workflowValidation.errors);
-              }}
-              sx={{ textTransform: 'none' }}
-            >
-              Autogen
-            </Button>
-          </Box>
-          
           <Button
             variant="outlined"
             startIcon={<EditIcon />}
@@ -537,6 +530,14 @@ const WorkflowGraph: React.FC = () => {
             aria-expanded={operatorMenuOpen ? 'true' : undefined}
           >
             Add Operator
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<VerifiedIcon />}
+            onClick={handleValidateWorkflow}
+            size="small"
+          >
+            Validate Workflow
           </Button>
         </Box>
       </Box>

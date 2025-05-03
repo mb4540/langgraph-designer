@@ -5,27 +5,37 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
+import FormControl from '@mui/material/FormControl';
+import FormLabel from '@mui/material/FormLabel';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Radio from '@mui/material/Radio';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useThemeContext } from '../../../context/ThemeContext';
+import { useRuntimeContext } from '../../../context/RuntimeContext';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useVersionedId } from '../../../hooks/useVersionedId';
+import { RuntimeType } from '../../../utils/workflowValidator';
 
 interface WorkflowDetails {
   name: string;
   description: string;
   version: string;
+  runtimeType: RuntimeType;
 }
 
 const WorkflowDetailsForm: React.FC = () => {
   const { nodes, edges } = useWorkflowContext();
   const { mode } = useThemeContext();
+  const { runtimeType, setRuntimeType } = useRuntimeContext();
   const isDarkMode = mode === 'dark';
   
   const [formData, setFormData] = useState<WorkflowDetails>({
     name: 'My Workflow',
     description: '',
     version: '1.0.0',
+    runtimeType: runtimeType,
   });
   const [isEditing, setIsEditing] = useState(false);
 
@@ -65,8 +75,22 @@ const WorkflowDetailsForm: React.FC = () => {
     return JSON.stringify(graphData, null, 2);
   };
 
+  // Update formData when runtimeType changes in context
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      runtimeType
+    }));
+  }, [runtimeType]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // If changing runtime type, update the context
+    if (name === 'runtimeType') {
+      setRuntimeType(value as RuntimeType);
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -146,6 +170,35 @@ const WorkflowDetailsForm: React.FC = () => {
         disabled={!isEditing}
         placeholder="Enter a description for your workflow"
       />
+      
+      {/* Runtime Type Selection */}
+      <Paper elevation={1} sx={{ p: 2, mt: 2, mb: 2 }}>
+        <FormControl component="fieldset" disabled={!isEditing}>
+          <FormLabel component="legend">Runtime Type</FormLabel>
+          <RadioGroup
+            row
+            name="runtimeType"
+            value={formData.runtimeType}
+            onChange={handleChange}
+          >
+            <FormControlLabel 
+              value="langgraph" 
+              control={<Radio />} 
+              label="LangGraph" 
+            />
+            <FormControlLabel 
+              value="autogen" 
+              control={<Radio />} 
+              label="Autogen" 
+            />
+          </RadioGroup>
+          <Typography variant="caption" color="text.secondary">
+            {formData.runtimeType === 'langgraph' 
+              ? 'LangGraph mode allows more flexible connections between operators.' 
+              : 'Autogen mode enforces stricter rules, like TOOL_CALL must only be reached from AGENT_CALL.'}
+          </Typography>
+        </FormControl>
+      </Paper>
       
       <Typography variant="subtitle1" sx={{ mt: 2 }}>
         Graph JSON
