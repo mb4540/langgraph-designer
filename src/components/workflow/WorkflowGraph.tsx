@@ -17,6 +17,9 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import EditIcon from '@mui/icons-material/Edit';
 import { useThemeContext } from '../../context/ThemeContext';
 import { WorkflowNode as StoreNode, WorkflowEdge as StoreEdge } from '../../types/nodeTypes';
 import { useWorkflowContext } from '../../context/WorkflowContext';
@@ -136,6 +139,9 @@ const WorkflowGraph: React.FC = () => {
   const { mode } = useThemeContext();
   const isDarkMode = mode === 'dark';
   
+  // State for workflow name (in a real app, this would come from a store)
+  const [workflowName, setWorkflowName] = useState('My Workflow');
+  
   // State for deletion confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
@@ -143,6 +149,14 @@ const WorkflowGraph: React.FC = () => {
 
   // Reference to the ReactFlow instance
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
+
+  // Handle showing workflow details
+  const handleEditWorkflowDetails = useCallback(() => {
+    // Use the global function we exposed in DetailsPanel
+    if (typeof (window as any).showWorkflowDetails === 'function') {
+      (window as any).showWorkflowDetails();
+    }
+  }, []);
 
   // Handle node deletion
   const handleDeleteNode = useCallback((id: string) => {
@@ -220,37 +234,64 @@ const WorkflowGraph: React.FC = () => {
   }, []);
 
   return (
-    <Paper elevation={3} sx={{ height: '100%', overflow: 'hidden' }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeClick={onNodeClick}
-        nodeTypes={nodeTypes}
-        fitView={false}
-        fitViewOptions={{ duration: 0 }}
-        onInit={onInit}
-        minZoom={0.1}
-        maxZoom={2}
-        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-      >
-        <Controls />
-        <MiniMap 
-          nodeStrokeWidth={3}
-          nodeColor={(node) => {
-            switch (node.type) {
-              case 'agent': return '#3182ce'; 
-              case 'memory': return isDarkMode ? '#2e7d32' : '#4caf50'; 
-              case 'tool': return isDarkMode ? '#7e57c2' : '#9575cd'; 
-              default: return '#718096';
-            }
-          }}
-        />
-        <Background color={isDarkMode ? '#2d3748' : '#f7fafc'} gap={16} />
-      </ReactFlow>
+    <Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Workflow Header */}
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        px: 2, 
+        py: 1, 
+        borderBottom: 1, 
+        borderColor: 'divider'
+      }}>
+        <Typography variant="subtitle1" fontWeight="medium">
+          Workflow Name: {workflowName}
+        </Typography>
+        <Button 
+          variant="outlined" 
+          size="small" 
+          startIcon={<EditIcon />} 
+          onClick={handleEditWorkflowDetails}
+        >
+          Edit Workflow Detail
+        </Button>
+      </Box>
       
+      {/* ReactFlow Container */}
+      <Box sx={{ flexGrow: 1, position: 'relative' }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onInit={onInit}
+          onNodeClick={onNodeClick}
+          nodeTypes={nodeTypes}
+          fitView={false}
+          fitViewOptions={{ duration: 0 }}
+          minZoom={0.1}
+          maxZoom={2}
+          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        >
+          <MiniMap
+            nodeStrokeWidth={3}
+            nodeColor={(node) => {
+              switch (node.type) {
+                case 'agent': return '#3182ce'; 
+                case 'memory': return isDarkMode ? '#2e7d32' : '#4caf50'; 
+                case 'tool': return isDarkMode ? '#7e57c2' : '#9575cd'; 
+                default: return '#718096';
+              }
+            }}
+          />
+          <Controls />
+          <Background color={isDarkMode ? '#2d3748' : '#f7fafc'} gap={16} />
+        </ReactFlow>
+      </Box>
+      
+      {/* Confirmation Dialog */}
       <ConfirmationDialog
         open={deleteDialogOpen}
         title="Delete Node"

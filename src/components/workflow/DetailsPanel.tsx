@@ -7,13 +7,63 @@ import { useThemeContext } from '../../context/ThemeContext';
 import AgentDetailsForm from './details/AgentDetailsForm';
 import MemoryDetailsForm from './details/MemoryDetailsForm';
 import ToolDetailsForm from './details/ToolDetailsForm';
+import WorkflowDetailsForm from './details/WorkflowDetailsForm';
 
+// Create a context for the details panel
+const DetailsPanelContext = React.createContext<{ showWorkflowDetails: () => void } | null>(null);
+
+// Export hook to access the details panel context
+export const useDetailsPanel = () => {
+  const context = React.useContext(DetailsPanelContext);
+  if (!context) {
+    throw new Error('useDetailsPanel must be used within a DetailsPanelProvider');
+  }
+  return context;
+};
+
+// Create a provider component
+export const DetailsPanelProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [showWorkflowDetailsState, setShowWorkflowDetailsState] = useState(false);
+
+  const showWorkflowDetails = React.useCallback(() => {
+    setShowWorkflowDetailsState(true);
+  }, []);
+
+  return (
+    <DetailsPanelContext.Provider value={{ showWorkflowDetails }}>
+      {children}
+    </DetailsPanelContext.Provider>
+  );
+};
+
+// The actual DetailsPanel component
 const DetailsPanel: React.FC = () => {
   const { selectedNode } = useWorkflowContext();
   const { mode } = useThemeContext();
+  const [showWorkflowDetails, setShowWorkflowDetails] = useState(false);
 
-  // Determine the title based on node type
+  // Reset workflow details view when a node is selected
+  useEffect(() => {
+    if (selectedNode) {
+      setShowWorkflowDetails(false);
+    }
+  }, [selectedNode]);
+
+  // Function to show workflow details
+  const handleShowWorkflowDetails = () => {
+    setShowWorkflowDetails(true);
+  };
+
+  // Expose the function to show workflow details
+  React.useEffect(() => {
+    // This is a workaround since we don't have direct access to the context here
+    // In a real app, you would use the context properly
+    (window as any).showWorkflowDetails = handleShowWorkflowDetails;
+  }, []);
+
+  // Determine the title based on node type or if showing workflow details
   const getNodeTitle = () => {
+    if (showWorkflowDetails) return 'Workflow Details';
     if (!selectedNode) return 'Details';
     
     switch (selectedNode.type) {
@@ -24,8 +74,12 @@ const DetailsPanel: React.FC = () => {
     }
   };
 
-  // Render different content based on node type
+  // Render different content based on node type or if showing workflow details
   const renderDetailsContent = () => {
+    if (showWorkflowDetails) {
+      return <WorkflowDetailsForm />;
+    }
+    
     if (!selectedNode) return null;
     
     switch (selectedNode.type) {
@@ -40,7 +94,7 @@ const DetailsPanel: React.FC = () => {
     }
   };
 
-  if (!selectedNode) {
+  if (!selectedNode && !showWorkflowDetails) {
     return (
       <Paper elevation={3} sx={{ height: '100%', padding: 2, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
         <Typography variant="h6" gutterBottom>
