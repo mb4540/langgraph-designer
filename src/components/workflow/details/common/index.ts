@@ -4,6 +4,7 @@
 
 export { default as BaseNodeForm } from './BaseNodeForm';
 export { default as FormField } from './FormField';
+export { default as FormFieldWrapper } from './FormFieldWrapper';
 export { default as VersionInfo } from './VersionInfo';
 export { default as CodeEditor } from './CodeEditor';
 

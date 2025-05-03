@@ -8,8 +8,7 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { ErrorRetryOperatorConfig as ErrorRetryConfig } from '../../../../types/nodeTypes';
-import { FormField } from '../common';
-import { CodeEditor } from '../common';
+import { FormFieldWrapper, CodeEditor } from '../common';
 
 interface ErrorRetryOperatorConfigProps {
   config: ErrorRetryConfig;
@@ -45,7 +44,7 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
         Error Retry Configuration
       </Typography>
       
-      <FormField
+      <FormFieldWrapper
         label="Maximum Retries"
         required
         helperText="Maximum number of retry attempts"
@@ -59,9 +58,9 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
           inputProps={{ min: 1 }}
           placeholder="3"
         />
-      </FormField>
+      </FormFieldWrapper>
       
-      <FormField
+      <FormFieldWrapper
         label="Retry Strategy"
         required
         helperText="Strategy for timing between retry attempts"
@@ -81,10 +80,10 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
           {RETRY_STRATEGIES.find(s => s.value === (config.retry_strategy || 'fixed'))?.description}
         </Typography>
-      </FormField>
+      </FormFieldWrapper>
       
       {config.retry_strategy !== 'custom' && (
-        <FormField
+        <FormFieldWrapper
           label="Initial Delay (seconds)"
           required
           helperText="Time to wait before the first retry"
@@ -98,12 +97,11 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
             inputProps={{ min: 0, step: 0.1 }}
             placeholder="1"
           />
-        </TextField>
-        </FormField>
+        </FormFieldWrapper>
       )}
       
       {(config.retry_strategy === 'exponential' || config.retry_strategy === 'linear') && (
-        <FormField
+        <FormFieldWrapper
           label="Backoff Factor"
           required
           helperText={config.retry_strategy === 'exponential' 
@@ -119,13 +117,12 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
             inputProps={{ min: config.retry_strategy === 'exponential' ? 1 : 0, step: 0.1 }}
             placeholder={config.retry_strategy === 'exponential' ? '2' : '1'}
           />
-        </TextField>
-        </FormField>
+        </FormFieldWrapper>
       )}
       
       {config.retry_strategy === 'random' && (
         <>
-          <FormField
+          <FormFieldWrapper
             label="Minimum Delay (seconds)"
             required
             helperText="Minimum random delay between retries"
@@ -139,9 +136,9 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
               inputProps={{ min: 0, step: 0.1 }}
               placeholder="1"
             />
-          </FormField>
+          </FormFieldWrapper>
           
-          <FormField
+          <FormFieldWrapper
             label="Maximum Delay (seconds)"
             required
             helperText="Maximum random delay between retries"
@@ -155,12 +152,12 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
               inputProps={{ min: 0, step: 0.1 }}
               placeholder="5"
             />
-          </FormField>
+          </FormFieldWrapper>
         </>
       )}
       
       {config.retry_strategy === 'custom' && (
-        <FormField
+        <FormFieldWrapper
           label="Custom Retry Function"
           required
           helperText="JavaScript function that takes retry count and returns delay in seconds"
@@ -171,10 +168,10 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
             language="javascript"
             height="150px"
           />
-        </FormField>
+        </FormFieldWrapper>
       )}
       
-      <FormField
+      <FormFieldWrapper
         label="Maximum Delay (seconds)"
         helperText="Maximum delay between retries (caps exponential growth)"
       >
@@ -187,9 +184,9 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
           inputProps={{ min: 0, step: 0.1 }}
           placeholder="60"
         />
-      </FormField>
+      </FormFieldWrapper>
       
-      <FormField>
+      <FormFieldWrapper>
         <FormControlLabel
           control={
             <Checkbox
@@ -202,10 +199,10 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
         <Typography variant="caption" color="text.secondary" display="block">
           Retry on any error (if unchecked, only retry on specified error types)
         </Typography>
-      </FormField>
+      </FormFieldWrapper>
       
       {!config.retry_all_errors && (
-        <FormField
+        <FormFieldWrapper
           label="Retryable Error Types"
           helperText="Comma-separated list of error types to retry (e.g., 'NetworkError, TimeoutError')"
         >
@@ -216,10 +213,10 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
             size="small"
             placeholder="NetworkError, TimeoutError, RateLimitError"
           />
-        </FormField>
+        </FormFieldWrapper>
       )}
       
-      <FormField
+      <FormFieldWrapper
         label="On Max Retries Exceeded"
         helperText="JavaScript expression to execute when max retries are exceeded"
       >
@@ -230,7 +227,7 @@ const ErrorRetryOperatorConfig: React.FC<ErrorRetryOperatorConfigProps> = ({
           height="100px"
           placeholder="// Example: Log error and set status\nstate.error_status = 'max_retries_exceeded';\nstate.last_error = error;\nreturn state;"
         />
-      </FormField>
+      </FormFieldWrapper>
     </Box>
   );
 };

@@ -169,8 +169,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
               inputProps={{ min: 0, max: 1, step: 0.01 }}
               placeholder="0.7"
             />
-          </TextField>
-        </FormField>
+          </FormField>
         </>
       )}
       

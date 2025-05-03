@@ -11,24 +11,26 @@ import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useRuntimeContext } from '../../../context/RuntimeContext';
 
 // Import common components
-import BaseNodeForm from './common/BaseNodeForm';
-import FormField from './common/FormField';
+import { BaseNodeForm, FormField } from './common';
 
 // Import operator config components
-import StartOperatorConfig from './StartOperatorConfig';
-import EndOperatorConfig from './EndOperatorConfig';
-import AgentCallOperatorConfig from './AgentCallOperatorConfig';
-import ToolCallOperatorConfig from './ToolCallOperatorConfig';
-import MemoryReadOperatorConfig from './MemoryReadOperatorConfig';
-import MemoryWriteOperatorConfig from './MemoryWriteOperatorConfig';
-import DecisionOperatorConfig from './DecisionOperatorConfig';
-import ParallelForkOperatorConfig from './ParallelForkOperatorConfig';
-import ParallelJoinOperatorConfig from './ParallelJoinOperatorConfig';
-import LoopOperatorConfig from './LoopOperatorConfig';
-import ErrorRetryOperatorConfig from './ErrorRetryOperatorConfig';
-import TimeoutOperatorConfig from './TimeoutOperatorConfig';
-import HumanPauseOperatorConfig from './HumanPauseOperatorConfig';
-import SubGraphOperatorConfig from './SubGraphOperatorConfig';
+import {
+  StartOperatorConfig,
+  EndOperatorConfig,
+  AgentCallOperatorConfig,
+  ToolCallOperatorConfig,
+  MemoryReadOperatorConfig,
+  MemoryWriteOperatorConfig,
+  DecisionOperatorConfig,
+  ParallelForkOperatorConfig,
+  ParallelJoinOperatorConfig,
+  LoopOperatorConfig,
+  ErrorRetryOperatorConfig,
+  TimeoutOperatorConfig,
+  HumanPauseOperatorConfig,
+  SubGraphOperatorConfig,
+  SequenceOperatorConfig
+} from './operator';
 
 interface OperatorDetailsFormProps {
   node: WorkflowNode;
@@ -67,33 +69,40 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
       case OperatorType.Stop:
         return { status_code: 'success', emit_transcript: true };
       case OperatorType.AgentCall:
-        return { agent_type: runtimeType === 'autogen' ? 'AssistantAgent' : 'OpenAI', llm_model: 'gpt-4o', prompt_template: '' };
+        return { call_type: 'internal', agent_id: '', input_mapping: 'function mapInput(state) {\n  return state;\n}' };
       case OperatorType.ToolCall:
-        return { tool_name: '', function_signature: {}, side_effect: false };
+        return { call_type: 'internal', tool_name: '', tool_id: '' };
       case OperatorType.MemoryRead:
-        return { store: 'zep', query: '', top_k: 5 };
+        return { memory_node_id: '', read_mode: 'exact', memory_key: '' };
       case OperatorType.MemoryWrite:
-        return { store: 'zep', data_path: '', upsert: true };
+        return { memory_node_id: '', write_mode: 'set', memory_key: '' };
       case OperatorType.Decision:
         return { predicate_language: 'javascript', expression: '', branches: [] };
+      case OperatorType.Sequence:
+        return { steps: [], stop_on_error: true };
       case OperatorType.ParallelFork:
-        return { strategy: 'fanout', gather_mode: 'wait_all' };
+        return { branches: {}, wait_for_all: true };
       case OperatorType.ParallelJoin:
-        return { merge_strategy: 'concat', allow_partial: false };
+        return { join_strategy: 'merge', fork_node_id: '' };
       case OperatorType.Loop:
         return { condition_expression: '', max_iterations: 10, break_on_failure: true };
       case OperatorType.ErrorRetry:
-        return { max_attempts: 3, backoff_strategy: 'exponential', retryable_errors: [] };
+        return { max_retries: 3, retry_strategy: 'exponential', initial_delay_seconds: 1 };
       case OperatorType.Timeout:
-        return { timeout_sec: 60, on_timeout: 'abort' };
+        return { timeout_seconds: 60, on_timeout_action: 'abort' };
       case OperatorType.HumanPause:
-        return { message_to_user: '', channel: 'web' };
+        return { message: '', notification_channel: 'none', require_approval: true };
       case OperatorType.SubGraph:
-        return { graph_id: '', mode: 'inline', isolate_memory: false };
+        return { workflow_id: '', isolate_state: true };
       default:
         return {};
     }
   }
+
+  // Handle config changes
+  const handleConfigChange = (newConfig: any) => {
+    setOperatorConfig(newConfig);
+  };
 
   // Check if form has been modified
   const isModified = 
@@ -125,33 +134,35 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
   const renderOperatorConfig = () => {
     switch (operatorType) {
       case OperatorType.Start:
-        return <StartOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <StartOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.Stop:
-        return <EndOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <EndOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.AgentCall:
-        return <AgentCallOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <AgentCallOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.ToolCall:
-        return <ToolCallOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <ToolCallOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.MemoryRead:
-        return <MemoryReadOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <MemoryReadOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.MemoryWrite:
-        return <MemoryWriteOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <MemoryWriteOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.Decision:
-        return <DecisionOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <DecisionOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
+      case OperatorType.Sequence:
+        return <SequenceOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.ParallelFork:
-        return <ParallelForkOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <ParallelForkOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.ParallelJoin:
-        return <ParallelJoinOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <ParallelJoinOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.Loop:
-        return <LoopOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <LoopOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.ErrorRetry:
-        return <ErrorRetryOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <ErrorRetryOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.Timeout:
-        return <TimeoutOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <TimeoutOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.HumanPause:
-        return <HumanPauseOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <HumanPauseOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.SubGraph:
-        return <SubGraphOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+        return <SubGraphOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       default:
         return null;
     }

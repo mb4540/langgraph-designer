@@ -73,7 +73,7 @@ const ConversationPanel: React.FC = () => {
     // Override the environment API key with our stored one
     await openAIChat([{ role: 'user', content: 'Test message' }], undefined, apiKey);
     return true;
-  }, { immediate: !!apiKey });
+  }, { immediate: !!apiKey, autoRetry: true, maxRetries: 1 });
 
   // Handle sending messages
   const { 
