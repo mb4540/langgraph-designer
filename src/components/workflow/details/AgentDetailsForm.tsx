@@ -88,7 +88,6 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   
   // Form state
   const [name, setName] = useState(node.name || '');
-  const [workgroup, setWorkgroup] = useState(node.workgroup || 'wg1');
   const [selectedIcon, setSelectedIcon] = useState(node.icon || 'smart-toy');
   const [agentType, setAgentType] = useState(node.agentType || 'assistant');
   const [description, setDescription] = useState(node.description || '');
@@ -105,7 +104,6 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   // Update form when node changes
   useEffect(() => {
     setName(node.name || '');
-    setWorkgroup(node.workgroup || 'wg1');
     setSelectedIcon(node.icon || 'smart-toy');
     setAgentType(node.agentType || 'assistant');
     setDescription(node.description || '');
@@ -154,7 +152,6 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     // Update node with form values and include versioned ID information
     const updates: Partial<WorkflowNode> = {
       name,
-      workgroup,
       icon: selectedIcon,
       agentType,
       description,
@@ -183,20 +180,6 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     <Box sx={{ p: 1 }}>
       {/* Basic Information Section */}
       <Box sx={{ mb: 3 }}>
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="workgroup-label">Work-group</InputLabel>
-          <Select
-            labelId="workgroup-label"
-            value={workgroup}
-            label="Work-group"
-            onChange={(e) => setWorkgroup(e.target.value)}
-          >
-            {workgroups.map((group) => (
-              <MenuItem key={group.id} value={group.id}>{group.name}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
         <TextField
           fullWidth
           label="Name"

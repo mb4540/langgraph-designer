@@ -189,36 +189,29 @@ const WorkflowDetailsForm: React.FC = () => {
     }
   };
 
+  // Expose the functions to save and cancel changes
+  useEffect(() => {
+    // Expose functions for the DetailsPanel to call
+    (window as any).saveWorkflowChanges = handleSave;
+    (window as any).cancelWorkflowChanges = handleCancel;
+    (window as any).isWorkflowModified = isModified;
+
+    // Update isWorkflowModified when isModified changes
+    const updateModifiedState = () => {
+      (window as any).isWorkflowModified = isModified;
+    };
+    updateModifiedState();
+
+    return () => {
+      // Clean up
+      delete (window as any).saveWorkflowChanges;
+      delete (window as any).cancelWorkflowChanges;
+      delete (window as any).isWorkflowModified;
+    };
+  }, [isModified]);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        mb: 2 
-      }}>
-        <Typography variant="subtitle1" fontWeight="medium">
-          Workflow Details
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={handleSave}
-            disabled={!isModified}
-          >
-            Save Changes
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={handleCancel}
-          >
-            Cancel
-          </Button>
-        </Box>
-      </Box>
-      
       {/* Work-group Field */}
       <FormControl fullWidth sx={{ mb: 2 }}>
         <InputLabel id="workgroup-label">Work-group</InputLabel>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, memo } from 'react';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import { useWorkflowContext } from '../../context/WorkflowContext';
 import { useThemeContext } from '../../context/ThemeContext';
 import AgentDetailsForm from './details/AgentDetailsForm';
@@ -115,9 +116,30 @@ const DetailsPanel: React.FC = () => {
 
   return (
     <Paper elevation={3} sx={{ height: '100%', padding: 2, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <Typography variant="h6" gutterBottom>
-        {getNodeTitle()}
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6">
+          {getNodeTitle()}
+        </Typography>
+        {showWorkflowDetails && (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => (window as any).saveWorkflowChanges?.()}
+              disabled={(window as any).isWorkflowModified === false}
+            >
+              Save Changes
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={() => (window as any).cancelWorkflowChanges?.()}
+            >
+              Cancel
+            </Button>
+          </Box>
+        )}
+      </Box>
       {renderDetailsContent()}
     </Paper>
   );
