@@ -19,7 +19,7 @@ import ErrorMessage from '../../ui/ErrorMessage';
 import ActionButtons from '../../ui/ActionButtons';
 import useAsyncOperation from '../../../hooks/useAsyncOperation';
 import { useVersionedId } from '../../../hooks/useVersionedId';
-import { VersionedEntity } from '../../../utils/idGenerator';
+import { VersionedEntity, generateVersionedId } from '../../../utils/idGenerator';
 
 // Tool types with MCP code templates
 const TOOL_TYPES = [
@@ -28,6 +28,9 @@ const TOOL_TYPES = [
     label: 'Stagehand Browser Tool',
     description: 'Gives an agent full, headless-browser super-powers (navigate, click, scrape, screenshot) through Browserbase; ideal for web search, form-filling, and UI testing workflows.',
     source: 'Stagehand',
+    version: '1.0.0',
+    versionedId: generateVersionedId('tool', '1.0.0').id,
+    createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 from stagehand.browserbase import BrowserBase
 
@@ -48,6 +51,9 @@ browser_tool = MCP(
     label: 'Vector-Store Retriever Tool',
     description: 'Lets the agent embed a query, hit a vector DB (e.g., Qdrant, Pinecone) and pull back the top-k chunks for Retrieval-Augmented Generation (RAG).',
     source: 'Data Science Daily',
+    version: '1.0.0',
+    versionedId: generateVersionedId('tool', '1.0.0').id,
+    createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 from langchain_community.vectorstores import Qdrant
 from langchain_openai import OpenAIEmbeddings
@@ -73,6 +79,9 @@ retriever_tool = MCP(
     label: 'Calculator / Math Tool',
     description: 'Provides precise mathematical operations, equation solving, and symbolic computation capabilities through the SymPy library.',
     source: 'LangChain',
+    version: '1.0.0',
+    versionedId: generateVersionedId('tool', '1.0.0').id,
+    createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 import sympy
 import re
@@ -102,50 +111,43 @@ calculator_tool = MCP(
   {
     value: 'multi-database-sql',
     label: 'Multi-Database SQL Tool',
-    description: 'Execute SQL queries across multiple database types (PostgreSQL, MySQL, SQLite) with automatic connection management and query validation.',
-    source: 'LangChain',
+    description: 'Executes SQL queries across different database engines (PostgreSQL, MySQL, SQLite, etc.) with connection pooling and error handling.',
+    source: 'Database Toolkit',
+    version: '1.0.0',
+    versionedId: generateVersionedId('tool', '1.0.0').id,
+    createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
-from sqlalchemy import create_engine, text
-import re
+import sqlalchemy
+import pandas as pd
 
 class DatabaseConnector:
     def __init__(self):
         self.connections = {}
         
     def execute_query(self, db_type, connection_string, query):
-        """Execute a SQL query on the specified database"""
+        """Execute SQL query on specified database"""
         try:
-            # Simple SQL injection prevention
-            if self._is_dangerous_query(query):
-                return {"error": "Potentially harmful query detected"}
-                
             # Get or create connection
-            conn_key = f"{db_type}:{connection_string}"
-            if conn_key not in self.connections:
-                engine = create_engine(connection_string)
-                self.connections[conn_key] = engine
+            if connection_string not in self.connections:
+                engine = sqlalchemy.create_engine(connection_string)
+                self.connections[connection_string] = engine
+            else:
+                engine = self.connections[connection_string]
             
             # Execute query
-            with self.connections[conn_key].connect() as connection:
-                result = connection.execute(text(query))
-                if result.returns_rows:
-                    columns = result.keys()
-                    rows = [dict(zip(columns, row)) for row in result.fetchall()]
-                    return {"results": rows, "rowCount": len(rows)}
-                else:
-                    return {"rowCount": result.rowcount, "message": "Query executed successfully"}
+            with engine.connect() as conn:
+                result = pd.read_sql(query, conn)
+                return {
+                    "success": True,
+                    "rows": result.to_dict(orient="records"),
+                    "columns": result.columns.tolist(),
+                    "row_count": len(result)
+                }
         except Exception as e:
-            return {"error": str(e)}
-    
-    def _is_dangerous_query(self, query):
-        """Check if query contains potentially harmful operations"""
-        dangerous_patterns = [
-            r'\bDROP\b',
-            r'\bDELETE\b',
-            r'\bTRUNCATE\b',
-            r'\bALTER\b'
-        ]
-        return any(re.search(pattern, query, re.IGNORECASE) for pattern in dangerous_patterns)
+            return {
+                "success": False,
+                "error": str(e)
+            }
 
 # Initialize the database connector
 db_connector = DatabaseConnector()
@@ -153,16 +155,17 @@ db_connector = DatabaseConnector()
 # Define the SQL tool MCP
 sql_tool = MCP(
     name="sql",
-    description="Execute SQL queries on databases",
+    description="Execute SQL queries on various databases",
     input_schema={
-        "db_type": str,  # "postgresql", "mysql", "sqlite"
+        "db_type": str,  # "postgresql", "mysql", "sqlite", etc.
         "connection_string": str,
         "query": str
     },
     output_schema={
-        "results": list,
-        "rowCount": int,
-        "message": str,
+        "success": bool,
+        "rows": list,
+        "columns": list,
+        "row_count": int,
         "error": str
     },
     fn=lambda params: db_connector.execute_query(
@@ -175,8 +178,11 @@ sql_tool = MCP(
   {
     value: 'email-imap-smtp',
     label: 'Email (IMAP/SMTP) Tool',
-    description: 'Send and receive emails through IMAP/SMTP with support for attachments, HTML content, and folder management.',
-    source: 'LangChain',
+    description: 'Enables reading from IMAP mailboxes and sending emails via SMTP with attachment handling and HTML content support.',
+    source: 'Email Automation Suite',
+    version: '1.0.0',
+    versionedId: generateVersionedId('tool', '1.0.0').id,
+    createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 import imaplib
 import smtplib
@@ -186,7 +192,6 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import base64
-import os
 
 class EmailClient:
     def __init__(self, imap_server, smtp_server, username, password):
@@ -198,7 +203,7 @@ class EmailClient:
         self.smtp = None
     
     def connect(self):
-        """Connect to both IMAP and SMTP servers"""
+        """Connect to IMAP and SMTP servers"""
         try:
             # Connect to IMAP
             self.imap = imaplib.IMAP4_SSL(self.imap_server)
@@ -209,12 +214,12 @@ class EmailClient:
             self.smtp.starttls()
             self.smtp.login(self.username, self.password)
             
-            return True
+            return {"success": True, "message": "Connected to email servers"}
         except Exception as e:
-            return str(e)
+            return {"success": False, "error": str(e)}
     
     def disconnect(self):
-        """Disconnect from both servers"""
+        """Disconnect from servers"""
         if self.imap:
             try:
                 self.imap.logout()
@@ -225,184 +230,163 @@ class EmailClient:
                 self.smtp.quit()
             except:
                 pass
-    
-    def send_email(self, to_email, subject, body, html=None, attachments=None):
-        """Send an email with optional HTML content and attachments"""
-        try:
-            if not self.smtp:
-                result = self.connect()
-                if result is not True:
-                    return {"error": f"Connection failed: {result}"}
-            
-            msg = MIMEMultipart('alternative')
-            msg['From'] = self.username
-            msg['To'] = to_email
-            msg['Subject'] = subject
-            
-            # Attach text body
-            msg.attach(MIMEText(body, 'plain'))
-            
-            # Attach HTML body if provided
-            if html:
-                msg.attach(MIMEText(html, 'html'))
-            
-            # Add attachments if provided
-            if attachments:
-                for attachment in attachments:
-                    filename = attachment.get('filename')
-                    content = attachment.get('content')
-                    
-                    if filename and content:
-                        # Decode base64 content
-                        try:
-                            file_content = base64.b64decode(content)
-                        except:
-                            return {"error": f"Invalid base64 content for {filename}"}
-                        
-                        part = MIMEBase('application', 'octet-stream')
-                        part.set_payload(file_content)
-                        encoders.encode_base64(part)
-                        part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
-                        msg.attach(part)
-            
-            # Send the email
-            self.smtp.sendmail(self.username, to_email, msg.as_string())
-            return {"success": True, "message": "Email sent successfully"}
-        except Exception as e:
-            return {"error": str(e)}
-        finally:
-            self.disconnect()
+        self.imap = None
+        self.smtp = None
     
     def read_emails(self, folder="INBOX", limit=10, unread_only=False):
         """Read emails from the specified folder"""
         try:
             if not self.imap:
                 result = self.connect()
-                if result is not True:
-                    return {"error": f"Connection failed: {result}"}
+                if not result["success"]:
+                    return result
             
-            # Select the folder
             self.imap.select(folder)
-            
-            # Search for emails
-            search_criteria = '(UNSEEN)' if unread_only else 'ALL'
-            status, data = self.imap.search(None, search_criteria)
-            
-            if status != 'OK':
-                return {"error": "Failed to search emails"}
-            
+            search_criterion = "UNSEEN" if unread_only else "ALL"
+            _, data = self.imap.search(None, search_criterion)
             email_ids = data[0].split()
-            emails = []
             
             # Get the most recent emails up to the limit
-            for email_id in reversed(email_ids[:limit]):
-                status, data = self.imap.fetch(email_id, '(RFC822)')
-                
-                if status != 'OK':
-                    continue
-                
-                raw_email = data[0][1]
-                msg = email.message_from_bytes(raw_email)
+            emails = []
+            for num in reversed(email_ids[-limit:]):
+                _, data = self.imap.fetch(num, "(RFC822)")
+                msg = email.message_from_bytes(data[0][1])
                 
                 # Extract email details
-                email_data = {
-                    "id": email_id.decode(),
-                    "from": msg.get("From", ""),
-                    "to": msg.get("To", ""),
-                    "subject": msg.get("Subject", ""),
-                    "date": msg.get("Date", ""),
-                    "body": ""
-                }
+                subject = msg["subject"]
+                sender = msg["from"]
+                date = msg["date"]
                 
-                # Get email body
+                # Get body
+                body = ""
                 if msg.is_multipart():
                     for part in msg.walk():
                         content_type = part.get_content_type()
-                        content_disposition = str(part.get("Content-Disposition"))
-                        
-                        if content_type == "text/plain" and "attachment" not in content_disposition:
-                            email_data["body"] = part.get_payload(decode=True).decode()
+                        if content_type == "text/plain":
+                            body = part.get_payload(decode=True).decode()
                             break
                 else:
-                    email_data["body"] = msg.get_payload(decode=True).decode()
+                    body = msg.get_payload(decode=True).decode()
                 
-                emails.append(email_data)
+                emails.append({
+                    "id": num.decode(),
+                    "subject": subject,
+                    "sender": sender,
+                    "date": date,
+                    "body": body
+                })
             
-            return {"emails": emails, "count": len(emails)}
+            return {"success": True, "emails": emails}
         except Exception as e:
-            return {"error": str(e)}
-        finally:
-            self.disconnect()
+            return {"success": False, "error": str(e)}
+    
+    def send_email(self, to, subject, body, html=False, attachments=None):
+        """Send an email"""
+        try:
+            if not self.smtp:
+                result = self.connect()
+                if not result["success"]:
+                    return result
+            
+            msg = MIMEMultipart()
+            msg["From"] = self.username
+            msg["To"] = to
+            msg["Subject"] = subject
+            
+            # Add body
+            content_type = "html" if html else "plain"
+            msg.attach(MIMEText(body, content_type))
+            
+            # Add attachments if any
+            if attachments:
+                for attachment in attachments:
+                    filename = attachment["filename"]
+                    content = base64.b64decode(attachment["content"])
+                    
+                    part = MIMEBase("application", "octet-stream")
+                    part.set_payload(content)
+                    encoders.encode_base64(part)
+                    part.add_header("Content-Disposition", f"attachment; filename={filename}")
+                    msg.attach(part)
+            
+            # Send email
+            self.smtp.send_message(msg)
+            
+            return {"success": True, "message": "Email sent successfully"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
 # Define the email tool MCP
 email_tool = MCP(
     name="email",
     description="Send and read emails",
     input_schema={
-        "action": str,  # "send" or "read"
+        "action": str,  # "read" or "send"
         "imap_server": str,
         "smtp_server": str,
         "username": str,
         "password": str,
-        # For send action
-        "to_email": str,
-        "subject": str,
-        "body": str,
-        "html": str,
-        # For read action
+        # For reading emails
         "folder": str,
         "limit": int,
-        "unread_only": bool
+        "unread_only": bool,
+        # For sending emails
+        "to": str,
+        "subject": str,
+        "body": str,
+        "html": bool,
+        "attachments": list
     },
     output_schema={
         "success": bool,
-        "message": str,
         "emails": list,
-        "count": int,
+        "message": str,
         "error": str
     },
     fn=lambda params: {
-        # Create email client
-        client = EmailClient(
+        client := EmailClient(
             params["imap_server"],
             params["smtp_server"],
             params["username"],
             params["password"]
         ),
-        # Call appropriate method based on action
-        return client.send_email(
-            params["to_email"],
-            params["subject"],
-            params["body"],
-            params.get("html"),
-            params.get("attachments")
-        ) if params["action"] == "send" else client.read_emails(
+        result := (client.read_emails(
             params.get("folder", "INBOX"),
             params.get("limit", 10),
             params.get("unread_only", False)
-        )
-    }
+        ) if params["action"] == "read" else client.send_email(
+            params["to"],
+            params["subject"],
+            params["body"],
+            params.get("html", False),
+            params.get("attachments", None)
+        )),
+        client.disconnect(),
+        return result
+    }["return"]
 )`
   },
   {
     value: 'azure-functions',
     label: 'Azure Functions Tool',
-    description: 'Call Azure Functions for serverless computation, data processing, or integration with other Azure services.',
+    description: 'Invokes Azure Functions serverless compute with authentication, payload transformation, and response handling.',
     source: 'Microsoft',
+    version: '1.0.0',
+    versionedId: generateVersionedId('tool', '1.0.0').id,
+    createdAt: new Date().toISOString(),
     code: `from langgraph.mcp import MCP
 import requests
 import json
 
 class AzureFunctionsClient:
     def __init__(self, function_app_url, api_key=None):
-        self.function_app_url = function_app_url
+        self.function_app_url = function_app_url.rstrip('/')
         self.api_key = api_key
-        
+    
     def call_function(self, function_name, payload, http_method="POST"):
-        """Call an Azure Function with the provided payload"""
+        """Call an Azure Function"""
         try:
-            # Construct the function URL
-            function_url = f"{self.function_app_url}/api/{function_name}"
+            url = f"{self.function_app_url}/api/{function_name}"
             
             # Set up headers
             headers = {
@@ -415,28 +399,29 @@ class AzureFunctionsClient:
             
             # Make the request
             if http_method.upper() == "GET":
-                response = requests.get(function_url, params=payload, headers=headers)
-            else:  # Default to POST
-                response = requests.post(function_url, json=payload, headers=headers)
+                response = requests.get(url, params=payload, headers=headers)
+            else:
+                response = requests.post(url, json=payload, headers=headers)
             
-            # Check if the request was successful
+            # Process response
             response.raise_for_status()
             
-            # Try to parse JSON response
             try:
-                result = response.json()
+                return response.json()
             except json.JSONDecodeError:
-                # Return text response if not JSON
-                result = {"text_response": response.text}
-            
-            return {"status_code": response.status_code, "result": result}
+                return {"text": response.text}
+                
         except requests.exceptions.RequestException as e:
-            return {"error": str(e)}
+            return {
+                "error": str(e),
+                "status_code": getattr(e.response, 'status_code', None),
+                "response": getattr(e.response, 'text', None)
+            }
 
 # Define the Azure Functions tool MCP
 azure_functions_tool = MCP(
     name="azure_functions",
-    description="Call Azure Functions for remote computation",
+    description="Call Azure Functions serverless compute",
     input_schema={
         "function_app_url": str,
         "function_name": str,
@@ -444,11 +429,7 @@ azure_functions_tool = MCP(
         "api_key": str,
         "http_method": str
     },
-    output_schema={
-        "status_code": int,
-        "result": dict,
-        "error": str
-    },
+    output_schema=dict,
     fn=lambda params: AzureFunctionsClient(
         params["function_app_url"],
         params.get("api_key")
@@ -471,16 +452,11 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
   const [toolType, setToolType] = useState(node.toolType || '');
   const [isEditingTool, setIsEditingTool] = useState(false);
   const [toolCode, setToolCode] = useState('');
-  const [version, setVersion] = useState(node.version || '1.0.0');
-  
-  // Generate versioned ID for the tool
-  const versionedTool: VersionedEntity | null = useVersionedId('tool', version);
   
   // Update form when node changes
   useEffect(() => {
     setToolType(node.toolType || '');
     setIsEditingTool(false);
-    setVersion(node.version || '1.0.0');
     
     // Set tool code based on selected tool type
     if (node.toolType) {
@@ -510,13 +486,14 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
       updates.content = toolCode;
     }
     
-    // Add version information
-    updates.version = version;
-    
-    // Add versioned ID information if available
-    if (versionedTool) {
-      updates.versionedId = versionedTool.id;
-      updates.createdAt = versionedTool.createdAt;
+    // Add version information from the selected tool
+    if (toolType) {
+      const selectedTool = TOOL_TYPES.find(tool => tool.value === toolType);
+      if (selectedTool) {
+        updates.version = selectedTool.version;
+        updates.versionedId = selectedTool.versionedId;
+        updates.createdAt = selectedTool.createdAt;
+      }
     }
     
     updateNode(node.id, updates);
@@ -543,7 +520,6 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
     // Reset form to original values
     setToolType(node.toolType || '');
     setIsEditingTool(false);
-    setVersion(node.version || '1.0.0');
     
     // Set tool code based on selected tool type
     if (node.toolType) {
@@ -568,10 +544,6 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
     if (isEditingTool && toolCode !== (node.content || '')) {
       isModified = true;
     }
-    
-    if (version !== (node.version || '1.0.0')) {
-      isModified = true;
-    }
 
     // Expose functions for the DetailsPanel to call
     (window as any).saveNodeChanges = handleSave;
@@ -584,7 +556,7 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
       delete (window as any).cancelNodeChanges;
       delete (window as any).isNodeModified;
     };
-  }, [toolType, toolCode, isEditingTool, version, node]);
+  }, [toolType, toolCode, isEditingTool, node]);
 
   // Handle code validation
   const { 
@@ -655,39 +627,20 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
                     Source: {selectedToolInfo.source}
                   </Typography>
                 )}
+                {/* Display version information in the selected tool card */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Version: {selectedToolInfo.version}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    ID: {selectedToolInfo.versionedId.substring(0, 8)}...
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  Created: {new Date(selectedToolInfo.createdAt).toLocaleString()}
+                </Typography>
               </CardContent>
             </Card>
-          )}
-          
-          {/* Version Information */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <TextField
-              label="Version"
-              value={version}
-              onChange={(e) => setVersion(e.target.value)}
-              margin="normal"
-              variant="outlined"
-              placeholder="1.0.0"
-              helperText="Semantic version (MAJOR.MINOR.PATCH)"
-              sx={{ width: '50%' }}
-            />
-            
-            <TextField
-              label="Versioned ID"
-              value={versionedTool?.id || 'Generating...'}
-              margin="normal"
-              variant="outlined"
-              InputProps={{
-                readOnly: true,
-              }}
-              sx={{ width: '50%' }}
-            />
-          </Box>
-          
-          {versionedTool && (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-              Created: {new Date(versionedTool.createdAt).toLocaleString()}
-            </Typography>
           )}
           
           {/* Code editor for the selected tool */}
@@ -737,37 +690,6 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
       // Show the list of tool cards with edit buttons
       return (
         <Box sx={{ mb: 2, mt: 2 }}>
-          {/* Version Information */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <TextField
-              label="Version"
-              value={version}
-              onChange={(e) => setVersion(e.target.value)}
-              margin="normal"
-              variant="outlined"
-              placeholder="1.0.0"
-              helperText="Semantic version (MAJOR.MINOR.PATCH)"
-              sx={{ width: '50%' }}
-            />
-            
-            <TextField
-              label="Versioned ID"
-              value={versionedTool?.id || 'Generating...'}
-              margin="normal"
-              variant="outlined"
-              InputProps={{
-                readOnly: true,
-              }}
-              sx={{ width: '50%' }}
-            />
-          </Box>
-          
-          {versionedTool && (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-              Created: {new Date(versionedTool.createdAt).toLocaleString()}
-            </Typography>
-          )}
-
           <FormControl component="fieldset" fullWidth>
             <FormLabel component="legend">Tool Type</FormLabel>
             <Box sx={{ mt: 2 }}>
@@ -820,6 +742,15 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
                           Source: {tool.source}
                         </Typography>
                       )}
+                      {/* Display version information in each tool card */}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          Version: {tool.version}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          ID: {tool.versionedId.substring(0, 8)}...
+                        </Typography>
+                      </Box>
                     </CardActionArea>
                   </CardContent>
                 </Card>
@@ -847,22 +778,6 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
           />
         </Box>
       )}
-      
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-        {saveLoading ? (
-          <LoadingIndicator 
-            type="spinner" 
-            size="small" 
-            message="Saving..."
-          />
-        ) : (
-          <ActionButtons
-            onSave={handleSave}
-            onCancel={handleCancel}
-            isSaveDisabled={isEditingTool && Boolean(validationError)}
-          />
-        )}
-      </Box>
     </>
   );
 };
