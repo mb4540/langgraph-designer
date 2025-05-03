@@ -5,7 +5,7 @@
  * rules required by both Autogen and LangGraph runtimes.
  */
 
-import { OperatorType, WorkflowNode, WorkflowEdge } from '../types/nodeTypes';
+import { OperatorType, WorkflowNode, WorkflowEdge, TriggerType } from '../types/nodeTypes';
 
 // Define the types for the validation rules
 export type RuntimeType = 'autogen' | 'langgraph';
@@ -187,6 +187,132 @@ const getRuleForOperatorType = (operatorType: OperatorType, runtimeType: Runtime
 };
 
 /**
+ * Validates a Start operator node
+ */
+export const validateStartOperator = (
+  node: WorkflowNode,
+  nodes: WorkflowNode[],
+  edges: WorkflowEdge[],
+  runtimeType: RuntimeType = 'langgraph',
+  runtimeSettings?: { checkpointStore?: string }
+): { isValid: boolean, message?: string, warnings?: string[] } => {
+  // Check if the node is a Start operator
+  if (node.type !== 'operator' || node.operatorType !== OperatorType.Start) {
+    return { isValid: true };
+  }
+
+  const warnings: string[] = [];
+
+  // Check if the trigger type is set
+  if (!node.triggerType) {
+    return { isValid: false, message: 'Start operator must have a trigger type' };
+  }
+
+  // Check for incoming edges (Start nodes should never have incoming edges)
+  const incomingEdges = edges.filter(edge => edge.target === node.id);
+  if (incomingEdges.length > 0) {
+    return { isValid: false, message: 'Start nodes cannot have incoming edges' };
+  }
+
+  // Get outgoing edges for this Start node
+  const outgoingEdges = edges.filter(edge => edge.source === node.id);
+  
+  // Trigger-specific edge rules
+  switch (node.triggerType) {
+    case 'human':
+      // Must have outgoing edges
+      if (outgoingEdges.length === 0) {
+        return { isValid: false, message: 'Human-triggered Start node must have at least one outgoing edge' };
+      }
+      
+      // First outgoing edge should point to AGENT_CALL
+      if (outgoingEdges.length > 0) {
+        const firstTargetId = outgoingEdges[0].target;
+        const firstTarget = nodes.find(n => n.id === firstTargetId);
+        
+        if (!firstTarget || firstTarget.type !== 'operator' || firstTarget.operatorType !== OperatorType.AgentCall) {
+          return { 
+            isValid: false, 
+            message: 'Human-triggered Start node\'s first outgoing edge must point to an AGENT_CALL node' 
+          };
+        }
+        
+        // Runtime-specific checks
+        if (runtimeType === 'autogen') {
+          // Should check if the AGENT_CALL wraps a UserProxyAgent
+          // This would require additional metadata about agent types
+          warnings.push('Ensure the target AGENT_CALL wraps a UserProxyAgent for Autogen runtime');
+        } else if (runtimeType === 'langgraph') {
+          // Should check if it points to an interrupt() node
+          warnings.push('Ensure the target AGENT_CALL includes an interrupt() node for LangGraph runtime');
+        }
+      }
+      break;
+      
+    case 'system':
+      // Must have outgoing edges
+      if (outgoingEdges.length === 0) {
+        return { isValid: false, message: 'System-triggered Start node must have at least one outgoing edge' };
+      }
+      break;
+      
+    case 'event':
+      // Should not have outgoing edges (external orchestration picks first node)
+      if (outgoingEdges.length > 0) {
+        return { 
+          isValid: false, 
+          message: 'Event-triggered Start node should not have outgoing edges (external orchestration will pick first node)' 
+        };
+      }
+      
+      // Runtime-specific warnings
+      if (runtimeType === 'autogen') {
+        warnings.push('Autogen lacks a native scheduler; generate an external wrapper');
+      }
+      break;
+      
+    case 'multi':
+      // Must have at least two outgoing edges (fan-out)
+      if (outgoingEdges.length < 2) {
+        return { 
+          isValid: false, 
+          message: 'Multi-triggered Start node must have at least two outgoing edges (fan-out)' 
+        };
+      }
+      break;
+  }
+
+  // Check if resume_capable requires a checkpoint store
+  if (node.resumeCapable && (!runtimeSettings || !runtimeSettings.checkpointStore)) {
+    return { 
+      isValid: false, 
+      message: 'Resume-capable workflows require a checkpoint store to be configured in runtime settings' 
+    };
+  }
+
+  // Runtime-specific validations
+  if (runtimeType === 'autogen') {
+    // For 'system' trigger type in Autogen, resume_capable must be false
+    if (node.triggerType === 'system' && node.resumeCapable) {
+      return { 
+        isValid: false, 
+        message: "System-triggered workflows in Autogen cannot be resume-capable" 
+      };
+    }
+    
+    // Autogen only supports 'human' and 'system' trigger types
+    if (node.triggerType !== 'human' && node.triggerType !== 'system') {
+      return { 
+        isValid: false, 
+        message: `Autogen runtime only supports 'human' and 'system' trigger types, not '${node.triggerType}'` 
+      };
+    }
+  }
+
+  return { isValid: true, warnings: warnings.length > 0 ? warnings : undefined };
+};
+
+/**
  * Validates if a connection between two nodes is allowed according to the rules
  */
 export const validateConnection = (
@@ -199,71 +325,50 @@ export const validateConnection = (
   if (sourceNode.type !== 'operator' || targetNode.type !== 'operator') {
     return { isValid: true };
   }
-  
-  // Get the operator types
-  const sourceOperatorType = sourceNode.operatorType;
-  const targetOperatorType = targetNode.operatorType;
-  
-  if (!sourceOperatorType || !targetOperatorType) {
-    return { isValid: false, message: 'Missing operator type' };
+
+  // Get the rules for the source and target operator types
+  const sourceRule = getRuleForOperatorType(sourceNode.operatorType!, runtimeType);
+  const targetRule = getRuleForOperatorType(targetNode.operatorType!, runtimeType);
+
+  if (!sourceRule || !targetRule) {
+    return { isValid: false, message: 'Invalid operator type' };
   }
-  
-  // Get the rules for the source and target operators
-  const sourceRule = getRuleForOperatorType(sourceOperatorType, runtimeType);
-  const targetRule = getRuleForOperatorType(targetOperatorType, runtimeType);
-  
-  if (!sourceRule) {
-    return { isValid: false, message: `No rules defined for source operator type: ${sourceOperatorType}` };
-  }
-  
-  if (!targetRule) {
-    return { isValid: false, message: `No rules defined for target operator type: ${targetOperatorType}` };
-  }
-  
-  // Get the rule keys for source and target
-  const sourceRuleKey = operatorTypeToRuleKey[sourceOperatorType];
-  const targetRuleKey = operatorTypeToRuleKey[targetOperatorType];
-  
-  // Check if the target type is allowed as an outgoing connection from the source
-  const allowedOutgoing = sourceRule.out.flatMap(type => 
-    expandRuleType(type, { ...context, sourceNodeId: sourceNode.id, targetNodeId: targetNode.id })
+
+  // Check if the target node type is allowed as an output of the source node
+  const allowedOutputs = sourceRule.out;
+  const targetRuleKey = operatorTypeToRuleKey[targetNode.operatorType!];
+
+  // Expand any special rule types
+  const expandedOutputs = allowedOutputs.flatMap(ruleType => 
+    expandRuleType(ruleType, { ...context, sourceNodeId: sourceNode.id, targetNodeId: targetNode.id })
   );
-  
-  if (!allowedOutgoing.includes(targetRuleKey)) {
+
+  if (!expandedOutputs.includes(targetRuleKey)) {
     return { 
       isValid: false, 
-      message: `Connection from ${sourceOperatorType} to ${targetOperatorType} is not allowed. Allowed targets are: ${allowedOutgoing.join(', ')}` 
+      message: `${sourceNode.operatorType} cannot connect to ${targetNode.operatorType}` 
     };
   }
-  
-  // Check if the source type is allowed as an incoming connection to the target
-  const allowedIncoming = Array.isArray(targetRule.in) 
-    ? targetRule.in.flatMap(type => 
-        expandRuleType(type, { ...context, sourceNodeId: sourceNode.id, targetNodeId: targetNode.id })
-      )
-    : [];
-    
-  // If the target rule has a complex 'in' rule (for TOOL_CALL), handle it specially
-  if (!Array.isArray(targetRule.in) && typeof targetRule.in === 'object') {
-    const inRule = targetRule.in as { autogen: string[], langgraph: string[] };
-    const ruleForRuntime = inRule[runtimeType];
-    const expandedIncoming = ruleForRuntime.flatMap(type => 
-      expandRuleType(type, { ...context, sourceNodeId: sourceNode.id, targetNodeId: targetNode.id })
-    );
-    
-    if (!expandedIncoming.includes(operatorTypeToRuleKey[sourceOperatorType])) {
-      return { 
-        isValid: false, 
-        message: `Connection to ${targetOperatorType} from ${sourceOperatorType} is not allowed in ${runtimeType} mode. Allowed sources are: ${expandedIncoming.join(', ')}` 
-      };
-    }
-  } else if (!allowedIncoming.includes(operatorTypeToRuleKey[sourceOperatorType])) {
+
+  // Check if the source node type is allowed as an input to the target node
+  const allowedInputs = Array.isArray(targetRule.in) 
+    ? targetRule.in 
+    : targetRule.in[runtimeType];
+
+  const sourceRuleKey = operatorTypeToRuleKey[sourceNode.operatorType!];
+
+  // Expand any special rule types
+  const expandedInputs = allowedInputs.flatMap(ruleType => 
+    expandRuleType(ruleType, { ...context, sourceNodeId: sourceNode.id, targetNodeId: targetNode.id })
+  );
+
+  if (!expandedInputs.includes(sourceRuleKey)) {
     return { 
       isValid: false, 
-      message: `Connection to ${targetOperatorType} from ${sourceOperatorType} is not allowed. Allowed sources are: ${allowedIncoming.join(', ')}` 
+      message: `${targetNode.operatorType} cannot accept input from ${sourceNode.operatorType}` 
     };
   }
-  
+
   return { isValid: true };
 };
 
@@ -273,124 +378,111 @@ export const validateConnection = (
 export const validateWorkflow = (
   nodes: WorkflowNode[],
   edges: WorkflowEdge[],
-  runtimeType: RuntimeType = 'langgraph'
-): { isValid: boolean, errors: string[] } => {
+  runtimeType: RuntimeType = 'langgraph',
+  runtimeSettings?: { checkpointStore?: string }
+): { isValid: boolean, errors: string[], warnings?: string[] } => {
   const errors: string[] = [];
-  const context = { nodes, edges };
-  
-  // 1. Check global invariants
-  
-  // 1.1 Exactly one START node
+  const warnings: string[] = [];
+
+  // Uniqueness check for Start nodes
   const startNodes = nodes.filter(node => 
     node.type === 'operator' && node.operatorType === OperatorType.Start
   );
-  
+
   if (startNodes.length === 0) {
-    errors.push('Workflow must have exactly one START node');
-  } else if (startNodes.length > 1) {
-    errors.push(`Workflow has ${startNodes.length} START nodes, but must have exactly one`);
+    errors.push('Graph must contain exactly one Start node.');
+  } else if (startNodes.length > 1 && startNodes.some(s => s.triggerType !== 'multi')) {
+    errors.push('Multiple Start nodes require `trigger_type: "multi"` on each.');
   }
-  
-  // 1.2 At least one END node
+
+  // For Autogen, only one START node is allowed regardless of trigger type
+  if (runtimeType === 'autogen' && startNodes.length > 1) {
+    errors.push('Autogen runtime only supports one START node');
+  }
+
+  // Validate each START node
+  startNodes.forEach(node => {
+    const validation = validateStartOperator(node, nodes, edges, runtimeType, runtimeSettings);
+    if (!validation.isValid && validation.message) {
+      errors.push(validation.message);
+    }
+    if (validation.warnings && validation.warnings.length > 0) {
+      warnings.push(...validation.warnings);
+    }
+  });
+
+  // Check that we have at least one END node
   const endNodes = nodes.filter(node => 
     node.type === 'operator' && node.operatorType === OperatorType.Stop
   );
-  
+
   if (endNodes.length === 0) {
     errors.push('Workflow must have at least one END node');
   }
-  
-  // 1.3 START has no incoming edges
-  if (startNodes.length > 0) {
-    const startNodeIds = startNodes.map(node => node.id);
-    const startNodeIncomingEdges = edges.filter(edge => 
-      startNodeIds.includes(edge.target)
-    );
-    
-    if (startNodeIncomingEdges.length > 0) {
-      errors.push('START node cannot have incoming edges');
-    }
-  }
-  
-  // 1.4 END has no outgoing edges
-  if (endNodes.length > 0) {
-    const endNodeIds = endNodes.map(node => node.id);
-    const endNodeOutgoingEdges = edges.filter(edge => 
-      endNodeIds.includes(edge.source)
-    );
-    
-    if (endNodeOutgoingEdges.length > 0) {
-      errors.push('END node cannot have outgoing edges');
-    }
-  }
-  
-  // 1.5 Check DECISION nodes have at least two outgoing edges
-  const decisionNodes = nodes.filter(node => 
-    node.type === 'operator' && node.operatorType === OperatorType.Decision
-  );
-  
-  decisionNodes.forEach(decisionNode => {
-    const outgoingEdges = edges.filter(edge => edge.source === decisionNode.id);
-    if (outgoingEdges.length < 2) {
-      errors.push(`DECISION node '${decisionNode.name}' must have at least two outgoing edges`);
-    }
-  });
-  
-  // 1.6 Check PARALLEL_FORK nodes have matching PARALLEL_JOIN nodes
-  const forkNodes = nodes.filter(node => 
-    node.type === 'operator' && node.operatorType === OperatorType.ParallelFork
-  );
-  
-  const joinNodes = nodes.filter(node => 
-    node.type === 'operator' && node.operatorType === OperatorType.ParallelJoin
-  );
-  
-  // This is a simplified check - a more thorough check would trace paths
-  if (forkNodes.length > joinNodes.length) {
-    errors.push(`Workflow has ${forkNodes.length} PARALLEL_FORK nodes but only ${joinNodes.length} PARALLEL_JOIN nodes`);
-  }
-  
-  // 1.7 Check Autogen-specific rule: TOOL_CALL must only be reached from AGENT_CALL
-  if (runtimeType === 'autogen') {
-    const toolCallNodes = nodes.filter(node => 
-      node.type === 'operator' && node.operatorType === OperatorType.ToolCall
-    );
-    
-    toolCallNodes.forEach(toolCallNode => {
-      const incomingEdges = edges.filter(edge => edge.target === toolCallNode.id);
-      
-      incomingEdges.forEach(edge => {
-        const sourceNode = nodes.find(node => node.id === edge.source);
-        if (sourceNode && 
-            (sourceNode.type !== 'operator' || 
-             sourceNode.operatorType !== OperatorType.AgentCall)) {
-          errors.push(`In Autogen mode, TOOL_CALL node '${toolCallNode.name}' can only be reached from AGENT_CALL nodes`);
+
+  // Check that all nodes have the required connections
+  nodes.forEach(node => {
+    // Skip non-operator nodes for now
+    if (node.type !== 'operator') return;
+
+    const rule = getRuleForOperatorType(node.operatorType!, runtimeType);
+    if (!rule) return;
+
+    // Skip connection checks for START nodes (handled in validateStartOperator)
+    if (node.operatorType === OperatorType.Start) return;
+
+    // Check incoming connections
+    const incomingEdges = edges.filter(edge => edge.target === node.id);
+    const incomingNodes = incomingEdges.map(edge => 
+      nodes.find(n => n.id === edge.source)
+    ).filter(Boolean) as WorkflowNode[];
+
+    if (incomingEdges.length === 0) {
+      errors.push(`${node.operatorType} node '${node.name}' has no incoming connections`);
+    } else {
+      // Check if the incoming connections are valid
+      incomingNodes.forEach(sourceNode => {
+        if (sourceNode.type === 'operator') {
+          const validation = validateConnection(sourceNode, node, runtimeType, { nodes, edges });
+          if (!validation.isValid && validation.message) {
+            errors.push(validation.message);
+          }
         }
       });
-    });
-  }
-  
-  // 2. Check individual connections
-  edges.forEach(edge => {
-    const sourceNode = nodes.find(node => node.id === edge.source);
-    const targetNode = nodes.find(node => node.id === edge.target);
-    
-    if (sourceNode && targetNode) {
-      const validationResult = validateConnection(sourceNode, targetNode, runtimeType, context);
-      
-      if (!validationResult.isValid && validationResult.message) {
-        errors.push(validationResult.message);
+    }
+
+    // Check outgoing connections (except for END nodes)
+    if (node.operatorType !== OperatorType.Stop) {
+      const outgoingEdges = edges.filter(edge => edge.source === node.id);
+      const outgoingNodes = outgoingEdges.map(edge => 
+        nodes.find(n => n.id === edge.target)
+      ).filter(Boolean) as WorkflowNode[];
+
+      if (outgoingEdges.length === 0) {
+        errors.push(`${node.operatorType} node '${node.name}' has no outgoing connections`);
+      } else {
+        // Check if the outgoing connections are valid
+        outgoingNodes.forEach(targetNode => {
+          if (targetNode.type === 'operator') {
+            const validation = validateConnection(node, targetNode, runtimeType, { nodes, edges });
+            if (!validation.isValid && validation.message) {
+              errors.push(validation.message);
+            }
+          }
+        });
+      }
+
+      // Check minimum branches for nodes that require them
+      if (rule.minBranches && outgoingEdges.length < rule.minBranches) {
+        errors.push(`${node.operatorType} node '${node.name}' requires at least ${rule.minBranches} outgoing connections`);
       }
     }
   });
-  
-  // 3. Check for cycles (except through DECISION or LOOP nodes)
-  // This would require a more complex graph traversal algorithm
-  // For now, we'll skip this check
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
+    warnings: warnings.length > 0 ? warnings : undefined
   };
 };
 
@@ -404,25 +496,31 @@ export const canConnect = (
   edges: WorkflowEdge[],
   runtimeType: RuntimeType = 'langgraph'
 ): { canConnect: boolean, message?: string } => {
-  // Don't allow self-connections
-  if (sourceNode.id === targetNode.id) {
-    return { canConnect: false, message: 'Cannot connect a node to itself' };
+  // First, check if the connection would be valid according to the rules
+  const validation = validateConnection(sourceNode, targetNode, runtimeType, { nodes, edges });
+  if (!validation.isValid) {
+    return { canConnect: false, message: validation.message };
   }
-  
-  // Don't allow duplicate connections
-  const existingEdge = edges.find(edge => 
-    edge.source === sourceNode.id && edge.target === targetNode.id
-  );
-  
-  if (existingEdge) {
-    return { canConnect: false, message: 'Connection already exists' };
+
+  // Check if the connection would create a cycle (except for LOOP nodes)
+  if (sourceNode.operatorType !== OperatorType.Loop) {
+    // Simple cycle detection: check if there's already a path from target to source
+    const visited = new Set<string>();
+    const queue = [targetNode.id];
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      if (currentId === sourceNode.id) {
+        return { canConnect: false, message: 'Connection would create a cycle' };
+      }
+
+      if (!visited.has(currentId)) {
+        visited.add(currentId);
+        const outgoingEdges = edges.filter(edge => edge.source === currentId);
+        outgoingEdges.forEach(edge => queue.push(edge.target));
+      }
+    }
   }
-  
-  // Check if the connection is valid according to the rules
-  const validationResult = validateConnection(sourceNode, targetNode, runtimeType, { nodes, edges });
-  
-  return {
-    canConnect: validationResult.isValid,
-    message: validationResult.message
-  };
+
+  return { canConnect: true };
 };

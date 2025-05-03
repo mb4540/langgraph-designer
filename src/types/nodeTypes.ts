@@ -29,6 +29,11 @@ export enum OperatorType {
 }
 
 /**
+ * Enum for Start operator trigger types
+ */
+export type TriggerType = 'human' | 'system' | 'event' | 'multi';
+
+/**
  * Interface for agent setting
  */
 export interface AgentSetting {
@@ -55,6 +60,8 @@ export interface WorkflowNode {
   memoryType?: string; // Only for memory nodes
   toolType?: string; // Only for tool nodes
   operatorType?: OperatorType; // Only for operator nodes
+  triggerType?: TriggerType; // Only for START operator nodes
+  resumeCapable?: boolean; // Only for START operator nodes
   parentId?: string; // Reference to the parent node (if created from a diamond connector)
   sourceHandle?: string; // The handle ID from which this node was created
   

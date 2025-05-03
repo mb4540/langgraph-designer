@@ -8,7 +8,13 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Grid from '@mui/material/Grid';
-import { WorkflowNode, OperatorType } from '../../../types/nodeTypes';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormLabel from '@mui/material/FormLabel';
+import Divider from '@mui/material/Divider';
+import { WorkflowNode, OperatorType, TriggerType } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import ActionButtons from '../../ui/ActionButtons';
 
@@ -23,21 +29,33 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
   const [name, setName] = useState(node.name || '');
   const [operatorType, setOperatorType] = useState<OperatorType>(node.operatorType || OperatorType.Sequential);
   const [description, setDescription] = useState(node.content || '');
+  const [triggerType, setTriggerType] = useState<TriggerType>(node.triggerType || 'human');
+  const [resumeCapable, setResumeCapable] = useState<boolean>(node.resumeCapable || false);
 
   // Update form when node changes
   useEffect(() => {
     setName(node.name || '');
     setOperatorType(node.operatorType || OperatorType.Sequential);
     setDescription(node.content || '');
+    setTriggerType(node.triggerType || 'human');
+    setResumeCapable(node.resumeCapable || false);
   }, [node]);
 
   const handleSave = () => {
     // Update node with form values
-    updateNode(node.id, {
+    const updates: Partial<WorkflowNode> = {
       name,
       operatorType,
       content: description,
-    });
+    };
+
+    // Only add START-specific properties if the operator type is START
+    if (operatorType === OperatorType.Start) {
+      updates.triggerType = triggerType;
+      updates.resumeCapable = resumeCapable;
+    }
+
+    updateNode(node.id, updates);
   };
 
   const handleCancel = () => {
@@ -45,6 +63,8 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
     setName(node.name || '');
     setOperatorType(node.operatorType || OperatorType.Sequential);
     setDescription(node.content || '');
+    setTriggerType(node.triggerType || 'human');
+    setResumeCapable(node.resumeCapable || false);
   };
 
   // Expose the functions to save and cancel changes
@@ -53,7 +73,9 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
     const isModified = 
       name !== (node.name || '') ||
       operatorType !== (node.operatorType || OperatorType.Sequential) ||
-      description !== (node.content || '');
+      description !== (node.content || '') ||
+      (operatorType === OperatorType.Start && triggerType !== (node.triggerType || 'human')) ||
+      (operatorType === OperatorType.Start && resumeCapable !== (node.resumeCapable || false));
 
     // Expose functions for the DetailsPanel to call
     (window as any).saveNodeChanges = handleSave;
@@ -66,7 +88,47 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
       delete (window as any).cancelNodeChanges;
       delete (window as any).isNodeModified;
     };
-  }, [name, operatorType, description, node]);
+  }, [name, operatorType, description, triggerType, resumeCapable, node]);
+
+  // Render START operator specific fields
+  const renderStartOperatorFields = () => {
+    if (operatorType !== OperatorType.Start) return null;
+
+    return (
+      <Box sx={{ mt: 3 }}>
+        <Divider sx={{ my: 2 }} />
+        <Typography variant="subtitle1" gutterBottom>
+          Start Operator Configuration
+        </Typography>
+        
+        <FormControl component="fieldset" sx={{ mb: 2 }}>
+          <FormLabel component="legend">Trigger Type</FormLabel>
+          <RadioGroup
+            value={triggerType}
+            onChange={(e) => setTriggerType(e.target.value as TriggerType)}
+          >
+            <FormControlLabel value="human" control={<Radio />} label="Human Trigger" />
+            <FormControlLabel value="system" control={<Radio />} label="System Trigger" />
+            <FormControlLabel value="event" control={<Radio />} label="Event Trigger" />
+            <FormControlLabel value="multi" control={<Radio />} label="Multi Trigger" />
+          </RadioGroup>
+        </FormControl>
+        
+        <FormControlLabel
+          control={
+            <Switch
+              checked={resumeCapable}
+              onChange={(e) => setResumeCapable(e.target.checked)}
+            />
+          }
+          label="Resume Capable"
+        />
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 3 }}>
+          Enable workflow to be resumed after interruption
+        </Typography>
+      </Box>
+    );
+  };
 
   return (
     <Box sx={{ p: 1 }}>
@@ -96,6 +158,9 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
           ))}
         </Select>
       </FormControl>
+      
+      {/* Render START operator specific fields */}
+      {renderStartOperatorFields()}
       
       <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
         Description
