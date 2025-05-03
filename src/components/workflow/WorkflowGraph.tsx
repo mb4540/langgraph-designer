@@ -19,13 +19,38 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Divider from '@mui/material/Divider';
 import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
+
+// Import operator-related icons
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import BuildIcon from '@mui/icons-material/Build';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import MemoryIcon from '@mui/icons-material/Memory';
+import SaveIcon from '@mui/icons-material/Save';
+import HelpIcon from '@mui/icons-material/Help';
+import CallSplitIcon from '@mui/icons-material/CallSplit';
+import MergeIcon from '@mui/icons-material/Merge';
+import LoopIcon from '@mui/icons-material/Loop';
+import ReplayIcon from '@mui/icons-material/Replay';
+import TimerIcon from '@mui/icons-material/Timer';
+import PauseIcon from '@mui/icons-material/Pause';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+
 import { useThemeContext } from '../../context/ThemeContext';
-import { WorkflowNode as StoreNode, WorkflowEdge as StoreEdge } from '../../types/nodeTypes';
+import { WorkflowNode as StoreNode, WorkflowEdge as StoreEdge, OperatorType } from '../../types/nodeTypes';
 import { useWorkflowContext } from '../../context/WorkflowContext';
 import AgentNode from '../nodes/AgentNode';
 import MemoryNode from '../nodes/MemoryNode';
 import ToolNode from '../nodes/ToolNode';
+import OperatorNode from '../nodes/OperatorNode';
 import ConfirmationDialog from '../ConfirmationDialog';
 
 // Define custom node types
@@ -33,6 +58,45 @@ const nodeTypes: NodeTypes = {
   agent: AgentNode,
   memory: MemoryNode,
   tool: ToolNode,
+  operator: OperatorNode,
+};
+
+// Map operator types to their corresponding icons
+const operatorIcons: Record<OperatorType, React.ElementType> = {
+  [OperatorType.Start]: PlayArrowIcon,
+  [OperatorType.Stop]: StopIcon,
+  [OperatorType.Sequential]: ArrowForwardIcon,
+  [OperatorType.ToolCall]: BuildIcon,
+  [OperatorType.AgentCall]: SmartToyIcon,
+  [OperatorType.MemoryRead]: MemoryIcon,
+  [OperatorType.MemoryWrite]: SaveIcon,
+  [OperatorType.Decision]: HelpIcon,
+  [OperatorType.ParallelFork]: CallSplitIcon,
+  [OperatorType.ParallelJoin]: MergeIcon,
+  [OperatorType.Loop]: LoopIcon,
+  [OperatorType.ErrorRetry]: ReplayIcon,
+  [OperatorType.Timeout]: TimerIcon,
+  [OperatorType.HumanPause]: PauseIcon,
+  [OperatorType.SubGraph]: AccountTreeIcon,
+};
+
+// Map operator types to colors
+const operatorColors: Record<OperatorType, string> = {
+  [OperatorType.Start]: '#4caf50', // Green
+  [OperatorType.Stop]: '#f44336', // Red
+  [OperatorType.Sequential]: '#2196f3', // Blue
+  [OperatorType.ToolCall]: '#ff9800', // Orange
+  [OperatorType.AgentCall]: '#9c27b0', // Purple
+  [OperatorType.MemoryRead]: '#00bcd4', // Cyan
+  [OperatorType.MemoryWrite]: '#009688', // Teal
+  [OperatorType.Decision]: '#673ab7', // Deep Purple
+  [OperatorType.ParallelFork]: '#3f51b5', // Indigo
+  [OperatorType.ParallelJoin]: '#3f51b5', // Indigo
+  [OperatorType.Loop]: '#795548', // Brown
+  [OperatorType.ErrorRetry]: '#ff5722', // Deep Orange
+  [OperatorType.Timeout]: '#607d8b', // Blue Grey
+  [OperatorType.HumanPause]: '#e91e63', // Pink
+  [OperatorType.SubGraph]: '#8bc34a', // Light Green
 };
 
 // Maps node types to their respective handle IDs
@@ -83,6 +147,9 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
     } else if (node.type === 'agent') {
       // For agent nodes, just use the name without any prefix
       label = node.name;
+    } else if (node.type === 'operator' && node.operatorType) {
+      // For operator nodes, use the operator type as the label
+      label = node.operatorType.toString().replace(/_/g, ' ').toLowerCase();
     } else {
       // For other node types, use the default format
       label = `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.name}`;
@@ -97,6 +164,7 @@ const storeNodesToFlowNodes = (nodes: StoreNode[], isDarkMode: boolean, onDelete
         memoryType: node.memoryType, // Pass the memory type to the node component
         toolType: node.toolType, // Pass the tool type to the node component
         icon: node.icon, // Pass the icon to the node component
+        operatorType: node.operatorType, // Pass the operator type to the node component
         onDelete: onDeleteFn
       },
       position: node.position,
@@ -135,7 +203,7 @@ const storeEdgesToFlowEdges = (edges: StoreEdge[], nodes: StoreNode[], isDarkMod
 };
 
 const WorkflowGraph: React.FC = () => {
-  const { nodes: storeNodes, edges: storeEdges, selectNode, removeNode, addEdge: addStoreEdge } = useWorkflowContext();
+  const { nodes: storeNodes, edges: storeEdges, selectNode, removeNode, addNode, addEdge: addStoreEdge } = useWorkflowContext();
   const { mode } = useThemeContext();
   const isDarkMode = mode === 'dark';
   
@@ -147,6 +215,10 @@ const WorkflowGraph: React.FC = () => {
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
   const [deleteDialogMessage, setDeleteDialogMessage] = useState('');
 
+  // State for operator menu
+  const [operatorMenuAnchorEl, setOperatorMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const operatorMenuOpen = Boolean(operatorMenuAnchorEl);
+
   // Reference to the ReactFlow instance
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
 
@@ -157,6 +229,43 @@ const WorkflowGraph: React.FC = () => {
       (window as any).showWorkflowDetails();
     }
   }, []);
+
+  // Handle opening operator menu
+  const handleOpenOperatorMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setOperatorMenuAnchorEl(event.currentTarget);
+  };
+
+  // Handle closing operator menu
+  const handleCloseOperatorMenu = () => {
+    setOperatorMenuAnchorEl(null);
+  };
+
+  // Handle adding a new operator node
+  const handleAddOperator = (operatorType: OperatorType) => {
+    if (!reactFlowInstanceRef.current) return;
+
+    // Close the menu
+    handleCloseOperatorMenu();
+
+    // Get the center position of the viewport
+    const { x, y, zoom } = reactFlowInstanceRef.current.getViewport();
+    const centerX = window.innerWidth / 2 / zoom - x / zoom;
+    const centerY = window.innerHeight / 2 / zoom - y / zoom;
+
+    // Create a new operator node
+    const newId = `operator-${Date.now()}`;
+    const newNode: StoreNode = {
+      id: newId,
+      type: 'operator',
+      name: operatorType.toString().replace(/_/g, ' ').toLowerCase(),
+      content: `This is a ${operatorType} operator.`,
+      position: { x: centerX, y: centerY },
+      operatorType,
+    };
+
+    // Add the new node
+    addNode(newNode);
+  };
 
   // Handle node deletion
   const handleDeleteNode = useCallback((id: string) => {
@@ -248,15 +357,106 @@ const WorkflowGraph: React.FC = () => {
         <Typography variant="subtitle1" fontWeight="medium">
           Workflow Name: {workflowName}
         </Typography>
-        <Button 
-          variant="outlined" 
-          size="small" 
-          startIcon={<EditIcon />} 
-          onClick={handleEditWorkflowDetails}
-        >
-          Edit Workflow Detail
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button 
+            variant="outlined" 
+            size="small" 
+            startIcon={<AddIcon />} 
+            onClick={handleOpenOperatorMenu}
+          >
+            Add Operator
+          </Button>
+          <Button 
+            variant="outlined" 
+            size="small" 
+            startIcon={<EditIcon />} 
+            onClick={handleEditWorkflowDetails}
+          >
+            Edit Workflow Detail
+          </Button>
+        </Box>
       </Box>
+      
+      {/* Operator Menu */}
+      <Menu
+        anchorEl={operatorMenuAnchorEl}
+        open={operatorMenuOpen}
+        onClose={handleCloseOperatorMenu}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={() => handleAddOperator(OperatorType.Start)}>
+          <ListItemIcon><PlayArrowIcon /></ListItemIcon>
+          <ListItemText>Start</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleAddOperator(OperatorType.Stop)}>
+          <ListItemIcon><StopIcon /></ListItemIcon>
+          <ListItemText>Stop</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => handleAddOperator(OperatorType.Sequential)}>
+          <ListItemIcon><ArrowForwardIcon /></ListItemIcon>
+          <ListItemText>Sequential</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleAddOperator(OperatorType.ToolCall)}>
+          <ListItemIcon><BuildIcon /></ListItemIcon>
+          <ListItemText>Tool Call</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleAddOperator(OperatorType.AgentCall)}>
+          <ListItemIcon><SmartToyIcon /></ListItemIcon>
+          <ListItemText>Agent Call</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => handleAddOperator(OperatorType.MemoryRead)}>
+          <ListItemIcon><MemoryIcon /></ListItemIcon>
+          <ListItemText>Memory Read</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleAddOperator(OperatorType.MemoryWrite)}>
+          <ListItemIcon><SaveIcon /></ListItemIcon>
+          <ListItemText>Memory Write</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => handleAddOperator(OperatorType.Decision)}>
+          <ListItemIcon><HelpIcon /></ListItemIcon>
+          <ListItemText>Decision</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleAddOperator(OperatorType.ParallelFork)}>
+          <ListItemIcon><CallSplitIcon /></ListItemIcon>
+          <ListItemText>Parallel Fork</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleAddOperator(OperatorType.ParallelJoin)}>
+          <ListItemIcon><MergeIcon /></ListItemIcon>
+          <ListItemText>Parallel Join</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => handleAddOperator(OperatorType.Loop)}>
+          <ListItemIcon><LoopIcon /></ListItemIcon>
+          <ListItemText>Loop</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleAddOperator(OperatorType.ErrorRetry)}>
+          <ListItemIcon><ReplayIcon /></ListItemIcon>
+          <ListItemText>Error Retry</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleAddOperator(OperatorType.Timeout)}>
+          <ListItemIcon><TimerIcon /></ListItemIcon>
+          <ListItemText>Timeout</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => handleAddOperator(OperatorType.HumanPause)}>
+          <ListItemIcon><PauseIcon /></ListItemIcon>
+          <ListItemText>Human Pause</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleAddOperator(OperatorType.SubGraph)}>
+          <ListItemIcon><AccountTreeIcon /></ListItemIcon>
+          <ListItemText>Sub Graph</ListItemText>
+        </MenuItem>
+      </Menu>
       
       {/* ReactFlow Container */}
       <Box sx={{ flexGrow: 1, position: 'relative' }}>
@@ -277,24 +477,30 @@ const WorkflowGraph: React.FC = () => {
         >
           <MiniMap
             nodeStrokeWidth={3}
-            nodeColor={(node) => {
-              switch (node.type) {
-                case 'agent': return '#3182ce'; 
-                case 'memory': return isDarkMode ? '#2e7d32' : '#4caf50'; 
-                case 'tool': return isDarkMode ? '#7e57c2' : '#9575cd'; 
-                default: return '#718096';
+            nodeColor={n => {
+              if (n.type === 'agent') return isDarkMode ? '#90cdf4' : '#3182ce';
+              if (n.type === 'memory') return isDarkMode ? '#9ae6b4' : '#38a169';
+              if (n.type === 'tool') return isDarkMode ? '#fbd38d' : '#dd6b20';
+              if (n.type === 'operator') {
+                // Get the operator type from the node data
+                const operatorType = (n.data as any)?.operatorType;
+                if (operatorType && Object.values(OperatorType).includes(operatorType)) {
+                  // Use the color from the operatorColors map
+                  return operatorColors[operatorType as OperatorType] || '#a0aec0';
+                }
               }
+              return isDarkMode ? '#a0aec0' : '#4a5568';
             }}
           />
           <Controls />
-          <Background color={isDarkMode ? '#2d3748' : '#f7fafc'} gap={16} />
+          <Background color={isDarkMode ? '#4a5568' : '#a0aec0'} gap={16} />
         </ReactFlow>
       </Box>
       
       {/* Confirmation Dialog */}
       <ConfirmationDialog
         open={deleteDialogOpen}
-        title="Delete Node"
+        title="Confirm Deletion"
         message={deleteDialogMessage}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}

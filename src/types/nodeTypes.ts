@@ -5,7 +5,28 @@
 /**
  * Enum for node types in the workflow
  */
-export type NodeType = 'agent' | 'tool' | 'memory';
+export type NodeType = 'agent' | 'tool' | 'memory' | 'operator';
+
+/**
+ * Enum for operator types
+ */
+export enum OperatorType {
+  Start = "START",
+  Stop = "STOP",
+  Sequential = "SEQUENCE",
+  ToolCall = "TOOL_CALL",
+  AgentCall = "AGENT_CALL",
+  MemoryRead = "MEMORY_READ",
+  MemoryWrite = "MEMORY_WRITE",
+  Decision = "DECISION",
+  ParallelFork = "PARALLEL_FORK",
+  ParallelJoin = "PARALLEL_JOIN",
+  Loop = "LOOP",
+  ErrorRetry = "ERROR_RETRY",
+  Timeout = "TIMEOUT",
+  HumanPause = "HUMAN_PAUSE",
+  SubGraph = "SUB_GRAPH"
+}
 
 /**
  * Interface for workflow nodes
@@ -19,6 +40,7 @@ export interface WorkflowNode {
   llmModel?: string; // Only for agents
   memoryType?: string; // Only for memory nodes
   toolType?: string; // Only for tool nodes
+  operatorType?: OperatorType; // Only for operator nodes
   parentId?: string; // Reference to the parent node (if created from a diamond connector)
   sourceHandle?: string; // The handle ID from which this node was created
   

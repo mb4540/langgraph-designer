@@ -37,10 +37,11 @@ const iconComponents: Record<string, React.ComponentType<any>> = {
 };
 
 // Define fixed positions for each node type relative to the parent agent
-const NODE_POSITIONS = {
-  memory: { x: -50, y: 150 },
-  tool: { x: 50, y: 150 },
-  agent: { x: 300, y: 0 } // For connected agents
+const NODE_POSITIONS: Record<NodeType, { x: number; y: number }> = {
+  memory: { x: -50, y: 200 },  // Memory below and to the left
+  tool: { x: 50, y: 200 },     // Tools below and to the right
+  agent: { x: 300, y: 0 },     // Connected agents to the right
+  operator: { x: 0, y: 300 }   // Operators directly below
 };
 
 interface DiamondProps {

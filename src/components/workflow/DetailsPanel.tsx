@@ -7,6 +7,7 @@ import { useThemeContext } from '../../context/ThemeContext';
 import AgentDetailsForm from './details/AgentDetailsForm';
 import MemoryDetailsForm from './details/MemoryDetailsForm';
 import ToolDetailsForm from './details/ToolDetailsForm';
+import OperatorDetailsForm from './details/OperatorDetailsForm';
 import WorkflowDetailsForm from './details/WorkflowDetailsForm';
 
 // Create a context for the details panel
@@ -70,6 +71,7 @@ const DetailsPanel: React.FC = () => {
       case 'agent': return 'Agent Details';
       case 'memory': return 'Memory Details';
       case 'tool': return 'Tool Details';
+      case 'operator': return 'Operator Details';
       default: return 'Node Details';
     }
   };
@@ -89,6 +91,8 @@ const DetailsPanel: React.FC = () => {
         return <MemoryDetailsForm node={selectedNode} />;
       case 'tool':
         return <ToolDetailsForm node={selectedNode} />;
+      case 'operator':
+        return <OperatorDetailsForm node={selectedNode} />;
       default:
         return null;
     }

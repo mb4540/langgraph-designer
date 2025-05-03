@@ -10,7 +10,6 @@ import Diamond from './nodes/Diamond';
 // Import utility functions
 import { getIconComponent } from '../utils/iconUtils';
 import { getModelDisplayName } from '../utils/modelUtils';
-import { NODE_POSITIONS, NODE_COLORS, calculateNodePosition } from '../utils/nodePositioning';
 
 /**
  * MainAgentNode component for displaying agent nodes in the workflow graph
@@ -128,9 +127,9 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
   // Style definitions
   const styles = {
     node: {
-      background: isDarkMode ? NODE_COLORS.agent.dark : NODE_COLORS.agent.background,
+      background: isDarkMode ? '#2b2e33' : '#f7f7f7',
       color: isDarkMode ? '#e2e8f0' : '#1a202c',
-      border: isDarkMode ? `1px solid ${NODE_COLORS.agent.main}` : `1px solid ${NODE_COLORS.agent.light}`,
+      border: isDarkMode ? `1px solid #4f566b` : `1px solid #cbd5e1`,
       borderRadius: '8px',
       padding: '10px',
       minWidth: '180px',
@@ -140,13 +139,13 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       boxShadow: isDarkMode ? '0 4px 6px rgba(0, 0, 0, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
     },
     handle: {
-      background: isDarkMode ? NODE_COLORS.agent.main : NODE_COLORS.agent.light,
+      background: isDarkMode ? '#4f566b' : '#cbd5e1',
     },
     icon: {
       position: 'absolute' as const,
       top: '10px',
       left: '10px',
-      color: isDarkMode ? NODE_COLORS.agent.main : NODE_COLORS.agent.main,
+      color: isDarkMode ? '#4f566b' : '#4f566b',
     },
     content: { 
       marginTop: '5px', 
@@ -175,8 +174,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       transform: 'translateY(-50%)',
       width: '20px',
       height: '20px',
-      background: isDarkMode ? NODE_COLORS.agent.dark : NODE_COLORS.agent.background,
-      border: isDarkMode ? `1px solid ${NODE_COLORS.agent.main}` : `1px solid ${NODE_COLORS.agent.light}`,
+      background: isDarkMode ? '#2b2e33' : '#f7f7f7',
+      border: isDarkMode ? `1px solid #4f566b` : `1px solid #cbd5e1`,
       display: 'flex' as const,
       justifyContent: 'center' as const,
       alignItems: 'center' as const,
@@ -186,10 +185,10 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
     },
     addIcon: {
       fontSize: '14px',
-      color: isDarkMode ? NODE_COLORS.agent.main : NODE_COLORS.agent.light
+      color: isDarkMode ? '#4f566b' : '#4f566b'
     },
     agentHandle: {
-      background: isDarkMode ? NODE_COLORS.agent.main : NODE_COLORS.agent.light,
+      background: isDarkMode ? '#4f566b' : '#cbd5e1',
       right: '-4px',
       width: '8px',
       height: '8px',
@@ -202,6 +201,26 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
       cursor: 'pointer',
       color: isDarkMode ? '#e53e3e' : '#f56565',
     }
+  };
+
+  // Fix the calculateNodePosition function to handle the 'operator' type
+  const calculateNodePosition = (agentPosition: { x: number; y: number }, type: NodeType) => {
+    // Define fixed position offsets for each component type relative to the agent
+    const NODE_POSITIONS: Record<NodeType, { x: number; y: number }> = {
+      agent: { x: 300, y: 0 },     // Connected agents to the right
+      memory: { x: -50, y: 200 },  // Memory below and to the left
+      tool: { x: 50, y: 200 },     // Tools below and to the right
+      operator: { x: 0, y: 300 }   // Operators directly below
+    };
+    
+    // Use the defined offset for this type
+    const offset = NODE_POSITIONS[type];
+    
+    // Return the new position
+    return {
+      x: agentPosition.x + offset.x,
+      y: agentPosition.y + offset.y
+    };
   };
 
   return (
@@ -260,8 +279,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         position={25}
         onClick={() => handleAddComponent('memory', 'memory-handle')}
         isDarkMode={isDarkMode}
-        color={NODE_COLORS.memory.main}
-        lightColor={NODE_COLORS.memory.light}
+        color="#4f566b"
+        lightColor="#cbd5e1"
         handleId="memory-handle"
         nodeType="memory"
       />
@@ -270,8 +289,8 @@ const AgentNode: React.FC<NodeProps> = ({ id, data }) => {
         position={75}
         onClick={() => handleAddComponent('tool', 'tool-handle')}
         isDarkMode={isDarkMode}
-        color={NODE_COLORS.tool.main}
-        lightColor={NODE_COLORS.tool.light}
+        color="#4f566b"
+        lightColor="#cbd5e1"
         handleId="tool-handle"
         nodeType="tool"
       />
