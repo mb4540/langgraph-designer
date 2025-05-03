@@ -7,11 +7,26 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
-import { WorkflowNode, OperatorType, TriggerType } from '../../../types/nodeTypes';
+import { WorkflowNode, OperatorType } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import { useRuntimeContext } from '../../../context/RuntimeContext';
 import ActionButtons from '../../ui/ActionButtons';
+
+// Import operator config components
 import StartOperatorConfig from './StartOperatorConfig';
+import EndOperatorConfig from './EndOperatorConfig';
+import AgentCallOperatorConfig from './AgentCallOperatorConfig';
+import ToolCallOperatorConfig from './ToolCallOperatorConfig';
+import MemoryReadOperatorConfig from './MemoryReadOperatorConfig';
+import MemoryWriteOperatorConfig from './MemoryWriteOperatorConfig';
+import DecisionOperatorConfig from './DecisionOperatorConfig';
+import ParallelForkOperatorConfig from './ParallelForkOperatorConfig';
+import ParallelJoinOperatorConfig from './ParallelJoinOperatorConfig';
+import LoopOperatorConfig from './LoopOperatorConfig';
+import ErrorRetryOperatorConfig from './ErrorRetryOperatorConfig';
+import TimeoutOperatorConfig from './TimeoutOperatorConfig';
+import HumanPauseOperatorConfig from './HumanPauseOperatorConfig';
+import SubGraphOperatorConfig from './SubGraphOperatorConfig';
 
 interface OperatorDetailsFormProps {
   node: WorkflowNode;
@@ -19,36 +34,66 @@ interface OperatorDetailsFormProps {
 
 const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
   const { updateNode } = useWorkflowContext();
-  const { runtimeType, runtimeSettings, updateRuntimeSettings } = useRuntimeContext();
+  const { runtimeType } = useRuntimeContext();
   
   // Form state
   const [name, setName] = useState(node.name || '');
-  const [operatorType, setOperatorType] = useState<OperatorType>(node.operatorType || OperatorType.Sequential);
+  const [operatorType, setOperatorType] = useState<OperatorType>(node.operatorType || OperatorType.Start);
   const [description, setDescription] = useState(node.content || '');
-  const [triggerType, setTriggerType] = useState<TriggerType>(node.triggerType || 'human');
-  const [resumeCapable, setResumeCapable] = useState<boolean>(node.resumeCapable || false);
+  
+  // Initialize operator config based on the node's existing config or create default
+  const [operatorConfig, setOperatorConfig] = useState<any>(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
 
   // Update form when node changes
   useEffect(() => {
     setName(node.name || '');
-    setOperatorType(node.operatorType || OperatorType.Sequential);
+    setOperatorType(node.operatorType || OperatorType.Start);
     setDescription(node.content || '');
-    setTriggerType(node.triggerType || 'human');
-    setResumeCapable(node.resumeCapable || false);
+    setOperatorConfig(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
   }, [node]);
 
-  // Handle resume capability change
-  const handleResumeCapableChange = (capable: boolean) => {
-    setResumeCapable(capable);
-    
-    // If enabling resume capability, ensure checkpoint store is configured
-    if (capable && (!runtimeSettings || !runtimeSettings.checkpointStore)) {
-      updateRuntimeSettings({
-        ...runtimeSettings,
-        checkpointStore: 'memory' // Default to memory store
-      });
+  // When operator type changes, reset the config to default for that type
+  useEffect(() => {
+    if (operatorType !== node.operatorType) {
+      setOperatorConfig(getDefaultConfig(operatorType));
     }
-  };
+  }, [operatorType, node.operatorType]);
+
+  // Get default config based on operator type
+  function getDefaultConfig(type: OperatorType) {
+    switch (type) {
+      case OperatorType.Start:
+        return { trigger_type: 'human', resume_capable: false };
+      case OperatorType.Stop:
+        return { status_code: 'success', emit_transcript: true };
+      case OperatorType.AgentCall:
+        return { agent_type: runtimeType === 'autogen' ? 'AssistantAgent' : 'OpenAI', llm_model: 'gpt-4o', prompt_template: '' };
+      case OperatorType.ToolCall:
+        return { tool_name: '', function_signature: {}, side_effect: false };
+      case OperatorType.MemoryRead:
+        return { store: 'zep', query: '', top_k: 5 };
+      case OperatorType.MemoryWrite:
+        return { store: 'zep', data_path: '', upsert: true };
+      case OperatorType.Decision:
+        return { predicate_language: 'javascript', expression: '', branches: [] };
+      case OperatorType.ParallelFork:
+        return { strategy: 'fanout', gather_mode: 'wait_all' };
+      case OperatorType.ParallelJoin:
+        return { merge_strategy: 'concat', allow_partial: false };
+      case OperatorType.Loop:
+        return { condition_expression: '', max_iterations: 10, break_on_failure: true };
+      case OperatorType.ErrorRetry:
+        return { max_attempts: 3, backoff_strategy: 'exponential', retryable_errors: [] };
+      case OperatorType.Timeout:
+        return { timeout_sec: 60, on_timeout: 'abort' };
+      case OperatorType.HumanPause:
+        return { message_to_user: '', channel: 'web' };
+      case OperatorType.SubGraph:
+        return { graph_id: '', mode: 'inline', isolate_memory: false };
+      default:
+        return {};
+    }
+  }
 
   const handleSave = () => {
     // Update node with form values
@@ -56,13 +101,8 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
       name,
       operatorType,
       content: description,
+      operatorConfig
     };
-
-    // Only add START-specific properties if the operator type is START
-    if (operatorType === OperatorType.Start) {
-      updates.triggerType = triggerType;
-      updates.resumeCapable = resumeCapable;
-    }
 
     updateNode(node.id, updates);
   };
@@ -70,10 +110,9 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
   const handleCancel = () => {
     // Reset form to original values
     setName(node.name || '');
-    setOperatorType(node.operatorType || OperatorType.Sequential);
+    setOperatorType(node.operatorType || OperatorType.Start);
     setDescription(node.content || '');
-    setTriggerType(node.triggerType || 'human');
-    setResumeCapable(node.resumeCapable || false);
+    setOperatorConfig(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
   };
 
   // Expose the functions to save and cancel changes
@@ -81,10 +120,9 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
     // Track if there are unsaved changes
     const isModified = 
       name !== (node.name || '') ||
-      operatorType !== (node.operatorType || OperatorType.Sequential) ||
+      operatorType !== (node.operatorType || OperatorType.Start) ||
       description !== (node.content || '') ||
-      (operatorType === OperatorType.Start && triggerType !== (node.triggerType || 'human')) ||
-      (operatorType === OperatorType.Start && resumeCapable !== (node.resumeCapable || false));
+      JSON.stringify(operatorConfig) !== JSON.stringify(node.operatorConfig || getDefaultConfig(node.operatorType || OperatorType.Start));
 
     // Expose functions for the DetailsPanel to call
     (window as any).saveNodeChanges = handleSave;
@@ -97,7 +135,43 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
       delete (window as any).cancelNodeChanges;
       delete (window as any).isNodeModified;
     };
-  }, [name, operatorType, description, triggerType, resumeCapable, node]);
+  }, [name, operatorType, description, operatorConfig, node]);
+
+  // Render the appropriate config component based on operator type
+  const renderOperatorConfig = () => {
+    switch (operatorType) {
+      case OperatorType.Start:
+        return <StartOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.Stop:
+        return <EndOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.AgentCall:
+        return <AgentCallOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.ToolCall:
+        return <ToolCallOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.MemoryRead:
+        return <MemoryReadOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.MemoryWrite:
+        return <MemoryWriteOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.Decision:
+        return <DecisionOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.ParallelFork:
+        return <ParallelForkOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.ParallelJoin:
+        return <ParallelJoinOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.Loop:
+        return <LoopOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.ErrorRetry:
+        return <ErrorRetryOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.Timeout:
+        return <TimeoutOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.HumanPause:
+        return <HumanPauseOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      case OperatorType.SubGraph:
+        return <SubGraphOperatorConfig config={operatorConfig} setConfig={setOperatorConfig} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <Box sx={{ p: 1 }}>
@@ -128,27 +202,14 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
         </Select>
       </FormControl>
       
-      {/* Render START operator specific fields */}
-      {operatorType === OperatorType.Start && (
-        <Box sx={{ mt: 3 }}>
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="subtitle1" gutterBottom>
-            Start Operator Configuration
-          </Typography>
-          <StartOperatorConfig 
-            triggerType={triggerType}
-            setTriggerType={(type) => {
-              setTriggerType(type);
-              // Reset resume capability for system trigger in Autogen
-              if (runtimeType === 'autogen' && type === 'system') {
-                setResumeCapable(false);
-              }
-            }}
-            resumeCapable={resumeCapable}
-            setResumeCapable={handleResumeCapableChange}
-          />
-        </Box>
-      )}
+      {/* Render operator-specific configuration */}
+      <Box sx={{ mt: 3 }}>
+        <Divider sx={{ my: 2 }} />
+        <Typography variant="subtitle1" gutterBottom>
+          {operatorType} Configuration
+        </Typography>
+        {renderOperatorConfig()}
+      </Box>
       
       <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
         Description
