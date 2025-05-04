@@ -39,7 +39,11 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
   filteredTools
 }) => {
   return (
-    <Box sx={{ mb: 2, mt: 2 }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      gap: 2
+    }}>
       <ToolSearch
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
@@ -54,13 +58,17 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
       />
 
       {/* Tool cards */}
-      <Box sx={{ mt: 2 }}>
-        {filteredTools.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-            No tools match your search criteria
-          </Typography>
-        ) : (
-          filteredTools.map(tool => (
+      {filteredTools.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+          No tools match your search criteria
+        </Typography>
+      ) : (
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2
+        }}>
+          {filteredTools.map(tool => (
             <ToolCard
               key={tool.value}
               tool={tool}
@@ -73,9 +81,9 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
                 }
               }}
             />
-          ))
-        )}
-      </Box>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 };

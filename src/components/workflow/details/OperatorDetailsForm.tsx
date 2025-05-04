@@ -175,42 +175,40 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
       onCancel={handleCancel}
       isModified={isModified}
       nodeId={node.id}>
-      <Box sx={{ mb: 3 }}>
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="operator-type-label">Operator Type</InputLabel>
-          <Select
-            labelId="operator-type-label"
-            id="operator-type"
-            value={operatorType}
-            label="Operator Type"
-            onChange={(e) => setOperatorType(e.target.value as OperatorType)}
-          >
-            {Object.values(OperatorType).map((type) => (
-              <MenuItem key={type} value={type}>
-                {type}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      <FormControl fullWidth>
+        <InputLabel id="operator-type-label">Operator Type</InputLabel>
+        <Select
+          labelId="operator-type-label"
+          id="operator-type"
+          value={operatorType}
+          label="Operator Type"
+          onChange={(e) => setOperatorType(e.target.value as OperatorType)}
+        >
+          {Object.values(OperatorType).map((type) => (
+            <MenuItem key={type} value={type}>
+              {type}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
-        <FormField
-          id="operator-description"
-          label="Description"
-          value={description}
-          onChange={setDescription}
-          multiline
-          rows={3}
-          placeholder="Enter a description for this operator"
-        />
+      <FormField
+        id="operator-description"
+        label="Description"
+        value={description}
+        onChange={setDescription}
+        multiline
+        rows={3}
+        placeholder="Enter a description for this operator"
+      />
 
-        <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="subtitle1" sx={{ mb: 2 }}>
-          {operatorType} Configuration
-        </Typography>
-        
-        {renderOperatorConfig()}
-      </Box>
+      <Divider sx={{ my: 2 }} />
+      
+      <Typography variant="subtitle1" gutterBottom>
+        {operatorType} Configuration
+      </Typography>
+      
+      {renderOperatorConfig()}
     </BaseNodeForm>
   );
 };

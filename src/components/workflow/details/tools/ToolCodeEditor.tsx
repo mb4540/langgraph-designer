@@ -32,18 +32,23 @@ const ToolCodeEditor: React.FC<ToolCodeEditorProps> = ({
   theme
 }) => {
   return (
-    <Box sx={{ mb: 2, mt: 2 }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      gap: 3,
+      height: '100%'
+    }}>
       {/* Display only the selected tool card */}
       {selectedTool && (
         <Card 
           sx={{ 
-            mb: 2, 
             border: 2,
             borderColor: 'primary.main',
             borderRadius: 1,
+            flexShrink: 0
           }}
         >
-          <CardContent>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <Typography variant="subtitle1" fontWeight="bold">
                 {selectedTool.label}
@@ -65,7 +70,13 @@ const ToolCodeEditor: React.FC<ToolCodeEditorProps> = ({
               </Typography>
             )}
             {/* Display version information in the selected tool card */}
-            <Box sx={{ display: 'flex', mt: 2 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              mt: 2,
+              pt: 1,
+              borderTop: '1px solid',
+              borderColor: 'divider'
+            }}>
               <Typography variant="caption" color="text.secondary" sx={{ flexGrow: 1 }}>
                 ID: {selectedTool.versionedId || 'Not assigned'}
               </Typography>
@@ -80,46 +91,65 @@ const ToolCodeEditor: React.FC<ToolCodeEditorProps> = ({
         </Card>
       )}
       
-      {/* Code editor for the selected tool */}
-      <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
-        MCP Code
-      </Typography>
-      
-      {validationError && (
-        <Box sx={{ mb: 2 }}>
+      {/* Code editor section */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        gap: 2,
+        flexGrow: 1
+      }}>
+        <Typography variant="subtitle1" fontWeight="medium">
+          MCP Code
+        </Typography>
+        
+        {validationError && (
           <ErrorMessage 
             message="Code validation error" 
             details={validationError.message}
             compact
             onRetry={onResetValidationError}
           />
-        </Box>
-      )}
-      
-      <Box sx={{ flexGrow: 1, mb: 2, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-        {validationLoading ? (
-          <Box sx={{ p: 2 }}>
-            <LoadingIndicator 
-              type="dots" 
-              size="small" 
-              centered={false} 
-              message="Validating code..."
-            />
-          </Box>
-        ) : (
-          <Editor
-            height="400px"
-            defaultLanguage="python"
-            value={toolCode}
-            onChange={(value) => onToolCodeChange(value || '')}
-            theme={theme === 'dark' ? 'vs-dark' : 'light'}
-            options={{
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              fontSize: 14,
-            }}
-          />
         )}
+        
+        <Box sx={{ 
+          flexGrow: 1, 
+          border: 1, 
+          borderColor: 'divider', 
+          borderRadius: 1, 
+          overflow: 'hidden',
+          minHeight: '400px',
+          display: 'flex'
+        }}>
+          {validationLoading ? (
+            <Box sx={{ 
+              p: 2, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              width: '100%'
+            }}>
+              <LoadingIndicator 
+                type="dots" 
+                size="small" 
+                centered={false} 
+                message="Validating code..."
+              />
+            </Box>
+          ) : (
+            <Editor
+              height="100%"
+              defaultLanguage="python"
+              value={toolCode}
+              onChange={(value) => onToolCodeChange(value || '')}
+              theme={theme === 'dark' ? 'vs-dark' : 'light'}
+              options={{
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                fontSize: 14,
+              }}
+            />
+          )}
+        </Box>
       </Box>
     </Box>
   );

@@ -173,7 +173,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
         
         <Grid item xs={12}>
           <Divider sx={{ my: 2 }} />
-          <Typography variant="h6" sx={{ mb: 2 }}>Model Configuration</Typography>
+          <Typography variant="h6" gutterBottom>Model Configuration</Typography>
           
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>

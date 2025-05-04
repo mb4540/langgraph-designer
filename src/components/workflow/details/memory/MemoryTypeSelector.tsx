@@ -25,23 +25,28 @@ const MemoryTypeSelector: React.FC<MemoryTypeSelectorProps> = ({
   sx = {}
 }) => {
   return (
-    <Box sx={{ ...sx }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      ...sx 
+    }}>
       <FormControl component="fieldset" fullWidth>
-        <FormLabel component="legend">Memory Type</FormLabel>
+        <FormLabel component="legend" sx={{ mb: 2, fontWeight: 'medium' }}>Memory Type</FormLabel>
         <RadioGroup
           value={memoryType}
           onChange={(e) => onMemoryTypeChange(e.target.value)}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
         >
           {MEMORY_TYPES.map(memory => (
             <Box 
               key={memory.value} 
               sx={{ 
-                mb: 2, 
                 border: 1, 
-                borderColor: 'divider', 
+                borderColor: memoryType === memory.value ? 'primary.main' : 'divider', 
                 borderRadius: 1, 
                 p: 2,
                 transition: 'all 0.2s',
+                backgroundColor: memoryType === memory.value ? 'action.selected' : 'transparent',
                 '&:hover': {
                   borderColor: 'primary.main',
                   boxShadow: 1
@@ -52,9 +57,13 @@ const MemoryTypeSelector: React.FC<MemoryTypeSelectorProps> = ({
                 value={memory.value} 
                 control={<Radio />} 
                 label={
-                  <Box>
-                    <Typography variant="subtitle1">{memory.label}</Typography>
-                    <Typography variant="body2" color="text.secondary">{memory.description}</Typography>
+                  <Box sx={{ ml: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={memoryType === memory.value ? 'medium' : 'regular'}>
+                      {memory.label}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {memory.description}
+                    </Typography>
                     {memory.source && (
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                         Source: {memory.source}
@@ -62,6 +71,11 @@ const MemoryTypeSelector: React.FC<MemoryTypeSelectorProps> = ({
                     )}
                   </Box>
                 } 
+                sx={{ 
+                  margin: 0,
+                  width: '100%',
+                  alignItems: 'flex-start'
+                }}
               />
             </Box>
           ))}

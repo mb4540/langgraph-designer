@@ -28,13 +28,32 @@ const FormFieldWrapper: React.FC<FormFieldWrapperProps> = ({
   sx = {}
 }) => {
   return (
-    <FormControl fullWidth margin="normal" sx={sx}>
+    <FormControl 
+      fullWidth 
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        mb: 2,
+        ...sx
+      }}
+    >
       {label && (
-        <FormLabel required={required} error={error}>
-          {label}
+        <FormLabel 
+          required={required} 
+          error={error}
+          sx={{ 
+            mb: 1,
+            '& .MuiFormLabel-asterisk': {
+              color: 'error.main'
+            }
+          }}
+        >
+          <Typography variant="body2" fontWeight="medium">
+            {label}
+          </Typography>
         </FormLabel>
       )}
-      <Box sx={{ mt: 1, mb: 0.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         {children}
       </Box>
       {(helperText || error) && (

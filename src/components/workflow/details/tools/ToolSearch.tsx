@@ -56,9 +56,9 @@ const ToolSearch: React.FC<ToolSearchProps> = ({
   const categories = Array.from(new Set(toolTags.map(tag => tag.category)));
 
   return (
-    <>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {/* Search and filter bar */}
-      <Box sx={{ display: 'flex', mb: 3, gap: 1 }}>
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
         <TextField
           fullWidth
           placeholder="Search tools..."
@@ -77,6 +77,7 @@ const ToolSearch: React.FC<ToolSearchProps> = ({
           onClick={handleFilterOpen} 
           color={selectedTags.length > 0 ? "primary" : "default"}
           title="Filter by tags"
+          sx={{ flexShrink: 0 }}
         >
           <FilterListIcon />
         </IconButton>
@@ -158,36 +159,44 @@ const ToolSearch: React.FC<ToolSearchProps> = ({
       </Box>
 
       {/* Selected tags display and result count */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, flex: 1 }}>
-          {selectedTags.length > 0 && (
-            <>
-              {selectedTags.map(tag => (
+      {(selectedTags.length > 0 || resultCount > 0) && (
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 1
+        }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, flex: 1 }}>
+            {selectedTags.length > 0 && (
+              <>
+                {selectedTags.map(tag => (
+                  <Chip 
+                    key={tag} 
+                    label={tag} 
+                    onDelete={() => onTagToggle(tag)} 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                  />
+                ))}
                 <Chip 
-                  key={tag} 
-                  label={tag} 
-                  onDelete={() => onTagToggle(tag)} 
+                  label="Clear all" 
+                  onClick={onClearAllTags} 
                   size="small" 
-                  color="primary" 
                   variant="outlined"
                 />
-              ))}
-              <Chip 
-                label="Clear all" 
-                onClick={onClearAllTags} 
-                size="small" 
-                variant="outlined"
-              />
-            </>
+              </>
+            )}
+          </Box>
+          {resultCount > 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+              {resultCount} {resultCount === 1 ? 'tool' : 'tools'} found
+            </Typography>
           )}
         </Box>
-        {resultCount > 0 && (
-          <Typography variant="caption" color="text.secondary">
-            {resultCount} {resultCount === 1 ? 'tool' : 'tools'} found
-          </Typography>
-        )}
-      </Box>
-    </>
+      )}
+    </Box>
   );
 };
 

@@ -101,22 +101,71 @@ const DetailsPanel: React.FC = () => {
 
   if (!selectedNode && !showWorkflowDetails) {
     return (
-      <Paper elevation={3} sx={{ height: '100%', padding: 2, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h6" gutterBottom>
-          Details
-        </Typography>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}>
-          <Typography variant="body1" color="text.secondary">
-            Double-click on an agent or tool in the workflow to view and edit its details here.
-          </Typography>
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}
+      >
+        <Box sx={{ 
+          p: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          justifyContent: 'space-between'
+        }}>
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Details
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+              Double-click on an agent or tool in the workflow to view and edit its details here.
+            </Typography>
+          </Box>
+          
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center',
+            mt: 'auto',
+            pt: 3
+          }}>
+            <img 
+              src="/assets/click-here.svg" 
+              alt="Click on a node" 
+              style={{ 
+                maxWidth: '60%', 
+                opacity: 0.7,
+                filter: mode === 'dark' ? 'invert(1)' : 'none'
+              }} 
+            />
+          </Box>
         </Box>
       </Paper>
     );
   }
 
   return (
-    <Paper elevation={3} sx={{ height: '100%', padding: 2, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <Paper 
+      elevation={3} 
+      sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}
+    >
+      <Box sx={{ 
+        p: 2, 
+        borderBottom: 1, 
+        borderColor: 'divider',
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        flexShrink: 0
+      }}>
         <Typography variant="h6">
           {getNodeTitle()}
         </Typography>
@@ -133,6 +182,7 @@ const DetailsPanel: React.FC = () => {
                 }
               }}
               disabled={showWorkflowDetails ? (window as any).isWorkflowModified === false : (window as any).isNodeModified === false}
+              size="small"
             >
               Save Changes
             </Button>
@@ -146,13 +196,21 @@ const DetailsPanel: React.FC = () => {
                   (window as any).cancelNodeChanges?.();
                 }
               }}
+              size="small"
             >
               Cancel
             </Button>
           </Box>
         )}
       </Box>
-      {renderDetailsContent()}
+      <Box sx={{ 
+        flexGrow: 1, 
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        {renderDetailsContent()}
+      </Box>
     </Paper>
   );
 };

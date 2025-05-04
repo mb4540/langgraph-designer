@@ -51,12 +51,10 @@ const MemoryDetailsForm: React.FC<MemoryDetailsFormProps> = ({ node }) => {
       error={error}
       nodeId={node.id}
     >
-      <Box sx={{ mb: 3 }}>
-        <MemoryTypeSelector
-          memoryType={memoryType}
-          onMemoryTypeChange={setMemoryType}
-        />
-      </Box>
+      <MemoryTypeSelector
+        memoryType={memoryType}
+        onMemoryTypeChange={setMemoryType}
+      />
     </BaseNodeForm>
   );
 };

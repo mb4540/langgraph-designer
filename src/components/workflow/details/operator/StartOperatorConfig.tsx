@@ -54,11 +54,11 @@ const StartOperatorConfig: React.FC<StartOperatorConfigProps> = ({
   };
 
   return (
-    <Box sx={{ mt: 2 }}>
-      <Typography variant="subtitle1" gutterBottom>
-        Start Configuration
-      </Typography>
-      
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      gap: 2
+    }}>
       <FormField
         label="Trigger Type"
         required

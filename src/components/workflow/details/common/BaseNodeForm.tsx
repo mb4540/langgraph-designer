@@ -45,15 +45,32 @@ const BaseNodeForm: React.FC<BaseNodeFormProps> = ({
   }, [isModified, onSave, onCancel]);
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Box sx={{ mb: 3 }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      height: '100%',
+      overflow: 'auto',
+      p: 2
+    }}>
+      <Box sx={{ 
+        mb: 3,
+        flexShrink: 0 // Prevents title from shrinking
+      }}>
         <h2>{title}</h2>
       </Box>
       
-      {children}
+      <Box sx={{
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2, // Consistent spacing between form elements
+        justifyContent: 'center'
+      }}>
+        {children}
+      </Box>
       
       {error && (
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mt: 3, flexShrink: 0 }}>
           <ErrorMessage 
             message="Failed to save changes" 
             details={error.message}

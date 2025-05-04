@@ -53,14 +53,23 @@ const FormField: React.FC<FormFieldProps> = ({
   children
 }) => {
   return (
-    <FormControl fullWidth={fullWidth} sx={{ mb: 2, ...sx }}>
-      <FormLabel htmlFor={id} sx={{ mb: 0.5 }}>
+    <FormControl 
+      fullWidth={fullWidth} 
+      sx={{ 
+        display: 'flex',
+        flexDirection: 'column',
+        ...sx 
+      }}
+    >
+      <FormLabel htmlFor={id} sx={{ mb: 1 }}>
         <Typography variant="body2" fontWeight="medium">
-          {label}{required && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
+          {label}{required && <Box component="span" sx={{ color: 'error.main', ml: 0.5 }}>*</Box>}
         </Typography>
       </FormLabel>
       {children ? (
-        children
+        <Box sx={{ mt: 0.5 }}>
+          {children}
+        </Box>
       ) : (
         <TextField
           id={id}
