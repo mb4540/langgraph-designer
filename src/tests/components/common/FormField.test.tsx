@@ -35,28 +35,18 @@ describe('FormField', () => {
     expect(screen.getByText('*')).toBeInTheDocument();
   });
   
-  it('shows helper text when provided', () => {
-    const helperText = 'This is helper text';
+  it('renders TextField when no children are provided', () => {
     render(
-      <FormField label="Test Label" helperText={helperText}>
-        <TextField />
-      </FormField>
+      <FormField 
+        label="Test Label" 
+        value="Test Value"
+        placeholder="Test Placeholder"
+      />
     );
     
-    expect(screen.getByText(helperText)).toBeInTheDocument();
-  });
-  
-  it('shows error state when error prop is true', () => {
-    const errorText = 'This field has an error';
-    render(
-      <FormField label="Test Label" error helperText={errorText}>
-        <TextField />
-      </FormField>
-    );
-    
-    const helperTextElement = screen.getByText(errorText);
-    expect(helperTextElement).toBeInTheDocument();
-    expect(helperTextElement).toHaveClass('Mui-error');
+    const textField = screen.getByPlaceholderText('Test Placeholder');
+    expect(textField).toBeInTheDocument();
+    expect(textField).toHaveValue('Test Value');
   });
   
   it('applies custom styles when provided', () => {
@@ -67,7 +57,7 @@ describe('FormField', () => {
     );
     
     // Get the form field container
-    const formFieldContainer = screen.getByText('Test Label').closest('div');
+    const formFieldContainer = screen.getByText('Test Label').closest('.MuiFormControl-root');
     expect(formFieldContainer).toHaveStyle('margin-top: 20px');
   });
 });

@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import { render as rtlRender, RenderOptions, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { WorkflowProvider } from '../../context/WorkflowContext';
 import { ThemeContext } from '../../context/ThemeContext';
@@ -41,8 +41,11 @@ const AllProviders = ({
   theme = 'light',
   workflowState = mockWorkflowState 
 }: AllProvidersProps) => {
+  const toggleTheme = () => {};
+  const setMode = () => {};
+
   return (
-    <ThemeContext.Provider value={{ mode: theme as 'light' | 'dark', setMode: () => {} }}>
+    <ThemeContext.Provider value={{ mode: theme as 'light' | 'dark', toggleTheme, setMode }}>
       <ThemeProvider theme={theme === 'light' ? lightTheme : darkTheme}>
         <WorkflowProvider>
           {children}
@@ -64,7 +67,7 @@ const customRender = (
 ) => {
   const { theme, workflowState, ...renderOptions } = options || {};
   
-  return render(ui, {
+  return rtlRender(ui, {
     wrapper: (props: { children: React.ReactNode }) => (
       <AllProviders theme={theme} workflowState={workflowState} {...props} />
     ),
@@ -73,7 +76,4 @@ const customRender = (
 };
 
 // Re-export everything from testing-library
-export * from '@testing-library/react';
-
-// Override render method
-export { customRender as render };
+export { screen, fireEvent, waitFor, customRender as render };

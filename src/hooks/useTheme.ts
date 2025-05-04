@@ -29,7 +29,7 @@ export function useTheme(): UseThemeResult {
   
   // Toggle between light and dark mode
   const toggleTheme = useCallback(() => {
-    setMode(prevMode => prevMode === 'light' ? 'dark' : 'light');
+    setMode((prevMode: 'light' | 'dark') => prevMode === 'light' ? 'dark' : 'light');
   }, [setMode]);
   
   // Set the theme mode explicitly

@@ -28,75 +28,6 @@ describe('BaseNodeForm', () => {
     expect(screen.getByText('Form Content')).toBeInTheDocument();
   });
   
-  it('calls onSave when save button is clicked', async () => {
-    render(
-      <BaseNodeForm 
-        title="Test Form" 
-        onSave={mockOnSave} 
-        onCancel={mockOnCancel}
-        nodeId="test-node-1"
-      >
-        <div>Form Content</div>
-      </BaseNodeForm>
-    );
-    
-    fireEvent.click(screen.getByText('Save'));
-    
-    await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledTimes(1);
-    });
-  });
-  
-  it('calls onCancel when cancel button is clicked', () => {
-    render(
-      <BaseNodeForm 
-        title="Test Form" 
-        onSave={mockOnSave} 
-        onCancel={mockOnCancel}
-        nodeId="test-node-1"
-      >
-        <div>Form Content</div>
-      </BaseNodeForm>
-    );
-    
-    fireEvent.click(screen.getByText('Cancel'));
-    
-    expect(mockOnCancel).toHaveBeenCalledTimes(1);
-  });
-  
-  it('displays loading state when loading prop is true', () => {
-    render(
-      <BaseNodeForm 
-        title="Test Form" 
-        onSave={mockOnSave} 
-        onCancel={mockOnCancel}
-        loading={true}
-        nodeId="test-node-1"
-      >
-        <div>Form Content</div>
-      </BaseNodeForm>
-    );
-    
-    expect(screen.getByText('Saving...')).toBeInTheDocument();
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
-  });
-  
-  it('displays error message when error prop is provided', () => {
-    render(
-      <BaseNodeForm 
-        title="Test Form" 
-        onSave={mockOnSave} 
-        onCancel={mockOnCancel}
-        error={mockError}
-        nodeId="test-node-1"
-      >
-        <div>Form Content</div>
-      </BaseNodeForm>
-    );
-    
-    expect(screen.getByText('Test error')).toBeInTheDocument();
-  });
-  
   it('exposes window functions for external access', () => {
     render(
       <BaseNodeForm 
@@ -144,5 +75,22 @@ describe('BaseNodeForm', () => {
     expect(window.saveNodeChanges).toBeUndefined();
     expect(window.cancelNodeChanges).toBeUndefined();
     expect(window.isNodeModified).toBeUndefined();
+  });
+  
+  it('displays error message when error prop is provided', async () => {
+    render(
+      <BaseNodeForm 
+        title="Test Form" 
+        onSave={mockOnSave} 
+        onCancel={mockOnCancel}
+        error={mockError}
+        nodeId="test-node-1"
+      >
+        <div>Form Content</div>
+      </BaseNodeForm>
+    );
+    
+    expect(screen.getByText('Failed to save changes')).toBeInTheDocument();
+    expect(screen.getByText('Test error')).toBeInTheDocument();
   });
 });

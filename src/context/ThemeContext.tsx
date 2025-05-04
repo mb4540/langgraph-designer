@@ -6,6 +6,7 @@ type ThemeMode = 'light' | 'dark';
 interface ThemeContextType {
   mode: ThemeMode;
   toggleTheme: () => void;
+  setMode: React.Dispatch<React.SetStateAction<ThemeMode>>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -63,8 +64,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, [mode]);
 
   return (
-    <ThemeContext.Provider value={{ mode, toggleTheme }}>
+    <ThemeContext.Provider value={{ mode, toggleTheme, setMode }}>
       <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>
     </ThemeContext.Provider>
   );
 };
+
+// Export the ThemeContext for testing purposes
+export { ThemeContext };
