@@ -27,10 +27,6 @@ export const AgentVersionControl: React.FC<AgentVersionControlProps> = ({
 }) => {
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="subtitle1" gutterBottom>
-        Version Control
-      </Typography>
-      
       <Grid container spacing={2} alignItems="center">
         <Grid item xs={8}>
           <FormControl fullWidth size="small">

@@ -136,7 +136,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     >
       <Grid container spacing={3}>
         {/* Basic Information */}
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12}>
           <TextField
             fullWidth
             label="Agent Name"
@@ -146,7 +146,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12}>
           <AgentTypeSelector
             value={agentType}
             onChange={setAgentType}
@@ -162,6 +162,27 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
             multiline
             rows={2}
           />
+        </Grid>
+        
+        <Grid item xs={12}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <TextField
+                fullWidth
+                label="Agent ID"
+                value={node.id}
+                InputProps={{ readOnly: true }}
+                size="small"
+                helperText="Unique identifier for this agent"
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <AgentVersionControl
+                version={version}
+                onVersionChange={setVersion}
+              />
+            </Box>
+          </Box>
         </Grid>
         
         <Grid item xs={12}>
@@ -218,13 +239,6 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
                 value={maxConsecutiveReplies}
                 onChange={(e) => setMaxConsecutiveReplies(parseInt(e.target.value))}
                 InputProps={{ inputProps: { min: 1, max: 10 } }}
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <AgentVersionControl
-                version={version}
-                onVersionChange={setVersion}
               />
             </Grid>
           </Grid>
