@@ -15,6 +15,14 @@ export interface EntityRolePair {
   role: string;
 }
 
+// Interface for user with validation information
+export interface WorkGroupUser {
+  id: string;
+  access: 'Admin' | 'Editor' | 'Viewer';
+  validationDaysRemaining: number;
+  lastValidated?: string; // ISO date string
+}
+
 // Interface for access request
 export interface AccessRequest {
   id: number;
@@ -35,6 +43,32 @@ export const sampleWorkGroups: WorkGroup[] = [
   { id: 4, name: 'Research Team', owner: 'Emily Davis', scope: 'Restricted', access: 'Admin', description: 'Research and development workflow group', pendingRequests: 2 },
   { id: 5, name: 'Executive Dashboard', owner: 'Robert Wilson', scope: 'Restricted', access: 'Viewer', description: 'Executive reporting and analytics workflows', pendingRequests: 0 },
 ];
+
+// Sample data for users with validation counters
+export const sampleWorkGroupUsers: Record<number, WorkGroupUser[]> = {
+  1: [
+    { id: 'user1@example.com', access: 'Admin', validationDaysRemaining: 153, lastValidated: '2024-12-01' },
+    { id: 'user2@example.com', access: 'Editor', validationDaysRemaining: 14, lastValidated: '2025-04-19' },
+    { id: 'user3@example.com', access: 'Viewer', validationDaysRemaining: 7, lastValidated: '2025-04-26' },
+    { id: 'user4@example.com', access: 'Editor', validationDaysRemaining: 21, lastValidated: '2025-04-12' },
+    { id: 'user5@example.com', access: 'Viewer', validationDaysRemaining: 28, lastValidated: '2025-04-05' },
+  ],
+  2: [
+    { id: 'user6@example.com', access: 'Admin', validationDaysRemaining: 120, lastValidated: '2025-01-03' },
+    { id: 'user7@example.com', access: 'Editor', validationDaysRemaining: 45, lastValidated: '2025-03-19' },
+  ],
+  3: [
+    { id: 'user8@example.com', access: 'Admin', validationDaysRemaining: 90, lastValidated: '2025-02-02' },
+    { id: 'user9@example.com', access: 'Viewer', validationDaysRemaining: 3, lastValidated: '2025-04-30' },
+  ],
+  4: [
+    { id: 'user10@example.com', access: 'Admin', validationDaysRemaining: 153, lastValidated: '2024-12-01' },
+  ],
+  5: [
+    { id: 'user11@example.com', access: 'Admin', validationDaysRemaining: 130, lastValidated: '2024-12-24' },
+    { id: 'user12@example.com', access: 'Viewer', validationDaysRemaining: 0, lastValidated: '2025-05-03' },
+  ],
+};
 
 // Sample data for access requests
 export const sampleAccessRequests: AccessRequest[] = [

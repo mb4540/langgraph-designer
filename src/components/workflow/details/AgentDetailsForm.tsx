@@ -15,6 +15,7 @@ import useAsyncOperation from '../../../hooks/useAsyncOperation';
 
 // Import common components
 import { BaseNodeForm } from './common';
+import HelpTooltip from '../../ui/HelpTooltip';
 
 // Import agent-specific components
 import { AgentIconSelector, AgentPromptEditor, AgentSettings } from './agent';
@@ -137,64 +138,89 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
       <Grid container spacing={3}>
         {/* Basic Information */}
         <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Agent Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <TextField
+              fullWidth
+              label="Agent Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <HelpTooltip category="agent" itemKey="agentName" />
+          </Box>
         </Grid>
         
         <Grid item xs={12}>
-          <AgentTypeSelector
-            value={agentType}
-            onChange={setAgentType}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+            <Box sx={{ flexGrow: 1 }}>
+              <AgentTypeSelector
+                value={agentType}
+                onChange={setAgentType}
+              />
+            </Box>
+            <HelpTooltip category="agent" itemKey="agentType" />
+          </Box>
         </Grid>
         
         <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            multiline
-            rows={2}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <TextField
+              fullWidth
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              multiline
+              rows={2}
+            />
+            <HelpTooltip category="agent" itemKey="agentDescription" />
+          </Box>
         </Grid>
         
         <Grid item xs={12}>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <TextField
-                fullWidth
-                label="Agent ID"
-                value={node.id}
-                InputProps={{ readOnly: true }}
-                size="small"
-                helperText="Unique identifier for this agent"
-              />
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <TextField
+                  fullWidth
+                  label="Agent ID"
+                  value={node.id}
+                  InputProps={{ readOnly: true }}
+                  size="small"
+                  helperText="Unique identifier for this agent"
+                />
+                <HelpTooltip category="agent" itemKey="agentId" />
+              </Box>
             </Box>
             <Box sx={{ flex: 1 }}>
-              <AgentVersionControl
-                version={version}
-                onVersionChange={setVersion}
-              />
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <AgentVersionControl
+                  version={version}
+                  onVersionChange={setVersion}
+                />
+                <HelpTooltip category="agent" itemKey="agentVersion" />
+              </Box>
             </Box>
           </Box>
         </Grid>
         
         <Grid item xs={12}>
-          <AgentIconSelector
-            selectedIcon={selectedIcon}
-            onSelectIcon={setSelectedIcon}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+            <Box sx={{ flexGrow: 1 }}>
+              <AgentIconSelector
+                selectedIcon={selectedIcon}
+                onSelectIcon={setSelectedIcon}
+              />
+            </Box>
+            <HelpTooltip category="agent" itemKey="agentIcon" />
+          </Box>
         </Grid>
         
         <Grid item xs={12}>
           <Divider sx={{ my: 2 }} />
-          <Typography variant="h6" gutterBottom>Model Configuration</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>Model Configuration</Typography>
+            <HelpTooltip category="agent" itemKey="llmModel" />
+          </Box>
           
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
@@ -215,37 +241,47 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
             </Grid>
             
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Credentials Source</InputLabel>
-                <Select
-                  value={credentialsSource}
-                  onChange={(e) => setCredentialsSource(e.target.value)}
-                  label="Credentials Source"
-                >
-                  {CREDENTIALS_SOURCES.map((source) => (
-                    <MenuItem key={source.value} value={source.value}>
-                      {source.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <FormControl fullWidth>
+                  <InputLabel>Credentials Source</InputLabel>
+                  <Select
+                    value={credentialsSource}
+                    onChange={(e) => setCredentialsSource(e.target.value)}
+                    label="Credentials Source"
+                  >
+                    {CREDENTIALS_SOURCES.map((source) => (
+                      <MenuItem key={source.value} value={source.value}>
+                        {source.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <HelpTooltip category="agent" itemKey="credentialsSource" />
+              </Box>
             </Grid>
             
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Max Consecutive Replies"
-                type="number"
-                value={maxConsecutiveReplies}
-                onChange={(e) => setMaxConsecutiveReplies(parseInt(e.target.value))}
-                InputProps={{ inputProps: { min: 1, max: 10 } }}
-              />
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <TextField
+                  fullWidth
+                  label="Max Consecutive Replies"
+                  type="number"
+                  value={maxConsecutiveReplies}
+                  onChange={(e) => setMaxConsecutiveReplies(parseInt(e.target.value))}
+                  InputProps={{ inputProps: { min: 1, max: 10 } }}
+                />
+                <HelpTooltip category="agent" itemKey="maxConsecutiveReplies" />
+              </Box>
             </Grid>
           </Grid>
         </Grid>
         
         <Grid item xs={12}>
           <Divider sx={{ my: 2 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>Prompt</Typography>
+            <HelpTooltip category="agent" itemKey="agentPrompt" />
+          </Box>
           <AgentPromptEditor
             prompt={prompt}
             onPromptChange={setPrompt}

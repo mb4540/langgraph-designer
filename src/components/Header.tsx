@@ -5,12 +5,18 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useTheme } from '@mui/material/styles';
 import { useThemeContext } from '../context/ThemeContext';
 
 const Header: React.FC = () => {
   const theme = useTheme();
   const { mode, toggleTheme } = useThemeContext();
+  
+  const handleOpenHelp = () => {
+    // Open the user guide in a new tab
+    window.open('/docs/user-guide.html', '_blank');
+  };
   
   return (
     <AppBar 
@@ -34,6 +40,19 @@ const Header: React.FC = () => {
         >
           Agent Platform
         </Typography>
+        
+        {/* Help Icon */}
+        <IconButton 
+          onClick={handleOpenHelp} 
+          color="inherit" 
+          aria-label="help"
+          sx={{ mr: 1 }}
+          title="Open User Guide"
+        >
+          <HelpOutlineIcon />
+        </IconButton>
+        
+        {/* Theme Toggle */}
         <IconButton onClick={toggleTheme} color="inherit" aria-label="toggle theme">
           {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
         </IconButton>

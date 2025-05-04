@@ -19,10 +19,15 @@ import {
   FormControlLabel,
   TextField,
   FormControl,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Tooltip,
+  IconButton
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { WorkGroup } from '../types/workGroup';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import { WorkGroup, WorkGroupUser, sampleWorkGroupUsers } from '../types/workGroup';
 import AccessLevelSelector from './forms/AccessLevelSelector';
 import EntityRoleSelector, { EntityRolePair } from './forms/EntityRoleSelector';
 import IdTypeSelector from './forms/IdTypeSelector';
@@ -32,11 +37,8 @@ interface WorkGroupUsersTabProps {
 }
 
 const WorkGroupUsersTab: React.FC<WorkGroupUsersTabProps> = ({ workGroup }) => {
-  // Sample user data - in a real app, this would come from an API or props
-  const sampleUsers = [
-    { id: 'user1@example.com', access: 'Admin' },
-    { id: 'user2@example.com', access: 'Editor' },
-  ];
+  // Get users for this work group from sample data
+  const users = sampleWorkGroupUsers[workGroup.id] || [];
 
   // State for the Add User dialog
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
@@ -95,6 +97,66 @@ const WorkGroupUsersTab: React.FC<WorkGroupUsersTabProps> = ({ workGroup }) => {
     handleCloseAddUserDialog();
   };
 
+  // Function to determine validation status and get appropriate UI elements
+  const getValidationStatus = (daysRemaining: number) => {
+    // Validation status based on days remaining
+    if (daysRemaining > 28) {
+      return {
+        icon: <CheckCircleIcon fontSize="small" sx={{ color: '#91DC00' }} />,
+        color: '#91DC00',
+        backgroundColor: 'rgba(145, 220, 0, 0.1)',
+        label: `${daysRemaining} days`,
+        tooltip: 'User validation is current'
+      };
+    } else if (daysRemaining > 21) {
+      return {
+        icon: <WarningIcon fontSize="small" sx={{ color: '#FFC107' }} />,
+        color: '#FFC107',
+        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+        label: `${daysRemaining} days`,
+        tooltip: '1st warning: User validation will expire in 28 days'
+      };
+    } else if (daysRemaining > 14) {
+      return {
+        icon: <WarningIcon fontSize="small" sx={{ color: '#FF9800' }} />,
+        color: '#FF9800',
+        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+        label: `${daysRemaining} days`,
+        tooltip: '2nd warning: User validation will expire in 21 days'
+      };
+    } else if (daysRemaining > 7) {
+      return {
+        icon: <WarningIcon fontSize="small" sx={{ color: '#F44336' }} />,
+        color: '#F44336',
+        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+        label: `${daysRemaining} days`,
+        tooltip: '3rd warning: User validation will expire in 14 days - escalation required'
+      };
+    } else if (daysRemaining > 0) {
+      return {
+        icon: <ErrorIcon fontSize="small" sx={{ color: '#D32F2F' }} />,
+        color: '#D32F2F',
+        backgroundColor: 'rgba(211, 47, 47, 0.1)',
+        label: `${daysRemaining} days`,
+        tooltip: 'Final warning: User access will be removed in 7 days if not validated'
+      };
+    } else {
+      return {
+        icon: <ErrorIcon fontSize="small" sx={{ color: '#B71C1C' }} />,
+        color: '#B71C1C',
+        backgroundColor: 'rgba(183, 28, 28, 0.1)',
+        label: 'Expired',
+        tooltip: 'User validation has expired - access will be removed'
+      };
+    }
+  };
+
+  // Function to handle user validation
+  const handleValidateUser = (userId: string) => {
+    console.log(`Validating user: ${userId}`);
+    // In a real app, this would call an API to reset the validation counter to 153 days
+  };
+
   return (
     <Box sx={{ pt: 1 }}>
       <Box sx={{ 
@@ -124,30 +186,63 @@ const WorkGroupUsersTab: React.FC<WorkGroupUsersTabProps> = ({ workGroup }) => {
             <TableRow>
               <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Access</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Validation Status</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Last Validated</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {sampleUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.id}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={user.access} 
-                    size="small" 
-                    sx={{ 
-                      backgroundColor: 
-                        user.access === 'Admin' ? 'rgba(145, 220, 0, 0.1)' : 
-                        user.access === 'Editor' ? 'rgba(0, 159, 219, 0.1)' : 
-                        'rgba(0, 56, 143, 0.1)',
-                      color: 
-                        user.access === 'Admin' ? '#91DC00' : 
-                        user.access === 'Editor' ? '#009FDB' : 
-                        '#00388f'
-                    }}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
+            {users.map((user) => {
+              const validationStatus = getValidationStatus(user.validationDaysRemaining);
+              return (
+                <TableRow key={user.id}>
+                  <TableCell>{user.id}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={user.access} 
+                      size="small" 
+                      sx={{ 
+                        backgroundColor: 
+                          user.access === 'Admin' ? 'rgba(145, 220, 0, 0.1)' : 
+                          user.access === 'Editor' ? 'rgba(0, 159, 219, 0.1)' : 
+                          'rgba(0, 56, 143, 0.1)',
+                        color: 
+                          user.access === 'Admin' ? '#91DC00' : 
+                          user.access === 'Editor' ? '#009FDB' : 
+                          '#00388f'
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title={validationStatus.tooltip}>
+                      <Chip
+                        icon={validationStatus.icon}
+                        label={validationStatus.label}
+                        size="small"
+                        sx={{
+                          backgroundColor: validationStatus.backgroundColor,
+                          color: validationStatus.color
+                        }}
+                      />
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell>
+                    {user.lastValidated ? new Date(user.lastValidated).toLocaleDateString() : 'Never'}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="Validate User Access">
+                      <IconButton 
+                        size="small" 
+                        onClick={() => handleValidateUser(user.id)}
+                        sx={{ color: '#00388f' }}
+                      >
+                        <CheckCircleIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LangGraph Designer User Guide</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #00388f;
+      border-bottom: 2px solid #009FDB;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #009FDB;
+      margin-top: 30px;
+    }
+    h3 {
+      color: #00388f;
+      margin-top: 25px;
+    }
+    a {
+      color: #009FDB;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    code {
+      background-color: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .toc {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 4px;
+      margin-bottom: 30px;
+    }
+    .toc ul {
+      list-style-type: none;
+      padding-left: 20px;
+    }
+    .toc li {
+      margin-bottom: 8px;
+    }
+    .warning {
+      background-color: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .tip {
+      background-color: #d1e7dd;
+      border-left: 4px solid #198754;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 20px auto;
+      border-radius: 4px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #121212;
+        color: #e0e0e0;
+      }
+      h1 {
+        color: #009FDB;
+        border-bottom-color: #00388f;
+      }
+      h2 {
+        color: #91DC00;
+      }
+      h3 {
+        color: #009FDB;
+      }
+      a {
+        color: #91DC00;
+      }
+      code, pre {
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+      }
+      .toc {
+        background-color: #1e1e1e;
+      }
+      .warning {
+        background-color: #332701;
+        border-left-color: #ffc107;
+        color: #e0e0e0;
+      }
+      .tip {
+        background-color: #0f2e1d;
+        border-left-color: #198754;
+        color: #e0e0e0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>LangGraph Designer User Guide</h1>
+
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ul>
+      <li><a href="#introduction">Introduction</a></li>
+      <li><a href="#getting-started">Getting Started</a></li>
+      <li><a href="#interface-overview">Interface Overview</a></li>
+      <li><a href="#creating-workflows">Creating Workflows</a></li>
+      <li><a href="#working-with-agents">Working with Agents</a></li>
+      <li><a href="#working-with-tools">Working with Tools</a></li>
+      <li><a href="#working-with-memory">Working with Memory</a></li>
+      <li><a href="#validation-system">Validation System</a></li>
+      <li><a href="#work-group-management">Work Group Management</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ul>
+  </div>
+
+  <h2 id="introduction">Introduction</h2>
+
+  <p>The LangGraph Designer is a powerful visual tool for creating and managing agent workflows. It allows you to design, test, and deploy complex AI agent systems with a user-friendly interface.</p>
+
+  <h3>Key Features</h3>
+
+  <ul>
+    <li>Visual workflow designer for creating agent-based systems</li>
+    <li>Support for multiple agent types and configurations</li>
+    <li>Integration with various LLM models including GPT-4o, Claude 3.7, and more</li>
+    <li>Built-in tool library for extending agent capabilities</li>
+    <li>Memory management for persistent agent state</li>
+    <li>Work group management for team collaboration</li>
+    <li>User validation system for security compliance</li>
+  </ul>
+
+  <h2 id="getting-started">Getting Started</h2>
+
+  <h3>System Requirements</h3>
+
+  <ul>
+    <li>Modern web browser (Chrome, Firefox, Safari, Edge)</li>
+    <li>Internet connection for API access</li>
+    <li>API keys for LLM services (if using custom credentials)</li>
+  </ul>
+
+  <h3>Accessing the Platform</h3>
+
+  <ol>
+    <li>Navigate to the landing page</li>
+    <li>Choose one of the three main sections:
+      <ul>
+        <li><strong>Workflow Designer</strong>: Create and edit agent workflows</li>
+        <li><strong>Accounts Management</strong>: Manage work groups and user access</li>
+        <li><strong>Command Center</strong>: Monitor and deploy workflows</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h2 id="interface-overview">Interface Overview</h2>
+
+  <p>The platform consists of three main sections:</p>
+
+  <h3>Landing Page</h3>
+
+  <p>The central hub that provides access to all platform features through navigation cards.</p>
+
+  <h3>Workflow Designer</h3>
+
+  <p>The main workspace for creating agent workflows with three panels:</p>
+
+  <ul>
+    <li><strong>Left Panel</strong>: Conversation panel for testing agent interactions</li>
+    <li><strong>Middle Panel</strong>: Visual workflow graph editor</li>
+    <li><strong>Right Panel</strong>: Details panel for configuring selected components</li>
+  </ul>
+
+  <h3>Accounts Page</h3>
+
+  <p>The administrative interface for managing work groups and user access:</p>
+
+  <ul>
+    <li>Work group listing with filtering and search</li>
+    <li>User management with validation tracking</li>
+    <li>Access request processing</li>
+  </ul>
+
+  <h2 id="creating-workflows">Creating Workflows</h2>
+
+  <h3>Workflow Basics</h3>
+
+  <p>A workflow consists of connected nodes representing different components of an agent system:</p>
+
+  <ul>
+    <li><strong>Agent Nodes</strong>: The core AI agents that process information and make decisions</li>
+    <li><strong>Tool Nodes</strong>: External capabilities that agents can use</li>
+    <li><strong>Memory Nodes</strong>: Storage systems for maintaining context</li>
+    <li><strong>Operator Nodes</strong>: Control flow elements for complex workflows</li>
+  </ul>
+
+  <h3>Creating a New Workflow</h3>
+
+  <ol>
+    <li>Navigate to the Workflow Designer</li>
+    <li>Click "Create New Workflow" in the header</li>
+    <li>Provide a name and description for your workflow</li>
+    <li>Add your first agent by clicking the "Add Agent" button</li>
+  </ol>
+
+  <h3>Saving and Versioning</h3>
+
+  <p>Workflows are automatically versioned using semantic versioning (MAJOR.MINOR.PATCH):</p>
+
+  <ol>
+    <li>Each workflow has a unique Version ID (ULID)</li>
+    <li>Version numbers can be manually updated in the Workflow Details panel</li>
+    <li>Changes are tracked with timestamps</li>
+  </ol>
+
+  <h2 id="working-with-agents">Working with Agents</h2>
+
+  <h3>Agent Types</h3>
+
+  <p>The platform supports multiple agent types, each with specific capabilities:</p>
+
+  <ul>
+    <li><strong>Assistant</strong>: General purpose assistant agent</li>
+    <li><strong>Tool User</strong>: Agent specialized in using tools</li>
+    <li><strong>Reasoning Agent</strong>: Enhanced reasoning capabilities</li>
+    <li><strong>Planner</strong>: Creates and executes plans</li>
+    <li><strong>Researcher</strong>: Specialized in information gathering</li>
+    <li><strong>Domain Specialist</strong>: Expert in a specific knowledge domain</li>
+  </ul>
+
+  <h3>Configuring Agents</h3>
+
+  <ol>
+    <li>Select an agent node in the workflow graph</li>
+    <li>Use the details panel to configure:
+      <ul>
+        <li>Agent Name and Description</li>
+        <li>Agent Type</li>
+        <li>Agent Icon</li>
+        <li>LLM Model</li>
+        <li>System Prompt</li>
+        <li>Advanced Settings</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h3>Connecting Agents</h3>
+
+  <p>Agents can be connected to create multi-agent workflows:</p>
+
+  <ol>
+    <li>Click on the connection handle on the right side of an agent</li>
+    <li>Drag to create a new agent or connect to an existing one</li>
+    <li>Configure the connection type in the details panel</li>
+  </ol>
+
+  <h2 id="working-with-tools">Working with Tools</h2>
+
+  <h3>Available Tools</h3>
+
+  <p>The platform includes several pre-built tools:</p>
+
+  <ul>
+    <li><strong>Stagehand Browser</strong>: Web interaction (navigate, click, scrape)</li>
+    <li><strong>Vector-Store Retriever</strong>: RAG with vector databases</li>
+    <li><strong>Calculator / Math</strong>: Mathematical operations</li>
+    <li><strong>Multi-Database SQL</strong>: Database querying</li>
+    <li><strong>Email (IMAP/SMTP)</strong>: Email automation</li>
+    <li><strong>Azure Functions</strong>: Serverless compute integration</li>
+  </ul>
+
+  <h3>Adding Tools to Agents</h3>
+
+  <ol>
+    <li>Select an agent node</li>
+    <li>Click on the tool diamond at the bottom</li>
+    <li>Choose a tool type from the available options</li>
+    <li>Configure the tool parameters in the details panel</li>
+  </ol>
+
+  <h3>Customizing Tool Code</h3>
+
+  <p>Each tool includes editable MCP (Message Calling Protocol) code:</p>
+
+  <ol>
+    <li>Select a tool node</li>
+    <li>Click the edit button in the top-right corner</li>
+    <li>Modify the Python code in the editor</li>
+    <li>Click "Save Changes" to update the tool</li>
+  </ol>
+
+  <h2 id="working-with-memory">Working with Memory</h2>
+
+  <h3>Memory Types</h3>
+
+  <p>The platform supports various memory types:</p>
+
+  <ul>
+    <li><strong>Conversation Buffer</strong>: Short-term working memory</li>
+    <li><strong>Sliding-Window</strong>: Buffer window memory</li>
+    <li><strong>Summary Memory</strong>: Condensed conversation history</li>
+    <li><strong>Entity / Knowledge-Graph</strong>: Structured information storage</li>
+    <li><strong>Vector-Store</strong>: Retrieval-based memory</li>
+    <li>And more specialized types</li>
+  </ul>
+
+  <h3>Configuring Memory</h3>
+
+  <ol>
+    <li>Select a memory node</li>
+    <li>Choose the memory type from the options</li>
+    <li>Configure memory-specific parameters</li>
+    <li>Connect the memory to an agent</li>
+  </ol>
+
+  <h2 id="validation-system">Validation System</h2>
+
+  <h3>Validation Lifecycle</h3>
+
+  <ul>
+    <li>Users start with 153 days of validation</li>
+    <li>Warning system begins at specific intervals:
+      <ul>
+        <li>28 days: First warning</li>
+        <li>21 days: Second warning</li>
+        <li>14 days: Third warning with escalation</li>
+        <li>7 days: Final warning before access removal</li>
+        <li>0 days: Access expired and will be removed</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>Managing Validations</h3>
+
+  <ol>
+    <li>Navigate to the Accounts page</li>
+    <li>Select a work group</li>
+    <li>Go to the Users tab</li>
+    <li>View validation status for each user</li>
+    <li>Click the validate button to reset a user's validation period</li>
+  </ol>
+
+  <div class="warning">
+    <strong>Important:</strong> Regular validation is required to maintain access. Users will receive warnings as their validation period approaches expiration.
+  </div>
+
+  <h2 id="work-group-management">Work Group Management</h2>
+
+  <h3>Creating Work Groups</h3>
+
+  <ol>
+    <li>Navigate to the Accounts page</li>
+    <li>Click "Create Work Group"</li>
+    <li>Provide a name, scope (Public/Restricted), and description</li>
+    <li>Click "Save" to create the work group</li>
+  </ol>
+
+  <h3>Managing Users</h3>
+
+  <ol>
+    <li>Click on a work group name to open details</li>
+    <li>Go to the Users tab</li>
+    <li>Click "Add User" to add new users</li>
+    <li>Choose between ATT ID or Client ID</li>
+    <li>Set appropriate access levels and permissions</li>
+  </ol>
+
+  <h3>Access Requests</h3>
+
+  <ol>
+    <li>Click the key icon in the Request Access column</li>
+    <li>Select the desired access level</li>
+    <li>For partial access, specify entity-role pairs</li>
+    <li>Submit the request for approval</li>
+  </ol>
+
+  <div class="tip">
+    <strong>Tip:</strong> Work group owners can view pending approval requests by clicking on the number in the Pending Approvals column.
+  </div>
+
+  <h2 id="troubleshooting">Troubleshooting</h2>
+
+  <h3>Common Issues</h3>
+
+  <ul>
+    <li><strong>Connection errors</strong>: Check your internet connection and API credentials</li>
+    <li><strong>Workflow validation errors</strong>: Ensure all required fields are completed</li>
+    <li><strong>Performance issues</strong>: Try reducing the complexity of your workflow</li>
+  </ul>
+
+  <h3>Getting Help</h3>
+
+  <p>For additional assistance:</p>
+
+  <ol>
+    <li>Check the inline help tooltips throughout the interface</li>
+    <li>Refer to this user guide for detailed instructions</li>
+    <li>Contact support through the help button in the header</li>
+  </ol>
+
+  <div class="tip">
+    <strong>Tip:</strong> Hover over the help icons (?) next to form fields for contextual help and explanations.
+  </div>
+
+  <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 0.9em; color: #666;">
+    <p>LangGraph Designer Documentation © 2025</p>
+  </footer>
+</body>
+</html>
