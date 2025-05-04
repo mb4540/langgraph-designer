@@ -16,6 +16,22 @@ interface ToolCallOperatorConfigProps {
   onConfigChange: (config: ToolCallConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedToolCallConfig extends ToolCallConfig {
+  call_type?: 'internal' | 'external' | 'api' | 'function';
+  tool_id?: string;
+  tool_url?: string;
+  auth_header?: string;
+  api_endpoint?: string;
+  api_key?: string;
+  request_method?: 'GET' | 'POST' | 'PUT';
+  function_definition?: string;
+  input_mapping?: string;
+  output_mapping?: string;
+  cache_results?: boolean;
+  timeout_seconds?: number;
+}
+
 // Tool call types
 const TOOL_CALL_TYPES = [
   { value: 'internal', label: 'Internal Tool', description: 'Call a tool defined within this workflow' },
@@ -31,11 +47,14 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
   config,
   onConfigChange
 }) => {
-  const handleChange = (field: keyof ToolCallConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedToolCallConfig;
+  
+  const handleChange = (field: keyof ExtendedToolCallConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as ToolCallConfig);
   };
 
   return (
@@ -51,7 +70,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.call_type || 'internal'}
+            value={extendedConfig.call_type || 'internal'}
             onChange={(e) => handleChange('call_type', e.target.value)}
           >
             {TOOL_CALL_TYPES.map(type => (
@@ -62,11 +81,11 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
           </Select>
         </FormControl>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-          {TOOL_CALL_TYPES.find(t => t.value === (config.call_type || 'internal'))?.description}
+          {TOOL_CALL_TYPES.find(t => t.value === (extendedConfig.call_type || 'internal'))?.description}
         </Typography>
       </FormField>
       
-      {config.call_type === 'internal' && (
+      {extendedConfig.call_type === 'internal' && (
         <FormField
           label="Tool ID"
           required
@@ -74,7 +93,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
         >
           <TextField
             fullWidth
-            value={config.tool_id || ''}
+            value={extendedConfig.tool_id || ''}
             onChange={(e) => handleChange('tool_id', e.target.value)}
             size="small"
             placeholder="tool_123"
@@ -82,7 +101,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
         </FormField>
       )}
       
-      {config.call_type === 'external' && (
+      {extendedConfig.call_type === 'external' && (
         <>
           <FormField
             label="Tool URL"
@@ -91,7 +110,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
           >
             <TextField
               fullWidth
-              value={config.tool_url || ''}
+              value={extendedConfig.tool_url || ''}
               onChange={(e) => handleChange('tool_url', e.target.value)}
               size="small"
               placeholder="https://example.com/tools/calculator"
@@ -104,7 +123,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
           >
             <TextField
               fullWidth
-              value={config.auth_header || ''}
+              value={extendedConfig.auth_header || ''}
               onChange={(e) => handleChange('auth_header', e.target.value)}
               size="small"
               placeholder="Bearer token123"
@@ -113,7 +132,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
         </>
       )}
       
-      {config.call_type === 'api' && (
+      {extendedConfig.call_type === 'api' && (
         <>
           <FormField
             label="API Endpoint"
@@ -122,7 +141,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
           >
             <TextField
               fullWidth
-              value={config.api_endpoint || ''}
+              value={extendedConfig.api_endpoint || ''}
               onChange={(e) => handleChange('api_endpoint', e.target.value)}
               size="small"
               placeholder="https://api.example.com/v1/tools/execute"
@@ -136,7 +155,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
             <TextField
               fullWidth
               type="password"
-              value={config.api_key || ''}
+              value={extendedConfig.api_key || ''}
               onChange={(e) => handleChange('api_key', e.target.value)}
               size="small"
               placeholder="sk-..."
@@ -150,7 +169,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
           >
             <FormControl fullWidth size="small">
               <Select
-                value={config.request_method || 'POST'}
+                value={extendedConfig.request_method || 'POST'}
                 onChange={(e) => handleChange('request_method', e.target.value)}
               >
                 <MenuItem value="GET">GET</MenuItem>
@@ -162,15 +181,15 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
         </>
       )}
       
-      {config.call_type === 'function' && (
+      {extendedConfig.call_type === 'function' && (
         <FormField
           label="Function Definition"
           required
           helperText="JavaScript function to execute when this tool is called"
         >
           <CodeEditor
-            value={config.function_definition || 'function execute(params, state) {\n  // Example: Perform a calculation\n  const result = params.a + params.b;\n  return {\n    result: result\n  };\n}'}
-            onChange={(value) => handleChange('function_definition', value)}
+            code={extendedConfig.function_definition || 'function execute(params, state) {\n  // Example: Perform a calculation\n  const result = params.a + params.b;\n  return {\n    result: result\n  };\n}'}
+            onCodeChange={(code) => handleChange('function_definition', code)}
             language="javascript"
             height="150px"
           />
@@ -178,26 +197,12 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
       )}
       
       <FormField
-        label="Tool Name"
-        required
-        helperText="Name of the tool to call"
-      >
-        <TextField
-          fullWidth
-          value={config.tool_name || ''}
-          onChange={(e) => handleChange('tool_name', e.target.value)}
-          size="small"
-          placeholder="calculator"
-        />
-      </FormField>
-      
-      <FormField
         label="Input Mapping"
         helperText="JavaScript code to map workflow state to tool input parameters"
       >
         <CodeEditor
-          value={config.input_mapping || 'function mapInput(state) {\n  // Example: Extract relevant fields for the tool\n  return {\n    a: state.value_a || 0,\n    b: state.value_b || 0\n  };\n}'}
-          onChange={(value) => handleChange('input_mapping', value)}
+          code={extendedConfig.input_mapping || 'function mapInput(state) {\n  // Example: Extract relevant fields for the tool\n  return {\n    a: state.value_a || 0,\n    b: state.value_b || 0\n  };\n}'}
+          onCodeChange={(code) => handleChange('input_mapping', code)}
           language="javascript"
           height="150px"
         />
@@ -208,18 +213,18 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
         helperText="JavaScript code to map tool output back to workflow state"
       >
         <CodeEditor
-          value={config.output_mapping || 'function mapOutput(toolOutput, state) {\n  // Example: Merge tool result into state\n  return {\n    ...state,\n    tool_result: toolOutput.result\n  };\n}'}
-          onChange={(value) => handleChange('output_mapping', value)}
+          code={extendedConfig.output_mapping || 'function mapOutput(toolOutput, state) {\n  // Example: Merge tool result into state\n  return {\n    ...state,\n    tool_result: toolOutput.result\n  };\n}'}
+          onCodeChange={(code) => handleChange('output_mapping', code)}
           language="javascript"
           height="150px"
         />
       </FormField>
       
-      <FormField>
+      <FormField label="Caching Options">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.cache_results || false}
+              checked={extendedConfig.cache_results || false}
               onChange={(e) => handleChange('cache_results', e.target.checked)}
             />
           }
@@ -237,7 +242,7 @@ const ToolCallOperatorConfig: React.FC<ToolCallOperatorConfigProps> = ({
         <TextField
           fullWidth
           type="number"
-          value={config.timeout_seconds || ''}
+          value={extendedConfig.timeout_seconds || ''}
           onChange={(e) => handleChange('timeout_seconds', e.target.value ? parseInt(e.target.value) : undefined)}
           size="small"
           inputProps={{ min: 0 }}

@@ -78,7 +78,7 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
         return { memory_node_id: '', write_mode: 'set', memory_key: '' };
       case OperatorType.Decision:
         return { predicate_language: 'javascript', expression: '', branches: [] };
-      case OperatorType.Sequence:
+      case OperatorType.Sequential:
         return { steps: [], stop_on_error: true };
       case OperatorType.ParallelFork:
         return { branches: {}, wait_for_all: true };
@@ -146,8 +146,8 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
       case OperatorType.MemoryWrite:
         return <MemoryWriteOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.Decision:
-        return <DecisionOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
-      case OperatorType.Sequence:
+        return <DecisionOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} nodeId={node.id} />;
+      case OperatorType.Sequential:
         return <SequenceOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
       case OperatorType.ParallelFork:
         return <ParallelForkOperatorConfig config={operatorConfig} onConfigChange={handleConfigChange} />;
@@ -169,12 +169,12 @@ const OperatorDetailsForm: React.FC<OperatorDetailsFormProps> = ({ node }) => {
   };
 
   return (
-    <BaseNodeForm
-      node={node}
+    <BaseNodeForm 
+      title={`${node.name} Configuration`}
       onSave={handleSave}
       onCancel={handleCancel}
       isModified={isModified}
-    >
+      nodeId={node.id}>
       <Box sx={{ mb: 3 }}>
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel id="operator-type-label">Operator Type</InputLabel>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
@@ -7,10 +7,10 @@ import Box from '@mui/material/Box';
 import { SxProps, Theme } from '@mui/material/styles';
 
 interface FormFieldProps {
-  id: string;
+  id?: string;
   label: string;
-  value: string;
-  onChange: (value: string) => void;
+  value?: string;
+  onChange?: (value: string) => void;
   multiline?: boolean;
   rows?: number;
   placeholder?: string;
@@ -25,6 +25,7 @@ interface FormFieldProps {
   variant?: 'standard' | 'outlined' | 'filled';
   size?: 'small' | 'medium';
   InputProps?: any;
+  children?: ReactNode;
 }
 
 /**
@@ -48,7 +49,8 @@ const FormField: React.FC<FormFieldProps> = ({
   errorText = '',
   variant = 'outlined',
   size = 'medium',
-  InputProps = {}
+  InputProps = {},
+  children
 }) => {
   return (
     <FormControl fullWidth={fullWidth} sx={{ mb: 2, ...sx }}>
@@ -57,23 +59,27 @@ const FormField: React.FC<FormFieldProps> = ({
           {label}{required && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
         </Typography>
       </FormLabel>
-      <TextField
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        multiline={multiline}
-        rows={multiline ? rows : undefined}
-        placeholder={placeholder}
-        helperText={error ? errorText : helperText}
-        required={required}
-        disabled={disabled}
-        fullWidth={fullWidth}
-        type={type}
-        error={error}
-        variant={variant}
-        size={size}
-        InputProps={InputProps}
-      />
+      {children ? (
+        children
+      ) : (
+        <TextField
+          id={id}
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
+          multiline={multiline}
+          rows={multiline ? rows : undefined}
+          placeholder={placeholder}
+          helperText={error ? errorText : helperText}
+          required={required}
+          disabled={disabled}
+          fullWidth={fullWidth}
+          type={type}
+          error={error}
+          variant={variant}
+          size={size}
+          InputProps={InputProps}
+        />
+      )}
     </FormControl>
   );
 };

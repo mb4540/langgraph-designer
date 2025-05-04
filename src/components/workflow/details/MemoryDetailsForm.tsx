@@ -23,16 +23,18 @@ const MemoryDetailsForm: React.FC<MemoryDetailsFormProps> = ({ node }) => {
     setMemoryType(node.memoryType || 'conversation-buffer');
   }, [node]);
 
-  // Handle save operation
-  const { execute: handleSave, loading, error } = useAsyncOperation(async () => {
+  // Handle save operation with proper typing
+  const { execute: handleSaveExecute, loading, error } = useAsyncOperation<void>(async () => {
     // Update the node with form values
-    const updatedNode = {
-      ...node,
+    updateNode(node.id, {
       memoryType
-    };
-    
-    updateNode(updatedNode);
+    });
   });
+
+  // Wrap the execute function to ensure it returns Promise<void>
+  const handleSave = async (): Promise<void> => {
+    await handleSaveExecute();
+  };
 
   // Handle cancel operation
   const handleCancel = () => {
@@ -49,11 +51,12 @@ const MemoryDetailsForm: React.FC<MemoryDetailsFormProps> = ({ node }) => {
       error={error}
       nodeId={node.id}
     >
-      <MemoryTypeSelector
-        memoryType={memoryType}
-        onMemoryTypeChange={setMemoryType}
-        sx={{ mt: 2 }}
-      />
+      <Box sx={{ mb: 3 }}>
+        <MemoryTypeSelector
+          memoryType={memoryType}
+          onMemoryTypeChange={setMemoryType}
+        />
+      </Box>
     </BaseNodeForm>
   );
 };

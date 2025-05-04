@@ -178,10 +178,11 @@ const ToolDetailsForm: React.FC<ToolDetailsFormProps> = ({ node }) => {
 
   return (
     <BaseNodeForm 
-      node={node}
+      title={`${node.name} Configuration`}
       onSave={handleSave}
       onCancel={handleCancel}
       isModified={isModified}
+      nodeId={node.id}
     >
       {isEditingTool && selectedToolInfo ? (
         <ToolCodeEditor

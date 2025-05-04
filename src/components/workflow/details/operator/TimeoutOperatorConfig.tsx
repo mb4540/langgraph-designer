@@ -15,6 +15,14 @@ interface TimeoutOperatorConfigProps {
   onConfigChange: (config: TimeoutConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedTimeoutConfig extends Omit<TimeoutConfig, 'timeout_sec'> {
+  // Use optional version for UI state management
+  timeout_sec?: number;
+  on_timeout?: 'abort' | 'retry' | 'fallback_node';
+  fallback_node?: string;
+}
+
 /**
  * Component for configuring a timeout operator
  */
@@ -24,11 +32,14 @@ const TimeoutOperatorConfig: React.FC<TimeoutOperatorConfigProps> = ({
 }) => {
   const { nodes } = useWorkflowContext();
   
-  const handleChange = (field: keyof TimeoutConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedTimeoutConfig;
+  
+  const handleChange = (field: keyof ExtendedTimeoutConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as TimeoutConfig);
   };
 
   return (
@@ -45,7 +56,7 @@ const TimeoutOperatorConfig: React.FC<TimeoutOperatorConfigProps> = ({
         <TextField
           fullWidth
           type="number"
-          value={config.timeout_sec || ''}
+          value={extendedConfig.timeout_sec || ''}
           onChange={(e) => handleChange('timeout_sec', e.target.value ? parseInt(e.target.value) : undefined)}
           size="small"
           inputProps={{ min: 1 }}
@@ -58,7 +69,7 @@ const TimeoutOperatorConfig: React.FC<TimeoutOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.on_timeout || 'abort'}
+            value={extendedConfig.on_timeout || 'abort'}
             onChange={(e) => handleChange('on_timeout', e.target.value)}
           >
             <MenuItem value="abort">Abort</MenuItem>
@@ -68,7 +79,7 @@ const TimeoutOperatorConfig: React.FC<TimeoutOperatorConfigProps> = ({
         </FormControl>
       </FormField>
       
-      {config.on_timeout === 'fallback_node' && (
+      {extendedConfig.on_timeout === 'fallback_node' && (
         <FormField
           label="Fallback Node"
           required
@@ -76,7 +87,7 @@ const TimeoutOperatorConfig: React.FC<TimeoutOperatorConfigProps> = ({
         >
           <FormControl fullWidth size="small">
             <Select
-              value={config.fallback_node || ''}
+              value={extendedConfig.fallback_node || ''}
               onChange={(e) => handleChange('fallback_node', e.target.value)}
             >
               {nodes.map(node => (

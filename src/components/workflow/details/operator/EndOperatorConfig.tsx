@@ -12,6 +12,12 @@ interface EndOperatorConfigProps {
   onConfigChange: (config: EndConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedEndConfig extends EndConfig {
+  // UI-specific properties can be added here
+  // All properties from EndConfig are already inherited
+}
+
 /**
  * Component for configuring an end operator
  */
@@ -19,11 +25,14 @@ const EndOperatorConfig: React.FC<EndOperatorConfigProps> = ({
   config,
   onConfigChange
 }) => {
-  const handleChange = (field: keyof EndConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedEndConfig;
+  
+  const handleChange = (field: keyof ExtendedEndConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as EndConfig);
   };
 
   return (
@@ -38,18 +47,18 @@ const EndOperatorConfig: React.FC<EndOperatorConfigProps> = ({
       >
         <TextField
           fullWidth
-          value={config.status_code || ''}
+          value={extendedConfig.status_code || ''}
           onChange={(e) => handleChange('status_code', e.target.value)}
           size="small"
           placeholder="success"
         />
       </FormField>
       
-      <FormField>
+      <FormField label="Transcript Options">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.emit_transcript || false}
+              checked={extendedConfig.emit_transcript || false}
               onChange={(e) => handleChange('emit_transcript', e.target.checked)}
             />
           }
@@ -66,7 +75,7 @@ const EndOperatorConfig: React.FC<EndOperatorConfigProps> = ({
       >
         <TextField
           fullWidth
-          value={config.on_terminate_hook || ''}
+          value={extendedConfig.on_terminate_hook || ''}
           onChange={(e) => handleChange('on_terminate_hook', e.target.value)}
           size="small"
           placeholder="https://example.com/webhook"

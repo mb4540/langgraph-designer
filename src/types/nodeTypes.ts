@@ -199,6 +199,16 @@ export interface SubGraphOperatorConfig {
 }
 
 /**
+ * Interface for SEQUENCE operator configuration
+ */
+export interface SequenceOperatorConfig {
+  steps?: string[];
+  stop_on_error?: boolean;
+  error_handler_node?: string;
+  state_key_prefix?: string;
+}
+
+/**
  * Interface for chat message
  */
 export interface ChatMessage {
@@ -243,7 +253,7 @@ export interface WorkflowNode {
     ToolCallOperatorConfig | MemoryReadOperatorConfig | MemoryWriteOperatorConfig |
     DecisionOperatorConfig | ParallelForkOperatorConfig | ParallelJoinOperatorConfig |
     LoopOperatorConfig | ErrorRetryOperatorConfig | TimeoutOperatorConfig |
-    HumanPauseOperatorConfig | SubGraphOperatorConfig;
+    HumanPauseOperatorConfig | SubGraphOperatorConfig | SequenceOperatorConfig;
   
   // Version control fields
   version?: string; // Semantic version (MAJOR.MINOR.PATCH)

@@ -13,6 +13,12 @@ interface LoopOperatorConfigProps {
   onConfigChange: (config: LoopConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedLoopConfig extends LoopConfig {
+  // UI-specific properties can be added here
+  // All properties from LoopConfig are already inherited
+}
+
 /**
  * Component for configuring a loop operator
  */
@@ -20,11 +26,14 @@ const LoopOperatorConfig: React.FC<LoopOperatorConfigProps> = ({
   config,
   onConfigChange
 }) => {
-  const handleChange = (field: keyof LoopConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedLoopConfig;
+  
+  const handleChange = (field: keyof ExtendedLoopConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as LoopConfig);
   };
 
   return (
@@ -39,8 +48,8 @@ const LoopOperatorConfig: React.FC<LoopOperatorConfigProps> = ({
         helperText="JavaScript expression that evaluates to true/false to determine if the loop should continue"
       >
         <CodeEditor
-          value={config.condition_expression || ''}
-          onChange={(value) => handleChange('condition_expression', value)}
+          code={extendedConfig.condition_expression || ''}
+          onCodeChange={(code) => handleChange('condition_expression', code)}
           language="javascript"
           height="120px"
           placeholder="state.counter < 10"
@@ -54,7 +63,7 @@ const LoopOperatorConfig: React.FC<LoopOperatorConfigProps> = ({
         <TextField
           fullWidth
           type="number"
-          value={config.max_iterations || ''}
+          value={extendedConfig.max_iterations || ''}
           onChange={(e) => handleChange('max_iterations', e.target.value ? parseInt(e.target.value) : undefined)}
           size="small"
           inputProps={{ min: 1 }}
@@ -69,7 +78,7 @@ const LoopOperatorConfig: React.FC<LoopOperatorConfigProps> = ({
         <TextField
           fullWidth
           type="number"
-          value={config.loop_delay_sec || ''}
+          value={extendedConfig.loop_delay_sec || ''}
           onChange={(e) => handleChange('loop_delay_sec', e.target.value ? parseInt(e.target.value) : undefined)}
           size="small"
           inputProps={{ min: 0 }}
@@ -77,11 +86,11 @@ const LoopOperatorConfig: React.FC<LoopOperatorConfigProps> = ({
         />
       </FormField>
       
-      <FormField>
+      <FormField label="Loop Behavior">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.break_on_failure || false}
+              checked={extendedConfig.break_on_failure || false}
               onChange={(e) => handleChange('break_on_failure', e.target.checked)}
             />
           }

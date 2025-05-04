@@ -3,29 +3,23 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import FormControl from '@mui/material/FormControl';
-import RadioGroup from '@mui/material/RadioGroup';
-import Radio from '@mui/material/Radio';
 import Grid from '@mui/material/Grid';
-import { useTheme } from '@mui/material/styles';
-
-import { WorkflowNode, AgentSetting } from '../../../types/nodeTypes';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Divider from '@mui/material/Divider';
+import { WorkflowNode } from '../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
-import { useThemeContext } from '../../../context/ThemeContext';
 import useAsyncOperation from '../../../hooks/useAsyncOperation';
-import { useVersionedId } from '../../../hooks/useVersionedId';
-import { VersionedEntity } from '../../../utils/idGenerator';
 
 // Import common components
-import { BaseNodeForm, FormField } from './common';
+import { BaseNodeForm } from './common';
 
 // Import agent-specific components
-import {
-  AgentIconSelector,
-  AgentSettings,
-  AgentPromptEditor,
-  AgentModelSettings
-} from './agent';
+import { AgentIconSelector, AgentPromptEditor, AgentSettings } from './agent';
+import AgentTypeSelector from './agent/AgentTypeSelector';
+import AgentVersionControl from './agent/AgentVersionControl';
 
 interface AgentDetailsFormProps {
   node: WorkflowNode;
@@ -35,24 +29,26 @@ interface AgentDetailsFormProps {
 const AGENT_TYPES = [
   { value: 'assistant', label: 'Assistant' },
   { value: 'tool-user', label: 'Tool User' },
+  { value: 'reasoning', label: 'Reasoning Agent' },
+  { value: 'planner', label: 'Planner' },
   { value: 'researcher', label: 'Researcher' },
-  { value: 'specialist', label: 'Specialist' },
-  { value: 'custom', label: 'Custom' }
+  { value: 'specialist', label: 'Domain Specialist' },
 ];
 
-// Define workgroup options (placeholder)
-const workgroups = [
-  { id: 'wg1', name: 'General Workgroup' },
-  { id: 'wg2', name: 'Customer Support' },
-  { id: 'wg3', name: 'Research Team' },
-  { id: 'wg4', name: 'Development' },
-  { id: 'wg5', name: 'Marketing' }
+// Define LLM model options
+const LLM_MODELS = [
+  { value: 'gpt-4o', label: 'GPT-4o' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+];
+
+// Define credentials source options
+const CREDENTIALS_SOURCES = [
+  { value: 'workgroup', label: 'Workgroup Default' },
+  { value: 'custom', label: 'Custom Credentials' },
 ];
 
 const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   const { updateNode } = useWorkflowContext();
-  const theme = useTheme();
-  const { mode } = useThemeContext();
   
   // Form state
   const [name, setName] = useState(node.name || '');
@@ -65,12 +61,7 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   const [llmModel, setLlmModel] = useState(node.llmModel || 'gpt-4o');
   const [maxConsecutiveReplies, setMaxConsecutiveReplies] = useState(node.maxConsecutiveReplies || 5);
   const [version, setVersion] = useState(node.version || '1.0.0');
-  
-  // Settings state
-  const [settings, setSettings] = useState<AgentSetting[]>(node.settings || []);
-  
-  // Generate versioned ID for the agent
-  const versionedAgent: VersionedEntity | null = useVersionedId('agent', version);
+  const [settings, setSettings] = useState(node.settings || []);
   
   // Update form when node changes
   useEffect(() => {
@@ -88,23 +79,17 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
   }, [node]);
 
   // Handle save operation
-  const { execute: handleSave, loading, error } = useAsyncOperation(async () => {
+  const { execute, loading, error } = useAsyncOperation<void>(async () => {
     // Validate required fields
     if (!name) {
       throw new Error('Agent name is required');
     }
-    
-    if (!agentType) {
-      throw new Error('Agent type is required');
-    }
-    
     if (!prompt) {
       throw new Error('Agent prompt is required');
     }
 
     // Update the node with form values
-    const updatedNode = {
-      ...node,
+    updateNode(node.id, {
       name,
       icon: selectedIcon,
       agentType,
@@ -116,11 +101,13 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
       maxConsecutiveReplies,
       version,
       settings,
-      versionedId: versionedAgent?.id || node.versionedId
-    };
-    
-    updateNode(updatedNode);
+    });
   });
+
+  // Create a wrapper function that always returns Promise<void>
+  const handleSave = async () => {
+    await execute();
+  };
 
   // Handle cancel operation
   const handleCancel = () => {
@@ -149,114 +136,112 @@ const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({ node }) => {
     >
       <Grid container spacing={3}>
         {/* Basic Information */}
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Agent Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </Grid>
+        
+        <Grid item xs={12} sm={6}>
+          <AgentTypeSelector
+            value={agentType}
+            onChange={setAgentType}
+          />
+        </Grid>
+        
         <Grid item xs={12}>
-          <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
-            Basic Information
-          </Typography>
+          <TextField
+            fullWidth
+            label="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            multiline
+            rows={2}
+          />
+        </Grid>
+        
+        <Grid item xs={12}>
+          <AgentIconSelector
+            selectedIcon={selectedIcon}
+            onSelectIcon={setSelectedIcon}
+          />
+        </Grid>
+        
+        <Grid item xs={12}>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="h6" sx={{ mb: 2 }}>Model Configuration</Typography>
           
           <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <FormField label="Agent Name" required>
-                <TextField
-                  fullWidth
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter agent name"
-                  size="small"
-                />
-              </FormField>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>LLM Model</InputLabel>
+                <Select
+                  value={llmModel}
+                  onChange={(e) => setLlmModel(e.target.value)}
+                  label="LLM Model"
+                >
+                  {LLM_MODELS.map((model) => (
+                    <MenuItem key={model.value} value={model.value}>
+                      {model.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             
-            <Grid item xs={12}>
-              <FormField label="Description">
-                <TextField
-                  fullWidth
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe what this agent does"
-                  size="small"
-                  multiline
-                  rows={2}
-                />
-              </FormField>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Credentials Source</InputLabel>
+                <Select
+                  value={credentialsSource}
+                  onChange={(e) => setCredentialsSource(e.target.value)}
+                  label="Credentials Source"
+                >
+                  {CREDENTIALS_SOURCES.map((source) => (
+                    <MenuItem key={source.value} value={source.value}>
+                      {source.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             
-            <Grid item xs={12}>
-              <FormField label="Version">
-                <TextField
-                  fullWidth
-                  value={version}
-                  onChange={(e) => setVersion(e.target.value)}
-                  placeholder="1.0.0"
-                  size="small"
-                />
-              </FormField>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Max Consecutive Replies"
+                type="number"
+                value={maxConsecutiveReplies}
+                onChange={(e) => setMaxConsecutiveReplies(parseInt(e.target.value))}
+                InputProps={{ inputProps: { min: 1, max: 10 } }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <AgentVersionControl
+                version={version}
+                onVersionChange={setVersion}
+              />
             </Grid>
           </Grid>
         </Grid>
         
-        {/* Agent Type */}
         <Grid item xs={12}>
-          <FormField label="Agent Type" required>
-            <FormControl component="fieldset">
-              <RadioGroup
-                row
-                value={agentType}
-                onChange={(e) => setAgentType(e.target.value)}
-              >
-                {AGENT_TYPES.map((type) => (
-                  <FormControl key={type.value} sx={{ mr: 2 }}>
-                    <Radio
-                      value={type.value}
-                      id={`agent-type-${type.value}`}
-                    />
-                    <label htmlFor={`agent-type-${type.value}`}>
-                      <Typography variant="body2">{type.label}</Typography>
-                    </label>
-                  </FormControl>
-                ))}
-              </RadioGroup>
-            </FormControl>
-          </FormField>
-        </Grid>
-        
-        {/* Agent Icon */}
-        <Grid item xs={12}>
-          <FormField label="Agent Icon">
-            <AgentIconSelector
-              selectedIcon={selectedIcon}
-              onSelectIcon={setSelectedIcon}
-              sx={{ mt: 1 }}
-            />
-          </FormField>
-        </Grid>
-        
-        {/* Agent Prompt */}
-        <Grid item xs={12}>
+          <Divider sx={{ my: 2 }} />
           <AgentPromptEditor
             prompt={prompt}
             onPromptChange={setPrompt}
             enableMarkdown={enableMarkdown}
             onEnableMarkdownChange={setEnableMarkdown}
-            sx={{ mt: 2 }}
           />
         </Grid>
         
-        {/* Model Settings */}
         <Grid item xs={12}>
-          <AgentModelSettings
-            llmModel={llmModel}
-            onLlmModelChange={setLlmModel}
-            credentialsSource={credentialsSource}
-            onCredentialsSourceChange={setCredentialsSource}
-            maxConsecutiveReplies={maxConsecutiveReplies}
-            onMaxConsecutiveRepliesChange={setMaxConsecutiveReplies}
-            sx={{ mt: 2 }}
-          />
-        </Grid>
-        
-        {/* Agent Settings */}
-        <Grid item xs={12}>
+          <Divider sx={{ my: 2 }} />
           <AgentSettings
             settings={settings}
             onSettingsChange={setSettings}

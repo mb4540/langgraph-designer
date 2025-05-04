@@ -45,10 +45,10 @@ export function useWorkflowNode(
   options: UseWorkflowNodeOptions = {}
 ): UseWorkflowNodeResult {
   const { autoSaveOnUnmount = false, onSaveSuccess, onSaveError } = options;
-  const { getNode, updateNode: updateWorkflowNode } = useWorkflowContext();
+  const { nodes, updateNode: updateWorkflowNode } = useWorkflowContext();
   
   // Get the initial node
-  const initialNode = getNode(nodeId);
+  const initialNode = nodes.find(node => node.id === nodeId);
   if (!initialNode) {
     throw new Error(`Node with ID ${nodeId} not found`);
   }
@@ -59,12 +59,12 @@ export function useWorkflowNode(
   
   // Update the node when it changes in the workflow
   useEffect(() => {
-    const currentNode = getNode(nodeId);
+    const currentNode = nodes.find(node => node.id === nodeId);
     if (currentNode) {
       setNode(currentNode);
       setOriginalNode(currentNode);
     }
-  }, [nodeId, getNode]);
+  }, [nodeId, nodes]);
   
   // Check if the node has been modified
   const isModified = useCallback(() => {
@@ -92,7 +92,7 @@ export function useWorkflowNode(
         ...updates
       };
       
-      updateWorkflowNode(updatedNode);
+      updateWorkflowNode(updatedNode.id, updatedNode);
       setOriginalNode(updatedNode);
       
       return updatedNode;

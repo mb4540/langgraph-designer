@@ -14,13 +14,21 @@ import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
-import { ParallelForkOperatorConfig as ParallelForkConfig } from '../../../../types/nodeTypes';
+import { ParallelForkOperatorConfig as ParallelForkConfig, OperatorType } from '../../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../../context/WorkflowContext';
 import { FormField } from '../common';
 
 interface ParallelForkOperatorConfigProps {
   config: ParallelForkConfig;
   onConfigChange: (config: ParallelForkConfig) => void;
+}
+
+// Extended config interface with UI-specific properties
+interface ExtendedParallelForkConfig extends ParallelForkConfig {
+  join_node_id?: string;
+  wait_for_all?: boolean;
+  timeout_seconds?: number;
+  branches?: Record<string, string>;
 }
 
 /**
@@ -34,18 +42,21 @@ const ParallelForkOperatorConfig: React.FC<ParallelForkOperatorConfigProps> = ({
   const [newBranchName, setNewBranchName] = useState('');
   const [newBranchTarget, setNewBranchTarget] = useState('');
   
-  const handleChange = (field: keyof ParallelForkConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedParallelForkConfig;
+  
+  const handleChange = (field: keyof ExtendedParallelForkConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as ParallelForkConfig);
   };
   
   const handleAddBranch = () => {
     if (!newBranchName || !newBranchTarget) return;
     
     const newBranches = {
-      ...(config.branches || {}),
+      ...(extendedConfig.branches || {}),
       [newBranchName]: newBranchTarget
     };
     
@@ -55,7 +66,7 @@ const ParallelForkOperatorConfig: React.FC<ParallelForkOperatorConfigProps> = ({
   };
   
   const handleRemoveBranch = (branchName: string) => {
-    const newBranches = { ...(config.branches || {}) };
+    const newBranches = { ...(extendedConfig.branches || {}) };
     delete newBranches[branchName];
     handleChange('branches', newBranches);
   };
@@ -72,13 +83,13 @@ const ParallelForkOperatorConfig: React.FC<ParallelForkOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.join_node_id || ''}
+            value={extendedConfig.join_node_id || ''}
             onChange={(e) => handleChange('join_node_id', e.target.value)}
             displayEmpty
           >
             <MenuItem value=""><em>Select a join node</em></MenuItem>
             {nodes
-              .filter(node => node.type === 'PARALLEL_JOIN')
+              .filter(node => node.operatorType === OperatorType.ParallelJoin)
               .map(node => (
                 <MenuItem key={node.id} value={node.id}>
                   {node.name || `Join ${node.id.slice(0, 8)}`}
@@ -88,11 +99,11 @@ const ParallelForkOperatorConfig: React.FC<ParallelForkOperatorConfigProps> = ({
         </FormControl>
       </FormField>
       
-      <FormField>
+      <FormField label="Branch Completion">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.wait_for_all || true}
+              checked={extendedConfig.wait_for_all ?? true}
               onChange={(e) => handleChange('wait_for_all', e.target.checked)}
             />
           }
@@ -110,7 +121,7 @@ const ParallelForkOperatorConfig: React.FC<ParallelForkOperatorConfigProps> = ({
         <TextField
           fullWidth
           type="number"
-          value={config.timeout_seconds || ''}
+          value={extendedConfig.timeout_seconds || ''}
           onChange={(e) => handleChange('timeout_seconds', e.target.value ? parseInt(e.target.value) : undefined)}
           size="small"
           inputProps={{ min: 0 }}
@@ -123,9 +134,9 @@ const ParallelForkOperatorConfig: React.FC<ParallelForkOperatorConfigProps> = ({
       </Typography>
       
       {/* Existing branches */}
-      {Object.keys(config.branches || {}).length > 0 && (
+      {Object.keys(extendedConfig.branches || {}).length > 0 && (
         <Box sx={{ mb: 2 }}>
-          {Object.entries(config.branches || {}).map(([branchName, targetId]) => (
+          {Object.entries(extendedConfig.branches || {}).map(([branchName, targetId]) => (
             <Paper key={branchName} variant="outlined" sx={{ p: 2, mb: 1 }}>
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={4}>
@@ -183,7 +194,7 @@ const ParallelForkOperatorConfig: React.FC<ParallelForkOperatorConfigProps> = ({
               >
                 {nodes.map(node => (
                   <MenuItem key={node.id} value={node.id}>
-                    {node.name || `${node.type} ${node.id.slice(0, 8)}`}
+                    {node.name || `${node.operatorType} ${node.id.slice(0, 8)}`}
                   </MenuItem>
                 ))}
               </Select>

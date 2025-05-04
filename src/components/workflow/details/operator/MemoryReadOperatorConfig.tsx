@@ -17,6 +17,24 @@ interface MemoryReadOperatorConfigProps {
   onConfigChange: (config: MemoryReadConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedMemoryReadConfig extends Omit<MemoryReadConfig, 'query'> {
+  // UI-specific properties and optional versions of required properties
+  memory_node_id?: string;
+  read_mode?: 'exact' | 'prefix' | 'semantic' | 'filter' | 'latest';
+  memory_key?: string;
+  key_prefix?: string;
+  query?: string; // Make optional for UI state management
+  max_results?: number;
+  similarity_threshold?: number;
+  filter_function?: string;
+  entry_count?: number;
+  result_key?: string;
+  transform_result?: boolean;
+  transform_function?: string;
+  fail_on_missing?: boolean;
+}
+
 // Memory read modes
 const MEMORY_READ_MODES = [
   { value: 'exact', label: 'Exact Key', description: 'Read a specific key from memory' },
@@ -35,11 +53,14 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
 }) => {
   const { nodes } = useWorkflowContext();
   
-  const handleChange = (field: keyof MemoryReadConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedMemoryReadConfig;
+  
+  const handleChange = (field: keyof ExtendedMemoryReadConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as MemoryReadConfig);
   };
 
   return (
@@ -55,7 +76,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.memory_node_id || ''}
+            value={extendedConfig.memory_node_id || ''}
             onChange={(e) => handleChange('memory_node_id', e.target.value)}
             displayEmpty
           >
@@ -78,7 +99,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.read_mode || 'exact'}
+            value={extendedConfig.read_mode || 'exact'}
             onChange={(e) => handleChange('read_mode', e.target.value)}
           >
             {MEMORY_READ_MODES.map(mode => (
@@ -89,11 +110,11 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
           </Select>
         </FormControl>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-          {MEMORY_READ_MODES.find(m => m.value === (config.read_mode || 'exact'))?.description}
+          {MEMORY_READ_MODES.find(m => m.value === (extendedConfig.read_mode || 'exact'))?.description}
         </Typography>
       </FormField>
       
-      {config.read_mode === 'exact' && (
+      {extendedConfig.read_mode === 'exact' && (
         <FormField
           label="Memory Key"
           required
@@ -101,7 +122,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
         >
           <TextField
             fullWidth
-            value={config.memory_key || ''}
+            value={extendedConfig.memory_key || ''}
             onChange={(e) => handleChange('memory_key', e.target.value)}
             size="small"
             placeholder="conversation_history"
@@ -109,7 +130,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
         </FormField>
       )}
       
-      {config.read_mode === 'prefix' && (
+      {extendedConfig.read_mode === 'prefix' && (
         <FormField
           label="Key Prefix"
           required
@@ -117,7 +138,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
         >
           <TextField
             fullWidth
-            value={config.key_prefix || ''}
+            value={extendedConfig.key_prefix || ''}
             onChange={(e) => handleChange('key_prefix', e.target.value)}
             size="small"
             placeholder="user_"
@@ -125,7 +146,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
         </FormField>
       )}
       
-      {config.read_mode === 'semantic' && (
+      {extendedConfig.read_mode === 'semantic' && (
         <>
           <FormField
             label="Query"
@@ -134,7 +155,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
           >
             <TextField
               fullWidth
-              value={config.query || ''}
+              value={extendedConfig.query || ''}
               onChange={(e) => handleChange('query', e.target.value)}
               size="small"
               placeholder="{{state.user_query}}"
@@ -148,7 +169,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
             <TextField
               fullWidth
               type="number"
-              value={config.max_results || ''}
+              value={extendedConfig.max_results || ''}
               onChange={(e) => handleChange('max_results', e.target.value ? parseInt(e.target.value) : undefined)}
               size="small"
               inputProps={{ min: 1 }}
@@ -163,7 +184,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
             <TextField
               fullWidth
               type="number"
-              value={config.similarity_threshold || ''}
+              value={extendedConfig.similarity_threshold || ''}
               onChange={(e) => handleChange('similarity_threshold', e.target.value ? parseFloat(e.target.value) : undefined)}
               size="small"
               inputProps={{ min: 0, max: 1, step: 0.01 }}
@@ -173,22 +194,22 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
         </>
       )}
       
-      {config.read_mode === 'filter' && (
+      {extendedConfig.read_mode === 'filter' && (
         <FormField
           label="Filter Function"
           required
           helperText="JavaScript function to filter memory entries"
         >
           <CodeEditor
-            value={config.filter_function || 'function filterMemory(entry, state) {\n  // Example: Filter entries by date range\n  return entry.timestamp > state.start_date && entry.timestamp < state.end_date;\n}'}
-            onChange={(value) => handleChange('filter_function', value)}
+            code={extendedConfig.filter_function || 'function filterMemory(entry, state) {\n  // Example: Filter entries by date range\n  return entry.timestamp > state.start_date && entry.timestamp < state.end_date;\n}'}
+            onCodeChange={(code) => handleChange('filter_function', code)}
             language="javascript"
             height="150px"
           />
         </FormField>
       )}
       
-      {config.read_mode === 'latest' && (
+      {extendedConfig.read_mode === 'latest' && (
         <FormField
           label="Entry Count"
           required
@@ -197,7 +218,7 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
           <TextField
             fullWidth
             type="number"
-            value={config.entry_count || ''}
+            value={extendedConfig.entry_count || ''}
             onChange={(e) => handleChange('entry_count', e.target.value ? parseInt(e.target.value) : undefined)}
             size="small"
             inputProps={{ min: 1 }}
@@ -213,18 +234,18 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
       >
         <TextField
           fullWidth
-          value={config.result_key || ''}
+          value={extendedConfig.result_key || ''}
           onChange={(e) => handleChange('result_key', e.target.value)}
           size="small"
           placeholder="memory_data"
         />
       </FormField>
       
-      <FormField>
+      <FormField label="Result Transformation">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.transform_result || false}
+              checked={extendedConfig.transform_result || false}
               onChange={(e) => handleChange('transform_result', e.target.checked)}
             />
           }
@@ -235,26 +256,26 @@ const MemoryReadOperatorConfig: React.FC<MemoryReadOperatorConfigProps> = ({
         </Typography>
       </FormField>
       
-      {config.transform_result && (
+      {extendedConfig.transform_result && (
         <FormField
           label="Transform Function"
           required
           helperText="JavaScript function to transform memory data"
         >
           <CodeEditor
-            value={config.transform_function || 'function transformMemory(memoryData, state) {\n  // Example: Format and combine memory entries\n  return {\n    formatted: memoryData.map(entry => `${entry.timestamp}: ${entry.content}`).join("\n"),\n    count: memoryData.length\n  };\n}'}
-            onChange={(value) => handleChange('transform_function', value)}
+            code={extendedConfig.transform_function || 'function transformMemory(memoryData, state) {\n  // Example: Format and combine memory entries\n  return {\n    formatted: memoryData.map(entry => `${entry.timestamp}: ${entry.content}`).join("\n"),\n    count: memoryData.length\n  };\n}'}
+            onCodeChange={(code) => handleChange('transform_function', code)}
             language="javascript"
             height="150px"
           />
         </FormField>
       )}
       
-      <FormField>
+      <FormField label="Error Handling">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.fail_on_missing || false}
+              checked={extendedConfig.fail_on_missing || false}
               onChange={(e) => handleChange('fail_on_missing', e.target.checked)}
             />
           }

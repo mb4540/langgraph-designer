@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
 import Box from '@mui/material/Box';
-import { WorkflowNode } from '../../../../types/nodeTypes';
 import ErrorMessage from '../../../ui/ErrorMessage';
-import useAsyncOperation from '../../../../hooks/useAsyncOperation';
-import { useWorkflowContext } from '../../../../context/WorkflowContext';
 
 export interface BaseNodeFormProps {
-  node: WorkflowNode;
+  title: string;
   children: React.ReactNode;
-  onSave?: () => Promise<void>;
-  onCancel?: () => void;
+  onSave: () => Promise<void>;
+  onCancel: () => void;
+  loading?: boolean;
+  error?: Error | null;
+  nodeId?: string;
   isModified?: boolean;
 }
 
@@ -20,41 +20,20 @@ export interface BaseNodeFormProps {
  * - Window-level function exposure for the parent DetailsPanel
  */
 const BaseNodeForm: React.FC<BaseNodeFormProps> = ({
-  node,
+  title,
   children,
   onSave,
   onCancel,
+  loading = false,
+  error = null,
+  nodeId,
   isModified = false
 }) => {
-  const { updateNode } = useWorkflowContext();
-
-  // Handle saving node details
-  const { 
-    loading: saveLoading, 
-    error: saveError, 
-    execute: executeSave,
-    reset: resetSaveError
-  } = useAsyncOperation<void>(async () => {
-    if (onSave) {
-      await onSave();
-    }
-  });
-
-  const handleSave = () => {
-    executeSave();
-  };
-
-  const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    }
-  };
-
   // Expose the functions to save and cancel changes
   useEffect(() => {
     // Expose functions for the DetailsPanel to call
-    (window as any).saveNodeChanges = handleSave;
-    (window as any).cancelNodeChanges = handleCancel;
+    (window as any).saveNodeChanges = onSave;
+    (window as any).cancelNodeChanges = onCancel;
     (window as any).isNodeModified = isModified;
 
     return () => {
@@ -63,25 +42,26 @@ const BaseNodeForm: React.FC<BaseNodeFormProps> = ({
       delete (window as any).cancelNodeChanges;
       delete (window as any).isNodeModified;
     };
-  }, [isModified]);
+  }, [isModified, onSave, onCancel]);
 
   return (
-    <>
+    <Box sx={{ p: 2 }}>
+      <Box sx={{ mb: 3 }}>
+        <h2>{title}</h2>
+      </Box>
+      
       {children}
       
-      {saveError && (
+      {error && (
         <Box sx={{ mb: 2 }}>
           <ErrorMessage 
             message="Failed to save changes" 
-            details={saveError.message}
-            onRetry={() => {
-              resetSaveError();
-              executeSave();
-            }}
+            details={error.message}
+            onRetry={onSave}
           />
         </Box>
       )}
-    </>
+    </Box>
   );
 };
 

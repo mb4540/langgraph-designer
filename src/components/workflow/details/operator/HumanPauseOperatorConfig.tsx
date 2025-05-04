@@ -16,6 +16,18 @@ interface HumanPauseOperatorConfigProps {
   onConfigChange: (config: HumanPauseConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedHumanPauseConfig extends HumanPauseConfig {
+  message?: string;
+  notification_channel?: 'email' | 'slack' | 'teams' | 'webhook' | 'sms' | 'none';
+  notification_recipients?: string;
+  timeout_minutes?: number;
+  require_approval?: boolean;
+  allow_modifications?: boolean;
+  editable_fields?: string[];
+  on_timeout_action?: string;
+}
+
 // Notification channel options
 const NOTIFICATION_CHANNELS = [
   { value: 'email', label: 'Email' },
@@ -33,11 +45,14 @@ const HumanPauseOperatorConfig: React.FC<HumanPauseOperatorConfigProps> = ({
   config,
   onConfigChange
 }) => {
-  const handleChange = (field: keyof HumanPauseConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedHumanPauseConfig;
+  
+  const handleChange = (field: keyof ExtendedHumanPauseConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as HumanPauseConfig);
   };
 
   return (
@@ -55,7 +70,7 @@ const HumanPauseOperatorConfig: React.FC<HumanPauseOperatorConfigProps> = ({
           fullWidth
           multiline
           rows={3}
-          value={config.message || ''}
+          value={extendedConfig.message || ''}
           onChange={(e) => handleChange('message', e.target.value)}
           size="small"
           placeholder="Please review the following information and approve to continue..."
@@ -68,7 +83,7 @@ const HumanPauseOperatorConfig: React.FC<HumanPauseOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.notification_channel || 'none'}
+            value={extendedConfig.notification_channel || 'none'}
             onChange={(e) => handleChange('notification_channel', e.target.value)}
           >
             {NOTIFICATION_CHANNELS.map(channel => (
@@ -80,22 +95,22 @@ const HumanPauseOperatorConfig: React.FC<HumanPauseOperatorConfigProps> = ({
         </FormControl>
       </FormField>
       
-      {config.notification_channel && config.notification_channel !== 'none' && (
+      {extendedConfig.notification_channel && extendedConfig.notification_channel !== 'none' && (
         <FormField
           label="Notification Recipients"
           required
-          helperText={`Recipients for ${config.notification_channel} notifications (comma-separated)`}
+          helperText={`Recipients for ${extendedConfig.notification_channel} notifications (comma-separated)`}
         >
           <TextField
             fullWidth
-            value={config.notification_recipients || ''}
+            value={extendedConfig.notification_recipients || ''}
             onChange={(e) => handleChange('notification_recipients', e.target.value)}
             size="small"
-            placeholder={config.notification_channel === 'email' 
+            placeholder={extendedConfig.notification_channel === 'email' 
               ? 'user@example.com, another@example.com'
-              : config.notification_channel === 'slack' || config.notification_channel === 'teams'
+              : extendedConfig.notification_channel === 'slack' || extendedConfig.notification_channel === 'teams'
                 ? '#channel-name, @username'
-                : config.notification_channel === 'webhook'
+                : extendedConfig.notification_channel === 'webhook'
                   ? 'https://example.com/webhook'
                   : '+1234567890, +9876543210'
             }
@@ -110,7 +125,7 @@ const HumanPauseOperatorConfig: React.FC<HumanPauseOperatorConfigProps> = ({
         <TextField
           fullWidth
           type="number"
-          value={config.timeout_minutes || ''}
+          value={extendedConfig.timeout_minutes || ''}
           onChange={(e) => handleChange('timeout_minutes', e.target.value ? parseInt(e.target.value) : undefined)}
           size="small"
           inputProps={{ min: 0 }}
@@ -118,11 +133,11 @@ const HumanPauseOperatorConfig: React.FC<HumanPauseOperatorConfigProps> = ({
         />
       </FormField>
       
-      <FormField>
+      <FormField label="Approval Settings">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.require_approval || true}
+              checked={extendedConfig.require_approval ?? true}
               onChange={(e) => handleChange('require_approval', e.target.checked)}
             />
           }
@@ -133,11 +148,11 @@ const HumanPauseOperatorConfig: React.FC<HumanPauseOperatorConfigProps> = ({
         </Typography>
       </FormField>
       
-      <FormField>
+      <FormField label="Modification Settings">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.allow_modifications || false}
+              checked={extendedConfig.allow_modifications || false}
               onChange={(e) => handleChange('allow_modifications', e.target.checked)}
             />
           }
@@ -148,14 +163,14 @@ const HumanPauseOperatorConfig: React.FC<HumanPauseOperatorConfigProps> = ({
         </Typography>
       </FormField>
       
-      {config.allow_modifications && (
+      {extendedConfig.allow_modifications && (
         <FormField
           label="Editable Fields"
           helperText="Comma-separated list of state fields that can be modified by the user"
         >
           <TextField
             fullWidth
-            value={(config.editable_fields || []).join(', ')}
+            value={(extendedConfig.editable_fields || []).join(', ')}
             onChange={(e) => handleChange('editable_fields', e.target.value.split(',').map(f => f.trim()).filter(Boolean))}
             size="small"
             placeholder="field1, field2, field3"
@@ -168,8 +183,8 @@ const HumanPauseOperatorConfig: React.FC<HumanPauseOperatorConfigProps> = ({
         helperText="JavaScript expression to execute if timeout occurs"
       >
         <CodeEditor
-          value={config.on_timeout_action || ''}
-          onChange={(value) => handleChange('on_timeout_action', value)}
+          code={extendedConfig.on_timeout_action || ''}
+          onCodeChange={(code) => handleChange('on_timeout_action', code)}
           language="javascript"
           height="100px"
           placeholder="// Example: Set a default value and continue\nstate.approval_status = 'timed_out';\nreturn state;"

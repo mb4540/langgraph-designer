@@ -15,6 +15,12 @@ interface StartOperatorConfigProps {
   onConfigChange: (config: StartConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedStartConfig extends StartConfig {
+  // UI-specific properties can be added here
+  // All properties from StartConfig are already inherited
+}
+
 // Trigger type options
 const TRIGGER_TYPES: { value: TriggerType; label: string; description: string }[] = [
   { value: 'human', label: 'Human Triggered', description: 'Workflow is started by a human user' },
@@ -37,11 +43,14 @@ const StartOperatorConfig: React.FC<StartOperatorConfigProps> = ({
   config,
   onConfigChange
 }) => {
-  const handleChange = (field: keyof StartConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedStartConfig;
+  
+  const handleChange = (field: keyof ExtendedStartConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as StartConfig);
   };
 
   return (
@@ -57,7 +66,7 @@ const StartOperatorConfig: React.FC<StartOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.trigger_type || 'human'}
+            value={extendedConfig.trigger_type || 'human'}
             onChange={(e) => handleChange('trigger_type', e.target.value)}
           >
             {TRIGGER_TYPES.map(type => (
@@ -69,11 +78,11 @@ const StartOperatorConfig: React.FC<StartOperatorConfigProps> = ({
         </FormControl>
       </FormField>
       
-      <FormField>
+      <FormField label="Resume Options">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.resume_capable || false}
+              checked={extendedConfig.resume_capable || false}
               onChange={(e) => handleChange('resume_capable', e.target.checked)}
             />
           }
@@ -84,7 +93,7 @@ const StartOperatorConfig: React.FC<StartOperatorConfigProps> = ({
         </Typography>
       </FormField>
       
-      {config.trigger_type === 'event' && (
+      {extendedConfig.trigger_type === 'event' && (
         <>
           <FormField
             label="Event Source"
@@ -93,7 +102,7 @@ const StartOperatorConfig: React.FC<StartOperatorConfigProps> = ({
           >
             <FormControl fullWidth size="small">
               <Select
-                value={config.event_source || 'webhook'}
+                value={extendedConfig.event_source || 'webhook'}
                 onChange={(e) => handleChange('event_source', e.target.value)}
               >
                 {EVENT_SOURCES.map(source => (
@@ -106,21 +115,21 @@ const StartOperatorConfig: React.FC<StartOperatorConfigProps> = ({
           </FormField>
           
           <FormField
-            label={config.event_source === 'cron' ? 'Cron Expression' : 'Event Topic/Path'}
+            label={extendedConfig.event_source === 'cron' ? 'Cron Expression' : 'Event Topic/Path'}
             required
-            helperText={config.event_source === 'cron' 
+            helperText={extendedConfig.event_source === 'cron' 
               ? 'Schedule using cron syntax (e.g., "0 0 * * *" for daily at midnight)'
               : 'Topic, path, or identifier for the event source'
             }
           >
             <TextField
               fullWidth
-              value={config.event_topic || ''}
+              value={extendedConfig.event_topic || ''}
               onChange={(e) => handleChange('event_topic', e.target.value)}
               size="small"
-              placeholder={config.event_source === 'cron' 
+              placeholder={extendedConfig.event_source === 'cron' 
                 ? '0 0 * * *' 
-                : config.event_source === 'webhook' 
+                : extendedConfig.event_source === 'webhook' 
                   ? '/api/webhooks/my-workflow'
                   : 'my-topic'
               }
@@ -129,12 +138,12 @@ const StartOperatorConfig: React.FC<StartOperatorConfigProps> = ({
         </>
       )}
       
-      {config.trigger_type === 'multi' && (
-        <FormField>
+      {extendedConfig.trigger_type === 'multi' && (
+        <FormField label="Multi-Start Options">
           <FormControlLabel
             control={
               <Checkbox
-                checked={config.wait_for_all_start_nodes || false}
+                checked={extendedConfig.wait_for_all_start_nodes || false}
                 onChange={(e) => handleChange('wait_for_all_start_nodes', e.target.checked)}
               />
             }

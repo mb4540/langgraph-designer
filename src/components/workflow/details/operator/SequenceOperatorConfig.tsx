@@ -23,6 +23,14 @@ interface SequenceOperatorConfigProps {
   onConfigChange: (config: SequenceConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedSequenceConfig extends SequenceConfig {
+  stop_on_error?: boolean;
+  error_handler_node?: string;
+  steps?: string[];
+  state_key_prefix?: string;
+}
+
 /**
  * Component for configuring a sequence operator
  */
@@ -33,34 +41,37 @@ const SequenceOperatorConfig: React.FC<SequenceOperatorConfigProps> = ({
   const { nodes } = useWorkflowContext();
   const [newNodeId, setNewNodeId] = useState('');
   
-  const handleChange = (field: keyof SequenceConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedSequenceConfig;
+  
+  const handleChange = (field: keyof ExtendedSequenceConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as SequenceConfig);
   };
   
   const handleAddStep = () => {
     if (!newNodeId) return;
     
-    const newSteps = [...(config.steps || []), newNodeId];
+    const newSteps = [...(extendedConfig.steps || []), newNodeId];
     handleChange('steps', newSteps);
     setNewNodeId('');
   };
   
   const handleRemoveStep = (index: number) => {
-    const newSteps = [...(config.steps || [])];
+    const newSteps = [...(extendedConfig.steps || [])];
     newSteps.splice(index, 1);
     handleChange('steps', newSteps);
   };
   
   const moveStep = (index: number, direction: 'up' | 'down') => {
-    if (!config.steps || config.steps.length < 2) return;
+    if (!extendedConfig.steps || extendedConfig.steps.length < 2) return;
     
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= config.steps.length) return;
+    if (newIndex < 0 || newIndex >= extendedConfig.steps.length) return;
     
-    const newSteps = [...config.steps];
+    const newSteps = [...extendedConfig.steps];
     const temp = newSteps[index];
     newSteps[index] = newSteps[newIndex];
     newSteps[newIndex] = temp;
@@ -74,11 +85,11 @@ const SequenceOperatorConfig: React.FC<SequenceOperatorConfigProps> = ({
         Sequence Configuration
       </Typography>
       
-      <FormField>
+      <FormField label="Error Handling">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.stop_on_error || false}
+              checked={extendedConfig.stop_on_error || false}
               onChange={(e) => handleChange('stop_on_error', e.target.checked)}
             />
           }
@@ -95,7 +106,7 @@ const SequenceOperatorConfig: React.FC<SequenceOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.error_handler_node || ''}
+            value={extendedConfig.error_handler_node || ''}
             onChange={(e) => handleChange('error_handler_node', e.target.value)}
             displayEmpty
           >
@@ -114,9 +125,9 @@ const SequenceOperatorConfig: React.FC<SequenceOperatorConfigProps> = ({
       </Typography>
       
       {/* Existing steps */}
-      {(config.steps || []).length > 0 ? (
+      {(extendedConfig.steps || []).length > 0 ? (
         <Box sx={{ mb: 2 }}>
-          {(config.steps || []).map((nodeId, index) => {
+          {(extendedConfig.steps || []).map((nodeId, index) => {
             const node = nodes.find(n => n.id === nodeId);
             return (
               <Paper key={index} variant="outlined" sx={{ p: 2, mb: 1 }}>
@@ -140,7 +151,7 @@ const SequenceOperatorConfig: React.FC<SequenceOperatorConfigProps> = ({
                     </IconButton>
                     <IconButton 
                       size="small" 
-                      disabled={index === (config.steps || []).length - 1}
+                      disabled={index === (extendedConfig.steps || []).length - 1}
                       onClick={() => moveStep(index, 'down')}
                       aria-label="move step down"
                     >
@@ -212,7 +223,7 @@ const SequenceOperatorConfig: React.FC<SequenceOperatorConfigProps> = ({
       >
         <TextField
           fullWidth
-          value={config.state_key_prefix || ''}
+          value={extendedConfig.state_key_prefix || ''}
           onChange={(e) => handleChange('state_key_prefix', e.target.value)}
           size="small"
           placeholder="sequence_1_"

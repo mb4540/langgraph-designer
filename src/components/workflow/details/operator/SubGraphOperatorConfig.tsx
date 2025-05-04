@@ -19,6 +19,18 @@ interface SubGraphOperatorConfigProps {
   onConfigChange: (config: SubGraphConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedSubGraphConfig extends Omit<SubGraphConfig, 'input_mapping' | 'output_mapping'> {
+  // UI-specific properties that aren't in the base interface
+  input_mapping?: string;
+  output_mapping?: string;
+  error_handler?: string;
+  parameters?: Record<string, any>;
+  workflow_id?: string;
+  version?: string;
+  isolate_state?: boolean;
+}
+
 /**
  * Component for configuring a sub-graph operator
  */
@@ -33,11 +45,14 @@ const SubGraphOperatorConfig: React.FC<SubGraphOperatorConfigProps> = ({
     { id: 'workflow4', name: 'Document Analysis Graph' },
   ]);
   
-  const handleChange = (field: keyof SubGraphConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedSubGraphConfig;
+  
+  const handleChange = (field: keyof ExtendedSubGraphConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as SubGraphConfig);
   };
 
   return (
@@ -53,7 +68,7 @@ const SubGraphOperatorConfig: React.FC<SubGraphOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.workflow_id || ''}
+            value={extendedConfig.workflow_id || ''}
             onChange={(e) => handleChange('workflow_id', e.target.value)}
             displayEmpty
           >
@@ -73,18 +88,18 @@ const SubGraphOperatorConfig: React.FC<SubGraphOperatorConfigProps> = ({
       >
         <TextField
           fullWidth
-          value={config.version || ''}
+          value={extendedConfig.version || ''}
           onChange={(e) => handleChange('version', e.target.value)}
           size="small"
           placeholder="latest"
         />
       </FormField>
       
-      <FormField>
+      <FormField label="State Isolation">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.isolate_state || true}
+              checked={extendedConfig.isolate_state ?? true}
               onChange={(e) => handleChange('isolate_state', e.target.checked)}
             />
           }
@@ -100,8 +115,8 @@ const SubGraphOperatorConfig: React.FC<SubGraphOperatorConfigProps> = ({
         helperText="JavaScript code to map parent state to sub-graph input"
       >
         <CodeEditor
-          value={config.input_mapping || 'function mapInput(parentState) {\n  // Example: Pass specific fields to sub-graph\n  return {\n    query: parentState.user_query,\n    context: parentState.context\n  };\n}'}
-          onChange={(value) => handleChange('input_mapping', value)}
+          code={extendedConfig.input_mapping || 'function mapInput(parentState) {\n  // Example: Pass specific fields to sub-graph\n  return {\n    query: parentState.user_query,\n    context: parentState.context\n  };\n}'}
+          onCodeChange={(code) => handleChange('input_mapping', code)}
           language="javascript"
           height="150px"
         />
@@ -112,8 +127,8 @@ const SubGraphOperatorConfig: React.FC<SubGraphOperatorConfigProps> = ({
         helperText="JavaScript code to map sub-graph output back to parent state"
       >
         <CodeEditor
-          value={config.output_mapping || 'function mapOutput(subGraphOutput, parentState) {\n  // Example: Merge sub-graph results into parent state\n  return {\n    ...parentState,\n    sub_graph_result: subGraphOutput.result\n  };\n}'}
-          onChange={(value) => handleChange('output_mapping', value)}
+          code={extendedConfig.output_mapping || 'function mapOutput(subGraphOutput, parentState) {\n  // Example: Merge sub-graph results into parent state\n  return {\n    ...parentState,\n    sub_graph_result: subGraphOutput.result\n  };\n}'}
+          onCodeChange={(code) => handleChange('output_mapping', code)}
           language="javascript"
           height="150px"
         />
@@ -124,8 +139,8 @@ const SubGraphOperatorConfig: React.FC<SubGraphOperatorConfigProps> = ({
         helperText="JavaScript code to handle errors from the sub-graph"
       >
         <CodeEditor
-          value={config.error_handler || 'function handleError(error, parentState) {\n  // Example: Log error and continue\n  console.error("Sub-graph error:", error);\n  return {\n    ...parentState,\n    sub_graph_error: error.message\n  };\n}'}
-          onChange={(value) => handleChange('error_handler', value)}
+          code={extendedConfig.error_handler || 'function handleError(error, parentState) {\n  // Example: Log error and continue\n  console.error("Sub-graph error:", error);\n  return {\n    ...parentState,\n    sub_graph_error: error.message\n  };\n}'}
+          onCodeChange={(code) => handleChange('error_handler', code)}
           language="javascript"
           height="150px"
         />
@@ -143,7 +158,7 @@ const SubGraphOperatorConfig: React.FC<SubGraphOperatorConfigProps> = ({
               label="Parameters (JSON)"
               multiline
               rows={4}
-              value={config.parameters ? JSON.stringify(config.parameters, null, 2) : ''}
+              value={extendedConfig.parameters ? JSON.stringify(extendedConfig.parameters, null, 2) : ''}
               onChange={(e) => {
                 try {
                   const parsedParams = e.target.value ? JSON.parse(e.target.value) : {};
@@ -163,8 +178,8 @@ const SubGraphOperatorConfig: React.FC<SubGraphOperatorConfigProps> = ({
         <Button
           variant="outlined"
           size="small"
-          onClick={() => window.open(`/workflow/${config.workflow_id}`, '_blank')}
-          disabled={!config.workflow_id}
+          onClick={() => window.open(`/workflow/${extendedConfig.workflow_id}`, '_blank')}
+          disabled={!extendedConfig.workflow_id}
         >
           Open Workflow
         </Button>

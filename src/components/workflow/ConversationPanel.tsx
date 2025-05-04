@@ -5,38 +5,38 @@ import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import { Message } from '../../api/openai';
-import { NodeType } from '../../types/nodeTypes';
+import { useTheme } from '@mui/material/styles';
+
 import { useWorkflowContext } from '../../context/WorkflowContext';
 import LoadingIndicator from '../ui/LoadingIndicator';
 import ErrorMessage from '../ui/ErrorMessage';
+import useAsyncOperation from '../../hooks/useAsyncOperation';
 import TextField from '../ui/TextField';
 import Button from '../ui/Button';
 import Dialog from '../ui/Dialog';
+import { Message } from '../../api/openai';
 
+// Sample initial interview questions
 const initialInterview = [
-  'Welcome to Workflow Designer! What workflow are you trying to build?',
-  'What agents do you envision in this workflow? (e.g., Data Collector, Summarizer, Notifier)',
-  'What tools or actions should each agent have?',
-  'How do you want the agents to interact or pass information?',
-  'Would you like to start building this workflow visually now?'
+  "Welcome to the Workflow Designer! I'm here to help you build your workflow. What type of workflow would you like to create today?",
+  "Great! Can you tell me more about the specific tasks or processes this workflow should handle?",
+  "Would you like to build this visually using our workflow designer, or would you prefer I help you code it?"
 ];
 
 // Local storage key for the API key
 const API_KEY_STORAGE_KEY = 'openai_api_key';
 
 const ConversationPanel: React.FC = () => {
-  const { addNode, addEdge } = useWorkflowContext();
-  const [activeTab, setActiveTab] = useState<'build' | 'test'>('build');
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: initialInterview[0] }
-  ]);
-  const [testMessages, setTestMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Welcome to the Test Workflow mode. Here you can test your workflow and see the interactions between agents and tools.' }
-  ]);
-  const [input, setInput] = useState('');
-  const [step, setStep] = useState(0);
+  const theme = useTheme();
+  const { addNode } = useWorkflowContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // State for conversation
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
+  const [input, setInput] = useState<string>('');
+  const [step, setStep] = useState<number>(-1);
+  const [activeTab, setActiveTab] = useState<'chat' | 'test'>('chat');
+  const [testMessages, setTestMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
   
   // API key state
   const [apiKey, setApiKey] = useState<string>(() => {
@@ -92,7 +92,7 @@ const ConversationPanel: React.FC = () => {
     error: sendError, 
     execute: executeSend,
     reset: resetSendError
-  } = useAsyncOperation<Message>(async (newMessages: Message[]) => {
+  } = useAsyncOperation<Message>(async (newMessages: { role: 'user' | 'assistant', content: string }[]) => {
     if (step < initialInterview.length - 1) {
       return { role: 'assistant', content: initialInterview[step + 1] };
     } else {
@@ -110,105 +110,79 @@ const ConversationPanel: React.FC = () => {
         } else {
           return { 
             role: 'assistant', 
-            content: 'No problem. Let\'s continue discussing your workflow here. ' +
-                    'What specific aspects would you like to focus on?'
+            content: 'I understand you prefer guidance. Let me help you build your workflow step by step. ' +
+                    'What would be the first step or component you want to add to your workflow?'
           };
         }
       } else {
-        // For all other conversations, use OpenAI
-        const { openAIChat } = await import('../../api/openai');
-        const reply = await openAIChat(newMessages, undefined, apiKey);
-
-        // Check for agent or tool creation commands
-        processCommandsInMessage(reply.content);
-        return reply;
+        // For subsequent messages, we'll use a simple echo for now
+        // In a real implementation, this would call an LLM API
+        try {
+          const { openAIChat } = await import('../../api/openai');
+          return await openAIChat(newMessages, undefined, apiKey);
+        } catch (error) {
+          // Error is already handled by useAsyncOperation
+          throw error;
+        }
       }
     }
   });
 
+  // Handle sending a message
   const handleSend = async () => {
     if (!input.trim() || sendLoading) return;
     
-    if (activeTab === 'build') {
-      const newMessages: Message[] = [...messages, { role: 'user', content: input }];
-      setMessages(newMessages);
-      setInput('');
-      
-      try {
-        const reply = await executeSend(newMessages);
-        if (reply) {
-          setMessages([...newMessages, reply]);
-          setStep(step + 1);
-        }
-      } catch (error) {
-        // Error is already handled by useAsyncOperation
-        // Just log for debugging purposes
-        console.error('Error in handleSend:', error);
-      }
-    } else {
-      // Test workflow mode
-      const newMessages: Message[] = [...testMessages, { role: 'user', content: input }];
-      setTestMessages(newMessages);
-      setInput('');
-      
-      try {
-        // In a real implementation, this would execute the workflow and show agent interactions
-        // For now, we'll simulate a response
-        setTimeout(() => {
-          const agentResponse: Message = { role: 'assistant', content: `Agent response to: ${input}` };
-          setTestMessages([...newMessages, agentResponse]);
-        }, 1000);
-      } catch (error) {
-        console.error('Error in test workflow:', error);
-      }
-    }
-  };
-
-  // Process commands like "create agent" or "add tool" in the AI's response
-  const processCommandsInMessage = (content: string) => {
-    // Check for agent creation
-    const agentRegex = /create\s+agent\s+["']?([\w\s]+)["']?/i;
-    const agentMatch = content.match(agentRegex);
-    if (agentMatch && agentMatch[1]) {
-      const agentName = agentMatch[1].trim();
-      createNewNode('agent', agentName);
-    }
-
-    // Check for tool creation
-    const toolRegex = /create\s+tool\s+["']?([\w\s]+)["']?/i;
-    const toolMatch = content.match(toolRegex);
-    if (toolMatch && toolMatch[1]) {
-      const toolName = toolMatch[1].trim();
-      createNewNode('tool', toolName);
-    }
-
-    // Check for connection creation
-    const connectRegex = /connect\s+["']?([\w\s]+)["']?\s+to\s+["']?([\w\s]+)["']?/i;
-    const connectMatch = content.match(connectRegex);
-    if (connectMatch && connectMatch[1] && connectMatch[2]) {
-      // This is simplified; in a real app, you'd need to find the actual node IDs
-      // based on names and ensure they exist
-      console.log(`Connect ${connectMatch[1]} to ${connectMatch[2]}`);
-    }
-  };
-
-  // Create a new node in the workflow
-  const createNewNode = (type: NodeType, name: string) => {
-    const id = `node-${Date.now()}`;
-    const position = { 
-      x: 200 + Math.random() * 200, 
-      y: 100 + Math.random() * 200 
-    };
+    const userMessage = { role: 'user' as const, content: input };
+    const newMessages = [...messages, userMessage];
     
-    const content = type === 'agent' 
-      ? `This ${name} agent is responsible for processing data.`
-      : `function ${name.replace(/\s+/g, '')}(input) {\n  // Tool implementation\n  return input;\n}`;
+    if (activeTab === 'chat') {
+      setMessages(newMessages);
+    } else {
+      setTestMessages(newMessages);
+    }
+    
+    setInput('');
+    
+    try {
+      const response = await executeSend(newMessages);
+      if (response) {
+        if (activeTab === 'chat') {
+          setMessages([...newMessages, response]);
+          setStep(prev => prev + 1);
+        } else {
+          setTestMessages([...newMessages, response]);
+        }
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  // Handle tab change
+  const handleTabChange = (_: React.SyntheticEvent, newValue: 'chat' | 'test') => {
+    setActiveTab(newValue);
+  };
+
+  // Start the conversation when the component mounts
+  useEffect(() => {
+    if (messages.length === 0 && activeTab === 'chat') {
+      setMessages([{ role: 'assistant', content: initialInterview[0] }]);
+      setStep(0);
+    }
+  }, [messages.length, activeTab]);
+
+  // Create a new node from the conversation
+  const handleCreateNode = (type: 'agent' | 'tool' | 'memory') => {
+    // Simple implementation - in a real app, we'd extract details from the conversation
+    const position = { x: 250, y: 100 };
+    const id = `${type}-${Date.now()}`;
+    const name = `New ${type.charAt(0).toUpperCase() + type.slice(1)}`;
     
     addNode({
       id,
-      type,
       name,
-      content,
+      type,
+      content: '',
       position,
       ...(type === 'agent' ? { llmModel: 'gpt-4o-mini' } : {})
     });
@@ -276,96 +250,99 @@ const ConversationPanel: React.FC = () => {
       
       <Tabs
         value={activeTab}
-        onChange={(_, newValue) => setActiveTab(newValue)}
-        textColor="primary"
-        indicatorColor="primary"
-        variant="fullWidth"
+        onChange={handleTabChange}
         sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
       >
-        <Tab value="build" label="Build Workflow" />
-        <Tab value="test" label="Test Workflow" />
+        <Tab value="chat" label="Chat" />
+        <Tab value="test" label="Test" />
       </Tabs>
       
-      <Box sx={{ flex: 1, overflowY: 'auto', mb: 2 }}>
-        {activeTab === 'build' ? messages.map((msg, idx) => (
-          <Box 
-            key={idx} 
-            sx={{ 
-              mb: 1, 
-              p: 1.5,
-              borderRadius: 2,
-              maxWidth: '85%',
-              backgroundColor: msg.role === 'user' ? 'primary.light' : 'background.paper',
-              color: msg.role === 'user' ? 'white' : 'text.primary',
-              alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-              boxShadow: 1,
-              ml: msg.role === 'user' ? 'auto' : 0,
-            }}
-          >
-            <Typography variant="body2">
-              {msg.content}
+      <Box sx={{ flexGrow: 1, overflow: 'auto', mb: 2 }}>
+        {activeTab === 'chat' ? (
+          messages.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
+              Start a conversation to build your workflow
             </Typography>
-          </Box>
-        )) : testMessages.map((msg, idx) => (
-          <Box 
-            key={idx} 
-            sx={{ 
-              mb: 1, 
-              p: 1.5,
-              borderRadius: 2,
-              maxWidth: '85%',
-              backgroundColor: msg.role === 'user' ? 'primary.light' : 'background.paper',
-              color: msg.role === 'user' ? 'white' : 'text.primary',
-              alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-              boxShadow: 1,
-              ml: msg.role === 'user' ? 'auto' : 0,
-            }}
-          >
-            <Typography variant="body2">
-              {msg.content}
+          ) : (
+            messages.map((message, index) => (
+              <Box 
+                key={index} 
+                sx={{
+                  display: 'flex',
+                  justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+                  mb: 2
+                }}
+              >
+                <Paper 
+                  elevation={1} 
+                  sx={{
+                    padding: 2,
+                    maxWidth: '80%',
+                    backgroundColor: message.role === 'user' 
+                      ? theme.palette.primary.main 
+                      : theme.palette.background.paper,
+                    color: message.role === 'user' 
+                      ? theme.palette.primary.contrastText 
+                      : theme.palette.text.primary,
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography variant="body1">
+                    {message.content}
+                  </Typography>
+                </Paper>
+              </Box>
+            ))
+          )
+        ) : (
+          testMessages.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
+              Test your workflow with sample inputs
             </Typography>
-          </Box>
-        ))}
-        
-        {sendLoading && (
-          <Box sx={{ my: 2 }}>
-            <LoadingIndicator 
-              type="dots" 
-              size="small" 
-              centered={false} 
-              message="AI is thinking..."
-            />
-          </Box>
+          ) : (
+            testMessages.map((message, index) => (
+              <Box 
+                key={index} 
+                sx={{
+                  display: 'flex',
+                  justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+                  mb: 2
+                }}
+              >
+                <Paper 
+                  elevation={1} 
+                  sx={{
+                    padding: 2,
+                    maxWidth: '80%',
+                    backgroundColor: message.role === 'user' 
+                      ? theme.palette.primary.main 
+                      : theme.palette.background.paper,
+                    color: message.role === 'user' 
+                      ? theme.palette.primary.contrastText 
+                      : theme.palette.text.primary,
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography variant="body1">
+                    {message.content}
+                  </Typography>
+                </Paper>
+              </Box>
+            ))
+          )
         )}
-        
-        {sendError && (
-          <Box sx={{ my: 2 }}>
-            <ErrorMessage 
-              message="Failed to get a response" 
-              details={sendError.message}
-              compact
-              onRetry={() => {
-                resetSendError();
-                const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-                if (lastUserMessage) {
-                  const newMessages = [...messages.filter(m => m !== lastUserMessage), lastUserMessage];
-                  executeSend(newMessages);
-                }
-              }}
-            />
-          </Box>
-        )}
-        
         <div ref={messagesEndRef} />
       </Box>
       
-      {apiKeyError && (
+      {sendError && (
         <Box sx={{ mb: 2 }}>
           <ErrorMessage 
             message="OpenAI API Key is invalid or missing" 
             details="Please set your API key to use the conversation feature."
-            onRetry={handleShowApiKeyDialog}
-            onDismiss={() => {}}
+            onRetry={() => {
+              resetSendError();
+              handleShowApiKeyDialog();
+            }}
           />
         </Box>
       )}
@@ -373,8 +350,7 @@ const ConversationPanel: React.FC = () => {
       <Box sx={{ display: 'flex', gap: 1 }}>
         <TextField
           fullWidth
-          size="small"
-          placeholder={activeTab === 'build' ? "Ask about building your workflow..." : "Test your workflow..."}
+          placeholder="Type your message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
@@ -382,6 +358,7 @@ const ConversationPanel: React.FC = () => {
         />
         <Button 
           variant="contained" 
+          color="primary" 
           onClick={handleSend}
           disabled={sendLoading || !input.trim() || apiKeyValidationState === 'loading' || apiKeyValidationState === 'invalid' || !apiKey}
         >
@@ -402,7 +379,7 @@ const ConversationPanel: React.FC = () => {
               <Button 
                 onClick={() => setShowApiKeyDialog(false)} 
                 variant="outlined" 
-                color="default"
+                color="primary"
               >
                 Close
               </Button>
@@ -417,17 +394,17 @@ const ConversationPanel: React.FC = () => {
           </>
         }
       >
-        <Typography variant="body2" sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" paragraph>
           Enter your OpenAI API key to enable the conversation feature. Your key will be stored locally in your browser and is not sent to our servers.
         </Typography>
         
         <TextField
           fullWidth
-          label="OpenAI API Key"
+          type="password"
           value={apiKey}
           onChange={handleApiKeyChange}
+          label="OpenAI API Key"
           placeholder="sk-..."
-          type="password"
           autoFocus
           highlightOnFocus
         />
@@ -437,7 +414,6 @@ const ConversationPanel: React.FC = () => {
             <LoadingIndicator 
               type="dots" 
               size="small" 
-              centered={false} 
               message="Validating API key..."
             />
           </Box>

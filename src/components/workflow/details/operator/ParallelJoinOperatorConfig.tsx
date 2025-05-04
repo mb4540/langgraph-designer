@@ -7,7 +7,7 @@ import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
-import { ParallelJoinOperatorConfig as ParallelJoinConfig } from '../../../../types/nodeTypes';
+import { ParallelJoinOperatorConfig as ParallelJoinConfig, OperatorType } from '../../../../types/nodeTypes';
 import { useWorkflowContext } from '../../../../context/WorkflowContext';
 import { FormField } from '../common';
 import { CodeEditor } from '../common';
@@ -15,6 +15,16 @@ import { CodeEditor } from '../common';
 interface ParallelJoinOperatorConfigProps {
   config: ParallelJoinConfig;
   onConfigChange: (config: ParallelJoinConfig) => void;
+}
+
+// Extended config interface with UI-specific properties
+interface ExtendedParallelJoinConfig extends ParallelJoinConfig {
+  fork_node_id?: string;
+  join_strategy?: 'merge' | 'array' | 'custom' | 'last_only';
+  custom_join_function?: string;
+  result_key?: string;
+  continue_on_error?: boolean;
+  min_success_count?: number;
 }
 
 // Join strategy options
@@ -34,11 +44,14 @@ const ParallelJoinOperatorConfig: React.FC<ParallelJoinOperatorConfigProps> = ({
 }) => {
   const { nodes } = useWorkflowContext();
   
-  const handleChange = (field: keyof ParallelJoinConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedParallelJoinConfig;
+  
+  const handleChange = (field: keyof ExtendedParallelJoinConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as ParallelJoinConfig);
   };
 
   return (
@@ -53,13 +66,13 @@ const ParallelJoinOperatorConfig: React.FC<ParallelJoinOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.fork_node_id || ''}
+            value={extendedConfig.fork_node_id || ''}
             onChange={(e) => handleChange('fork_node_id', e.target.value)}
             displayEmpty
           >
             <MenuItem value=""><em>Select a fork node</em></MenuItem>
             {nodes
-              .filter(node => node.type === 'PARALLEL_FORK')
+              .filter(node => node.operatorType === OperatorType.ParallelFork)
               .map(node => (
                 <MenuItem key={node.id} value={node.id}>
                   {node.name || `Fork ${node.id.slice(0, 8)}`}
@@ -76,7 +89,7 @@ const ParallelJoinOperatorConfig: React.FC<ParallelJoinOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.join_strategy || 'merge'}
+            value={extendedConfig.join_strategy || 'merge'}
             onChange={(e) => handleChange('join_strategy', e.target.value)}
           >
             {JOIN_STRATEGIES.map(strategy => (
@@ -87,19 +100,19 @@ const ParallelJoinOperatorConfig: React.FC<ParallelJoinOperatorConfigProps> = ({
           </Select>
         </FormControl>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-          {JOIN_STRATEGIES.find(s => s.value === (config.join_strategy || 'merge'))?.description}
+          {JOIN_STRATEGIES.find(s => s.value === (extendedConfig.join_strategy || 'merge'))?.description}
         </Typography>
       </FormField>
       
-      {config.join_strategy === 'custom' && (
+      {extendedConfig.join_strategy === 'custom' && (
         <FormField
           label="Custom Join Function"
           required
           helperText="JavaScript function that takes an array of branch results and returns a combined result"
         >
           <CodeEditor
-            value={config.custom_join_function || 'function joinResults(branchResults) {\n  // Example: merge all results\n  return Object.assign({}, ...branchResults);\n}'}
-            onChange={(value) => handleChange('custom_join_function', value)}
+            code={extendedConfig.custom_join_function || 'function joinResults(branchResults) {\n  // Example: merge all results\n  return Object.assign({}, ...branchResults);\n}'}
+            onCodeChange={(code) => handleChange('custom_join_function', code)}
             language="javascript"
             height="150px"
           />
@@ -112,18 +125,18 @@ const ParallelJoinOperatorConfig: React.FC<ParallelJoinOperatorConfigProps> = ({
       >
         <TextField
           fullWidth
-          value={config.result_key || ''}
+          value={extendedConfig.result_key || ''}
           onChange={(e) => handleChange('result_key', e.target.value)}
           size="small"
           placeholder="parallel_results"
         />
       </FormField>
       
-      <FormField>
+      <FormField label="Error Handling">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.continue_on_error || false}
+              checked={extendedConfig.continue_on_error || false}
               onChange={(e) => handleChange('continue_on_error', e.target.checked)}
             />
           }
@@ -141,7 +154,7 @@ const ParallelJoinOperatorConfig: React.FC<ParallelJoinOperatorConfigProps> = ({
         <TextField
           fullWidth
           type="number"
-          value={config.min_success_count || ''}
+          value={extendedConfig.min_success_count || ''}
           onChange={(e) => handleChange('min_success_count', e.target.value ? parseInt(e.target.value) : undefined)}
           size="small"
           inputProps={{ min: 0 }}

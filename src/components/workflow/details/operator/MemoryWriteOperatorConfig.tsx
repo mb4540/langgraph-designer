@@ -17,6 +17,23 @@ interface MemoryWriteOperatorConfigProps {
   onConfigChange: (config: MemoryWriteConfig) => void;
 }
 
+// Extended config interface with UI-specific properties
+interface ExtendedMemoryWriteConfig extends MemoryWriteConfig {
+  memory_node_id?: string;
+  write_mode?: 'set' | 'append' | 'update' | 'custom' | 'batch';
+  memory_key?: string;
+  value_mapping?: string;
+  value_to_append?: string;
+  create_if_missing?: boolean;
+  max_list_size?: number;
+  update_fields?: string;
+  custom_write_function?: string;
+  batch_entries?: string;
+  persist?: boolean;
+  return_updated_value?: boolean;
+  result_key?: string;
+}
+
 // Memory write modes
 const MEMORY_WRITE_MODES = [
   { value: 'set', label: 'Set Value', description: 'Set a specific key in memory' },
@@ -35,11 +52,14 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
 }) => {
   const { nodes } = useWorkflowContext();
   
-  const handleChange = (field: keyof MemoryWriteConfig, value: any) => {
+  // Cast config to extended type for UI properties
+  const extendedConfig = config as ExtendedMemoryWriteConfig;
+  
+  const handleChange = (field: keyof ExtendedMemoryWriteConfig, value: any) => {
     onConfigChange({
-      ...config,
+      ...extendedConfig,
       [field]: value
-    });
+    } as MemoryWriteConfig);
   };
 
   return (
@@ -55,7 +75,7 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.memory_node_id || ''}
+            value={extendedConfig.memory_node_id || ''}
             onChange={(e) => handleChange('memory_node_id', e.target.value)}
             displayEmpty
           >
@@ -78,7 +98,7 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
       >
         <FormControl fullWidth size="small">
           <Select
-            value={config.write_mode || 'set'}
+            value={extendedConfig.write_mode || 'set'}
             onChange={(e) => handleChange('write_mode', e.target.value)}
           >
             {MEMORY_WRITE_MODES.map(mode => (
@@ -89,11 +109,11 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
           </Select>
         </FormControl>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-          {MEMORY_WRITE_MODES.find(m => m.value === (config.write_mode || 'set'))?.description}
+          {MEMORY_WRITE_MODES.find(m => m.value === (extendedConfig.write_mode || 'set'))?.description}
         </Typography>
       </FormField>
       
-      {(config.write_mode === 'set' || config.write_mode === 'append' || config.write_mode === 'update') && (
+      {(extendedConfig.write_mode === 'set' || extendedConfig.write_mode === 'append' || extendedConfig.write_mode === 'update') && (
         <FormField
           label="Memory Key"
           required
@@ -101,7 +121,7 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
         >
           <TextField
             fullWidth
-            value={config.memory_key || ''}
+            value={extendedConfig.memory_key || ''}
             onChange={(e) => handleChange('memory_key', e.target.value)}
             size="small"
             placeholder="conversation_history"
@@ -109,22 +129,22 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
         </FormField>
       )}
       
-      {config.write_mode === 'set' && (
+      {extendedConfig.write_mode === 'set' && (
         <FormField
           label="Value Mapping"
           required
           helperText="JavaScript expression to determine the value to store"
         >
           <CodeEditor
-            value={config.value_mapping || 'function getValue(state) {\n  // Example: Store a specific value from state\n  return state.current_message;\n}'}
-            onChange={(value) => handleChange('value_mapping', value)}
+            code={extendedConfig.value_mapping || 'function getValue(state) {\n  // Example: Store a specific value from state\n  return state.current_message;\n}'}
+            onCodeChange={(code) => handleChange('value_mapping', code)}
             language="javascript"
             height="120px"
           />
         </FormField>
       )}
       
-      {config.write_mode === 'append' && (
+      {extendedConfig.write_mode === 'append' && (
         <>
           <FormField
             label="Value to Append"
@@ -132,18 +152,18 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
             helperText="JavaScript expression for the value to append"
           >
             <CodeEditor
-              value={config.value_to_append || 'function getValueToAppend(state) {\n  // Example: Format a message to append\n  return {\n    role: "user",\n    content: state.user_message,\n    timestamp: new Date().toISOString()\n  };\n}'}
-              onChange={(value) => handleChange('value_to_append', value)}
+              code={extendedConfig.value_to_append || 'function getValueToAppend(state) {\n  // Example: Format a message to append\n  return {\n    role: "user",\n    content: state.user_message,\n    timestamp: new Date().toISOString()\n  };\n}'}
+              onCodeChange={(code) => handleChange('value_to_append', code)}
               language="javascript"
               height="150px"
             />
           </FormField>
           
-          <FormField>
+          <FormField label="List Creation Options">
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={config.create_if_missing || true}
+                  checked={extendedConfig.create_if_missing ?? true}
                   onChange={(e) => handleChange('create_if_missing', e.target.checked)}
                 />
               }
@@ -161,7 +181,7 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
             <TextField
               fullWidth
               type="number"
-              value={config.max_list_size || ''}
+              value={extendedConfig.max_list_size || ''}
               onChange={(e) => handleChange('max_list_size', e.target.value ? parseInt(e.target.value) : undefined)}
               size="small"
               inputProps={{ min: 0 }}
@@ -171,7 +191,7 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
         </>
       )}
       
-      {config.write_mode === 'update' && (
+      {extendedConfig.write_mode === 'update' && (
         <>
           <FormField
             label="Update Fields"
@@ -179,18 +199,18 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
             helperText="JavaScript expression for the fields to update"
           >
             <CodeEditor
-              value={config.update_fields || 'function getUpdateFields(state) {\n  // Example: Update specific fields in an object\n  return {\n    last_modified: new Date().toISOString(),\n    status: state.current_status,\n    count: (state.memory_data?.count || 0) + 1\n  };\n}'}
-              onChange={(value) => handleChange('update_fields', value)}
+              code={extendedConfig.update_fields || 'function getUpdateFields(state) {\n  // Example: Update specific fields in an object\n  return {\n    last_modified: new Date().toISOString(),\n    status: state.current_status,\n    count: (state.memory_data?.count || 0) + 1\n  };\n}'}
+              onCodeChange={(code) => handleChange('update_fields', code)}
               language="javascript"
               height="150px"
             />
           </FormField>
           
-          <FormField>
+          <FormField label="Object Creation Options">
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={config.create_if_missing || false}
+                  checked={extendedConfig.create_if_missing || false}
                   onChange={(e) => handleChange('create_if_missing', e.target.checked)}
                 />
               }
@@ -203,41 +223,41 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
         </>
       )}
       
-      {config.write_mode === 'custom' && (
+      {extendedConfig.write_mode === 'custom' && (
         <FormField
           label="Custom Write Function"
           required
           helperText="JavaScript function to handle the memory write operation"
         >
           <CodeEditor
-            value={config.custom_write_function || 'function writeToMemory(memory, state) {\n  // Example: Custom memory write logic\n  const timestamp = new Date().toISOString();\n  \n  // Update conversation history\n  if (!memory.conversation_history) {\n    memory.conversation_history = [];\n  }\n  \n  memory.conversation_history.push({\n    role: "user",\n    content: state.user_message,\n    timestamp\n  });\n  \n  // Limit history size\n  if (memory.conversation_history.length > 50) {\n    memory.conversation_history = memory.conversation_history.slice(-50);\n  }\n  \n  // Update metadata\n  memory.metadata = {\n    ...memory.metadata || {},\n    last_updated: timestamp,\n    message_count: (memory.metadata?.message_count || 0) + 1\n  };\n  \n  return memory;\n}'}
-            onChange={(value) => handleChange('custom_write_function', value)}
+            code={extendedConfig.custom_write_function || 'function writeToMemory(memory, state) {\n  // Example: Custom memory write logic\n  const timestamp = new Date().toISOString();\n  \n  // Update conversation history\n  if (!memory.conversation_history) {\n    memory.conversation_history = [];\n  }\n  \n  memory.conversation_history.push({\n    role: "user",\n    content: state.user_message,\n    timestamp\n  });\n  \n  // Limit history size\n  if (memory.conversation_history.length > 50) {\n    memory.conversation_history = memory.conversation_history.slice(-50);\n  }\n  \n  // Update metadata\n  memory.metadata = {\n    ...memory.metadata || {},\n    last_updated: timestamp,\n    message_count: (memory.metadata?.message_count || 0) + 1\n  };\n  \n  return memory;\n}'}
+            onCodeChange={(code) => handleChange('custom_write_function', code)}
             language="javascript"
             height="300px"
           />
         </FormField>
       )}
       
-      {config.write_mode === 'batch' && (
+      {extendedConfig.write_mode === 'batch' && (
         <FormField
           label="Batch Entries"
           required
           helperText="JavaScript function returning an object with keys and values to write"
         >
           <CodeEditor
-            value={config.batch_entries || 'function getBatchEntries(state) {\n  // Example: Write multiple entries at once\n  return {\n    "user_profile": state.user_data,\n    "session_info": {\n      start_time: state.session_start,\n      last_active: new Date().toISOString()\n    },\n    "interaction_count": (state.memory_data?.interaction_count || 0) + 1\n  };\n}'}
-            onChange={(value) => handleChange('batch_entries', value)}
+            code={extendedConfig.batch_entries || 'function getBatchEntries(state) {\n  // Example: Write multiple entries at once\n  return {\n    "user_profile": state.user_data,\n    "session_info": {\n      start_time: state.session_start,\n      last_active: new Date().toISOString()\n    },\n    "interaction_count": (state.memory_data?.interaction_count || 0) + 1\n  };\n}'}
+            onCodeChange={(code) => handleChange('batch_entries', code)}
             language="javascript"
             height="200px"
           />
         </FormField>
       )}
       
-      <FormField>
+      <FormField label="Storage Options">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.persist || true}
+              checked={extendedConfig.persist ?? true}
               onChange={(e) => handleChange('persist', e.target.checked)}
             />
           }
@@ -248,11 +268,11 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
         </Typography>
       </FormField>
       
-      <FormField>
+      <FormField label="Return Value Options">
         <FormControlLabel
           control={
             <Checkbox
-              checked={config.return_updated_value || false}
+              checked={extendedConfig.return_updated_value || false}
               onChange={(e) => handleChange('return_updated_value', e.target.checked)}
             />
           }
@@ -263,7 +283,7 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
         </Typography>
       </FormField>
       
-      {config.return_updated_value && (
+      {extendedConfig.return_updated_value && (
         <FormField
           label="Result Key"
           required
@@ -271,7 +291,7 @@ const MemoryWriteOperatorConfig: React.FC<MemoryWriteOperatorConfigProps> = ({
         >
           <TextField
             fullWidth
-            value={config.result_key || ''}
+            value={extendedConfig.result_key || ''}
             onChange={(e) => handleChange('result_key', e.target.value)}
             size="small"
             placeholder="updated_memory"
