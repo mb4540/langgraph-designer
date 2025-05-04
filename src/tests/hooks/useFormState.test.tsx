@@ -8,7 +8,6 @@ describe('useFormState', () => {
     id: 'test-node-1',
     type: 'tool',
     position: { x: 0, y: 0 },
-    data: {},
     name: 'Test Tool',
     toolType: 'test-tool',
     content: 'test content',

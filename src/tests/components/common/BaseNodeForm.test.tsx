@@ -2,6 +2,15 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '../../utils/test-utils';
 import { BaseNodeForm } from '../../../components/workflow/details/common';
 
+// Add TypeScript declarations for the window properties
+declare global {
+  interface Window {
+    saveNodeChanges: () => Promise<void>;
+    cancelNodeChanges: () => void;
+    isNodeModified: boolean;
+  }
+}
+
 describe('BaseNodeForm', () => {
   const mockOnSave = jest.fn();
   const mockOnCancel = jest.fn();
